@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
-# Enter the virtualenv
-import os.path
-_activate = os.path.join(os.path.dirname(__file__),
-                         'env/bin/activate_this.py')
-execfile(_activate, dict(__file__=_activate))
+# # Enter the virtualenv
+# import os.path
+# _activate = os.path.join(os.path.dirname(__file__),
+#                          'env/bin/activate_this.py')
+# execfile(_activate, dict(__file__=_activate))
 
 # Add our code to path.
 import sys
