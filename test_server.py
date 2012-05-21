@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # # Enter the virtualenv
 # import os.path
@@ -7,9 +7,9 @@
 # execfile(_activate, dict(__file__=_activate))
 
 # Add our code to path.
+import os.path
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             'web_scripts/kdc'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'kdc'))
 
 from werkzeug.exceptions import NotFound
 from werkzeug.wsgi import SharedDataMiddleware, DispatcherMiddleware
