@@ -1,4 +1,6 @@
 RewriteEngine On
-# RewriteCond %{REQUEST_FILENAME} !-f
-# RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ moooer.fcgi/$1 [QSA,L]
+RewriteRule ^$ kdc.fcgi/ [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ kdc.fcgi/$1 [QSA,L]
