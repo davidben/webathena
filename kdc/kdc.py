@@ -40,7 +40,8 @@ def send_request(socks, data):
 
 class WebKDC(object):
 
-    def __init__(self):
+    def __init__(self, realm=settings.REALM):
+        self.realm = realm
         self.url_map = Map([
             Rule('/v1/<krb_req_b64>', endpoint='request'),
         ])
@@ -50,7 +51,7 @@ class WebKDC(object):
 
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
         # support's UDP though.
-        srv_query = '_kerberos._udp.' + settings.REALM
+        srv_query = '_kerberos._udp.' + self.realm
         srv_records = list(dns.resolver.query(srv_query, 'SRV'))
         srv_records.sort(key = lambda r: r.priority)
 
