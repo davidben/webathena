@@ -1,5 +1,8 @@
+import base64
 import dns.resolver
 import json
+import select
+import socket
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
@@ -7,21 +10,72 @@ from werkzeug.wrappers import Request, Response
 
 import settings
 
+def wait_on_sockets(socks, timeout):
+    rs, _, _ = select.select(socks, [], [], timeout)
+    for r in rs:
+        data = r.recv(4096)
+        if data:
+            return data
+    return None
+
+# Algorithm borrowed from MIT kerberos code. This probably works or
+# something.
+def send_request(socks, data):
+    delay = 2
+    for p in range(3):
+        for s in socks:
+            # Send the request.
+            ret = s.send(data)
+            if ret == len(data):
+                # Wait for a reply for a second.
+                reply = wait_on_sockets(socks, 1)
+                if reply is not None:
+                    return reply
+        # Wait for a reply from anyone.
+        reply = wait_on_sockets(socks, delay)
+        if reply is not None:
+            return reply
+        delay *= 2
+    return None
+
 class WebKDC(object):
 
     def __init__(self):
         self.url_map = Map([
-            Rule('/v1/<arg>', endpoint='query'),
+            Rule('/v1/<krb_req_b64>', endpoint='request'),
         ])
 
-    def on_query(self, request, arg):
+    def on_request(self, request, krb_req_b64):
+        krb_req = base64.b64decode(krb_req_b64)
+
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
         # support's UDP though.
         srv_query = '_kerberos._udp.' + settings.REALM
         srv_records = list(dns.resolver.query(srv_query, 'SRV'))
         srv_records.sort(key = lambda r: r.priority)
 
-        data = [{'target': str(r.target), 'port': int(r.port)} for r in srv_records]
+        socks = []
+        try:
+            for r in srv_records:
+                host = str(r.target)
+                port = int(r.port)
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.setblocking(0)
+                s.connect((host, port))
+                socks.append(s)
+
+            krb_rep = send_request(socks, krb_req)
+        finally:
+            for s in socks:
+                s.close()
+
+        if krb_rep is None:
+            data = { 'status': 'TIMEOUT' }
+        else:
+            data = {
+                'status': 'OK',
+                'reply': base64.b64encode(krb_rep)
+                }
         return Response(json.dumps(data), mimetype='application/json')
 
     def dispatch_request(self, request):
