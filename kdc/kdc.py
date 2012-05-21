@@ -48,7 +48,18 @@ class WebKDC(object):
 
     def on_request(self, request, krb_req_b64):
         krb_req = base64.b64decode(krb_req_b64)
+        krb_rep = self.send_krb_request(krb_req)
 
+        if krb_rep is None:
+            data = { 'status': 'TIMEOUT' }
+        else:
+            data = {
+                'status': 'OK',
+                'reply': base64.b64encode(krb_rep)
+                }
+        return Response(json.dumps(data), mimetype='application/json')
+
+    def send_krb_request(self, krb_req):
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
         # support's UDP though.
         srv_query = '_kerberos._udp.' + self.realm
@@ -65,19 +76,10 @@ class WebKDC(object):
                 s.connect((host, port))
                 socks.append(s)
 
-            krb_rep = send_request(socks, krb_req)
+            return send_request(socks, krb_req)
         finally:
             for s in socks:
                 s.close()
-
-        if krb_rep is None:
-            data = { 'status': 'TIMEOUT' }
-        else:
-            data = {
-                'status': 'OK',
-                'reply': base64.b64encode(krb_rep)
-                }
-        return Response(json.dumps(data), mimetype='application/json')
 
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
