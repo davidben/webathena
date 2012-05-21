@@ -1,16 +1,28 @@
+import dns.resolver
+import json
+
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
+
+import settings
 
 class WebKDC(object):
 
     def __init__(self):
         self.url_map = Map([
-            Rule('/', endpoint='test'),
+            Rule('/v1/<arg>', endpoint='query'),
         ])
 
-    def on_test(self, request):
-        return Response('Blah blah blah', mimetype='text/plain')
+    def on_query(self, request, arg):
+        # TODO: Support TCP as well as UDP. I think MIT's KDC only
+        # support's UDP though.
+        srv_query = '_kerberos._udp.' + settings.REALM
+        srv_records = list(dns.resolver.query(srv_query, 'SRV'))
+        srv_records.sort(key = lambda r: r.priority)
+
+        data = [{'target': str(r.target), 'port': int(r.port)} for r in srv_records]
+        return Response(json.dumps(data), mimetype='application/json')
 
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
