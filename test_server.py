@@ -24,19 +24,13 @@ def create_app():
 
     web_scripts = os.path.join(os.path.dirname(__file__), 'web_scripts')
 
-    def throw_not_found(e, s): raise NotFound()
-    static_app = SharedDataMiddleware(throw_not_found, { '/': web_scripts, })
-    def index_html_hack(environ, start_response):
-        try:
-            return static_app(environ, start_response)
-        except NotFound, e:
-            environ['PATH_INFO'] = environ.get('PATH_INFO', '') + '/index.html'
-            try:
-                return static_app(environ, start_response)
-            except NotFound, e:
-                return e(environ, start_response)
+    def with_index_html(environ, start_response):
+        environ['PATH_INFO'] = environ.get('PATH_INFO', '') + '/index.html'
+        app = SharedDataMiddleware(NotFound(), { '/': web_scripts, })
+        return app(environ, start_response)
+    static_app = SharedDataMiddleware(with_index_html, { '/': web_scripts, })
 
-    return DispatcherMiddleware(index_html_hack, { '/kdc': kdc_app, })
+    return DispatcherMiddleware(static_app, { '/kdc': kdc_app, })
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
