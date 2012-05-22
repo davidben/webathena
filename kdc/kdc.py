@@ -107,7 +107,7 @@ class WebKDC(object):
 
     def send_krb_request(self, krb_req):
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
-        # support's UDP though.
+        # supports UDP though.
         srv_query = '_kerberos._udp.' + self.realm
         srv_records = list(dns.resolver.query(srv_query, 'SRV'))
         srv_records.sort(key = lambda r: r.priority)
