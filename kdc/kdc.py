@@ -16,6 +16,8 @@ from werkzeug.wrappers import Request, Response
 import krb_asn1
 import settings
 
+MAX_PACKET_SIZE = 4096
+
 def wait_on_sockets(socks, timeout):
     """
     Selects on a list of UDP sockets until one becomes readable or we
@@ -24,7 +26,7 @@ def wait_on_sockets(socks, timeout):
     """
     ready_r, _, _ = select.select(socks, [], [], timeout)
     for sock in ready_r:
-        data = sock.recv(4096)
+        data = sock.recv(MAX_PACKET_SIZE)
         if data:
             return data
     return None
@@ -57,16 +59,11 @@ class WebKDC(object):
 
     def __init__(self, realm=settings.REALM):
         self.realm = realm
-        # TODO: Move these out of the URL. It should be POST data or
-        # something. Ideally something that form posts can't send
-        # (Content-Type: application/json) so that we don't have to
-        # care about those DDoS that involve a bunch of visitors all
-        # submitting forms and stuff.
         self.url_map = Map([
-            Rule('/v1/AS_REQ/<req_b64>', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
-            Rule('/v1/TGS_REQ/<req_b64>',
+            Rule('/v1/AS_REQ', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
+            Rule('/v1/TGS_REQ',
                  endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
-            Rule('/v1/AP_REQ/<req_b64>', endpoint=('AP_REQ', krb_asn1.AP_REQ)),
+            Rule('/v1/AP_REQ', endpoint=('AP_REQ', krb_asn1.AP_REQ)),
         ])
 
 
@@ -90,7 +87,7 @@ class WebKDC(object):
                  'msg': str(e) }
         return Response(json.dumps(data), mimetype='application/json')
 
-    def proxy_kdc_request(self, request, endpoint, req_b64):
+    def proxy_kdc_request(self, request, endpoint):
         """
         Common code for all proxied KDC requests. endpoint is a
         (req_name, asn1Type) tuple and comes from the URL map. req_b64
@@ -98,6 +95,27 @@ class WebKDC(object):
         perform additional checks before sending it along.
         """
         req_name, asn1Type = endpoint
+
+        if request.method != 'POST':
+            return self._error_response('Bad method')
+        # May as well require this header just so browser same-origin
+        # rules do a little to keep us from being DDoS'd by automated
+        # form submissions here. We don't actually care this
+        # otherwise. Using a custom header as "CSRF" protection
+        # doesn't quite work thanks to, as always, Adobe. But I
+        # believe this has been fixed in browsers/NPAPI with
+        # NPP_URLRedirectNotify and the like. It also doesn't matter
+        # since a 307 redirect requires user action.
+        #
+        # http://lists.webappsec.org/pipermail/websecurity_lists.webappsec.org/2011-February/007533.html
+        if request.headers.get('X-WebKDC-Request') != 'OK':
+            return self._error_response('Missing header')
+        # Werkzeug docs make a big deal about memory problems if the
+        # client sends you MB of data. So, fine, we'll limit it.
+        length = request.headers.get('Content-Length', type=int)
+        if length is None or length > MAX_PACKET_SIZE * 2:
+            return self._error_response('Payload too large')
+        req_b64 = request.data
 
         try:
             req_der = base64.b64decode(req_b64)
