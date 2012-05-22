@@ -1,3 +1,4 @@
+""" Web-based proxy to a Kerberos KDC for Webathena. """
 import base64
 import dns.resolver
 import json
@@ -16,9 +17,14 @@ import krb_asn1
 import settings
 
 def wait_on_sockets(socks, timeout):
-    rs, _, _ = select.select(socks, [], [], timeout)
-    for r in rs:
-        data = r.recv(4096)
+    """
+    Selects on a list of UDP sockets until one becomes readable or we
+    hit a timeout. If one returns a packet we return it. Otherwise
+    None.
+    """
+    ready_r, _, _ = select.select(socks, [], [], timeout)
+    for sock in ready_r:
+        data = sock.recv(4096)
         if data:
             return data
     return None
@@ -26,11 +32,15 @@ def wait_on_sockets(socks, timeout):
 # Algorithm borrowed from MIT kerberos code. This probably works or
 # something.
 def send_request(socks, data):
+    """
+    Attempts to send a single request to a number of UDP sockets until
+    one returns or we timeout. Handles retry.
+    """
     delay = 2
-    for p in range(3):
-        for s in socks:
+    for _ in range(3):
+        for sock in socks:
             # Send the request.
-            ret = s.send(data)
+            ret = sock.send(data)
             if ret == len(data):
                 # Wait for a reply for a second.
                 reply = wait_on_sockets(socks, 1)
@@ -54,7 +64,8 @@ class WebKDC(object):
         # submitting forms and stuff.
         self.url_map = Map([
             Rule('/v1/AS_REQ/<req_b64>', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
-            Rule('/v1/TGS_REQ/<req_b64>', endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
+            Rule('/v1/TGS_REQ/<req_b64>',
+                 endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
         ])
 
 
@@ -70,11 +81,18 @@ class WebKDC(object):
 
 
     def _error_response(self, e):
+        """ Returns a Response corresponding to some exception e. """
         data = { 'status': 'ERROR',
                  'msg': str(e) }
         return Response(json.dumps(data), mimetype='application/json')
 
     def proxy_kdc_request(self, request, endpoint, req_b64):
+        """
+        Common code for all proxied KDC requests. endpoint is a
+        (req_name, asn1Type) tuple and comes from the URL map. req_b64
+        is base64-encoded request. Calls self.validate_${req_name} to
+        perform additional checks before sending it along.
+        """
         req_name, asn1Type = endpoint
 
         try:
@@ -106,6 +124,10 @@ class WebKDC(object):
         return Response(json.dumps(data), mimetype='application/json')
 
     def send_krb_request(self, krb_req):
+        """
+        Sends Kerberos request krb_req, returns the response or None
+        if we time out.
+        """
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
         # supports UDP though.
         srv_query = '_kerberos._udp.' + self.realm
