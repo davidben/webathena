@@ -4,10 +4,15 @@ import json
 import select
 import socket
 
+from pyasn1.codec.der import decoder as der_decoder
+from pyasn1.codec.der import encoder as der_encoder
+from pyasn1.error import PyAsn1Error
+
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
+import krb_asn1
 import settings
 
 def wait_on_sockets(socks, timeout):
@@ -43,12 +48,35 @@ class WebKDC(object):
     def __init__(self, realm=settings.REALM):
         self.realm = realm
         self.url_map = Map([
-            Rule('/v1/<krb_req_b64>', endpoint='request'),
+            Rule('/v1/AS_REQ/<req_b64>', endpoint='AS_REQ'),
         ])
 
-    def on_request(self, request, krb_req_b64):
-        krb_req = base64.b64decode(krb_req_b64)
-        krb_rep = self.send_krb_request(krb_req)
+    def _error_response(self, e):
+        data = { 'status': 'ERROR',
+                 'msg': str(e) }
+        return Response(json.dumps(data), mimetype='application/json')
+
+    def on_AS_REQ(self, request, req_b64):
+        try:
+            req_der = base64.b64decode(req_b64)
+        except TypeError, e:
+            return self._error_response(e)
+
+        # Make sure we don't send garbage to the KDC. Otherwise it
+        # doesn't reply and we time out, which is kinda awkward.
+        try:
+            as_req, rest = der_decoder.decode(req_der,
+                                              asn1Spec=krb_asn1.AS_REQ())
+            if rest:
+                raise ValueError('Garbage after request')
+            msg_type = int(as_req.getComponentByName('msg-type'))
+            if msg_type != krb_asn1.KDC_REQ.msg_type_as:
+                raise ValueError('Bad msg-type')
+        except (PyAsn1Error, ValueError), e:
+            return self._error_response(e)
+
+        # Okay, it seems good. Go on and send it.
+        krb_rep = self.send_krb_request(der_encoder.encode(as_req))
 
         if krb_rep is None:
             data = { 'status': 'TIMEOUT' }
