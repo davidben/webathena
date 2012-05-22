@@ -1,12 +1,15 @@
-from pyasn1.type import char, namedtype, tag, univ, useful
+from pyasn1.type import char, constraint, namedtype, tag, univ, useful
 
 # 5.2.1.  KerberosString
 class KerberosString(char.GeneralString): pass
 
 # 5.2.4.  Constrained Integer Types
-class Int32(univ.Integer): pass
-class UInt32(univ.Integer): pass
-class Microseconds(univ.Integer): pass
+class Int32(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(-2147483648, 2147483647)
+class UInt32(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(0, 4294967295)
+class Microseconds(univ.Integer):
+    subtypeSpec = constraint.ValueRangeConstraint(0, 999999)
 
 # 5.2.2.  Realm and PrincipalName
 class Realm(KerberosString): pass
@@ -471,6 +474,7 @@ class KDC_REQ(univ.Sequence):
         namedtype.NamedType(
             'msg-type',
             univ.Integer().subtype(
+                subtypeSpec=constraint.SingleValueConstraint(10, 12),
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 2))),
         namedtype.OptionalNamedType(
