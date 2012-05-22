@@ -66,6 +66,7 @@ class WebKDC(object):
             Rule('/v1/AS_REQ/<req_b64>', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
             Rule('/v1/TGS_REQ/<req_b64>',
                  endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
+            Rule('/v1/AP_REQ/<req_b64>', endpoint=('AP_REQ', krb_asn1.AP_REQ)),
         ])
 
 
@@ -78,6 +79,9 @@ class WebKDC(object):
         msg_type = int(req_asn1.getComponentByName('msg-type'))
         if msg_type != krb_asn1.KDC_REQ.msg_type_tgs:
             raise ValueError('Bad msg-type')
+
+    def validate_AP_REQ(self, req_asn1):
+        pass
 
 
     def _error_response(self, e):
