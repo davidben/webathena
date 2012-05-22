@@ -254,7 +254,7 @@ class KerberosFlags(univ.BitString): pass
 class Ticket(univ.Sequence):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatSimple, 1))
+                tag.tagFormatConstructed, 1))
     # ^ tagFormatConstructed??
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
@@ -313,7 +313,7 @@ class TransitedEncoding(univ.Sequence):
 class EncTicketPart(univ.Sequence):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatSimple, 1))
+                tag.tagFormatConstructed, 1))
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
             'flags',
@@ -486,12 +486,12 @@ class KDC_REQ(univ.Sequence):
 class AS_REQ(KDC_REQ):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatSimple, 10))
+                tag.tagFormatConstructed, 10))
 
 class TGS_REQ(KDC_REQ):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatSimple, 12))
+                tag.tagFormatConstructed, 12))
 
 # 5.4.2.  KRB_KDC_REP Definition
 
@@ -506,7 +506,7 @@ class APOptions(KerberosFlags):
 class AP_REQ(univ.Sequence):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatSimple, 14))
+                tag.tagFormatConstructed, 14))
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
             'pvno',
