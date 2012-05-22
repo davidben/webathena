@@ -106,7 +106,13 @@ class WebKDC(object):
         # doesn't quite work thanks to, as always, Adobe. But I
         # believe this has been fixed in browsers/NPAPI with
         # NPP_URLRedirectNotify and the like. It also doesn't matter
-        # since a 307 redirect requires user action.
+        # since a 307 redirect requires user action and can't get
+        # automated...
+        #
+        # ...except on Safari. (Sigh. It's always Apple. I bet they
+        # haven't fixed it in NPAPI either.) Oh well. We don't
+        # actually care, and we can rate-limit by IP or something
+        # later. This is pretty overkill.
         #
         # http://lists.webappsec.org/pipermail/websecurity_lists.webappsec.org/2011-February/007533.html
         if request.headers.get('X-WebKDC-Request') != 'OK':
