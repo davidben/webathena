@@ -16,6 +16,7 @@ from werkzeug.wrappers import Request, Response
 import krb_asn1
 import settings
 
+# This is the same limit used internally in MIT Kerberos it seems.
 MAX_PACKET_SIZE = 4096
 
 def wait_on_sockets(socks, timeout):
