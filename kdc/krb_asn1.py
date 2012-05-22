@@ -14,9 +14,6 @@ class Microseconds(univ.Integer):
 # 5.2.2.  Realm and PrincipalName
 class Realm(KerberosString): pass
 
-class _KerberosStringSequence(univ.SequenceOf):
-    componentType = KerberosString()
-
 class PrincipalName(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
@@ -26,7 +23,7 @@ class PrincipalName(univ.Sequence):
                                     tag.tagFormatSimple, 0))),
         namedtype.NamedType(
             'name-string',
-            _KerberosStringSequence().subtype(
+            univ.SequenceOf(componentType=KerberosString()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 1))),
         )
@@ -392,13 +389,6 @@ class KDCOptions(KerberosFlags):
     renew = 30
     validate = 31
 
-class Int32Sequence(univ.SequenceOf):
-    componentType = Int32()
-class TicketSequence(univ.SequenceOf):
-    componentType = Ticket()
-class PA_DATA_Sequence(univ.SequenceOf):
-    componentType = PA_DATA()
-
 class KDC_REQ_BODY(univ.Sequence):
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
@@ -443,7 +433,7 @@ class KDC_REQ_BODY(univ.Sequence):
                                     tag.tagFormatSimple, 7))),
         namedtype.NamedType(
             'etype',
-            Int32Sequence().subtype(
+            univ.SequenceOf(componentType=Int32()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 8))),
         namedtype.OptionalNamedType(
@@ -458,7 +448,7 @@ class KDC_REQ_BODY(univ.Sequence):
                                     tag.tagFormatSimple, 10))),
         namedtype.OptionalNamedType(
             'additional-tickets',
-            TicketSequence().subtype(
+            univ.SequenceOf(componentType=Ticket()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 11))),
         )
@@ -479,7 +469,7 @@ class KDC_REQ(univ.Sequence):
                                     tag.tagFormatSimple, 2))),
         namedtype.OptionalNamedType(
             'padata',
-            PA_DATA_Sequence().subtype(
+            univ.SequenceOf(componentType=PA_DATA()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 3))),
         namedtype.NamedType(
