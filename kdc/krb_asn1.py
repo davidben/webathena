@@ -74,7 +74,7 @@ class _AuthorizationDataEntry(univ.Sequence):
     ad_mandatory_for_kdc_type = 8
 
 class AuthorizationData(univ.SequenceOf):
-    componentType = _AuthorizationDataEntry
+    componentType = _AuthorizationDataEntry()
 
 # 5.2.6.1.  IF-RELEVANT
 class AD_IF_RELEVANT(AuthorizationData): pass
@@ -225,7 +225,7 @@ class ETYPE_INFO_ENTRY(univ.Sequence):
         )
 
 class ETYPE_INFO(univ.SequenceOf):
-    componentType = ETYPE_INFO_ENTRY
+    componentType = ETYPE_INFO_ENTRY()
 
 # 5.2.7.5.  PA-ETYPE-INFO2
 class ETYPE_INFO2_ENTRY(univ.Sequence):
@@ -248,7 +248,7 @@ class ETYPE_INFO2_ENTRY(univ.Sequence):
         )
 
 class ETYPE_INFO2(univ.SequenceOf):
-    componentType = ETYPE_INFO2_ENTRY
+    componentType = ETYPE_INFO2_ENTRY()
 
 # 5.2.8.  KerberosFlags
 class KerberosFlags(univ.BitString): pass
@@ -393,11 +393,11 @@ class KDCOptions(KerberosFlags):
     validate = 31
 
 class Int32Sequence(univ.SequenceOf):
-    componentType = Int32
+    componentType = Int32()
 class TicketSequence(univ.SequenceOf):
-    componentType = Ticket
+    componentType = Ticket()
 class PA_DATA_Sequence(univ.SequenceOf):
-    componentType = PA_DATA
+    componentType = PA_DATA()
 
 class KDC_REQ_BODY(univ.Sequence):
     componentType = namedtype.NamedTypes(
