@@ -49,12 +49,18 @@ class WebKDC(object):
         self.realm = realm
         self.url_map = Map([
             Rule('/v1/AS_REQ/<req_b64>', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
+            Rule('/v1/TGS_REQ/<req_b64>', endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
         ])
 
 
     def validate_AS_REQ(self, req_asn1):
         msg_type = int(req_asn1.getComponentByName('msg-type'))
         if msg_type != krb_asn1.KDC_REQ.msg_type_as:
+            raise ValueError('Bad msg-type')
+
+    def validate_TGS_REQ(self, req_asn1):
+        msg_type = int(req_asn1.getComponentByName('msg-type'))
+        if msg_type != krb_asn1.KDC_REQ.msg_type_tgs:
             raise ValueError('Bad msg-type')
 
 
