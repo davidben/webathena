@@ -263,7 +263,7 @@ class Ticket(univ.Sequence):
         namedtype.NamedType(
             'tkt-vno',
             univ.Integer().subtype(
-                value=5,
+                subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 0))),
         namedtype.NamedType(
@@ -468,7 +468,7 @@ class KDC_REQ(univ.Sequence):
         namedtype.OptionalNamedType(
             'pvno',
             univ.Integer().subtype(
-                value=5,
+                subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 1))),
         namedtype.NamedType(
@@ -521,13 +521,13 @@ class AP_REQ(univ.Sequence):
         namedtype.NamedType(
             'pvno',
             univ.Integer().subtype(
-                value=5,
+                subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 0))),
         namedtype.NamedType(
             'msg-type',
             univ.Integer().subtype(
-                value=14,
+                subtypeSpec=constraint.SingleValueConstraint(14),
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatSimple, 1))),
         namedtype.NamedType(
