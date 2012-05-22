@@ -20,12 +20,12 @@ class PrincipalName(univ.Sequence):
             'name-type',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'name-string',
             univ.SequenceOf(componentType=KerberosString()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 # 5.2.3.  KerberosTime
@@ -38,12 +38,12 @@ class HostAddress(univ.Sequence):
             'addr-type',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'address',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 class HostAddresses(univ.SequenceOf):
@@ -56,12 +56,12 @@ class _AuthorizationDataEntry(univ.Sequence):
             'ad-type',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'ad-data',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
     # ad-type values
@@ -83,17 +83,17 @@ class EncryptedData(univ.Sequence):
             'etype',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.OptionalNamedType(
             'kvno',
             UInt32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'cipher',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         )
 
 class EncryptionKey(univ.Sequence):
@@ -102,12 +102,12 @@ class EncryptionKey(univ.Sequence):
             'keytype',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'keyvalue',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 class Checksum(univ.Sequence):
@@ -116,12 +116,12 @@ class Checksum(univ.Sequence):
             'cksumtype',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'checksum',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 # 5.2.6.2.  KDCIssued
@@ -131,22 +131,22 @@ class AD_KDCIssued(univ.Sequence):
             'ad-checksum',
             Checksum().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'i-realm',
             Realm().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'i-sname',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.NamedType(
             'elements',
             AuthorizationData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         )
 
 # 5.2.6.3.  AND-OR
@@ -156,12 +156,12 @@ class AD_AND_OR(univ.Sequence):
             'condition-count',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'elements',
             AuthorizationData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 # 5.2.6.4.  MANDATORY-FOR-KDC
@@ -174,12 +174,12 @@ class PA_DATA(univ.Sequence):
             'padata-type',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'padata-value',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         )
 
     # padata-type values
@@ -198,12 +198,12 @@ class PA_ENC_TS_ENC(univ.Sequence):
             'patimestamp',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.OptionalNamedType(
             'pausec',
             Microseconds().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 # 5.2.7.4.  PA-ETYPE-INFO
@@ -213,12 +213,12 @@ class ETYPE_INFO_ENTRY(univ.Sequence):
             'etype',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.OptionalNamedType(
             'salt',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 class ETYPE_INFO(univ.SequenceOf):
@@ -231,17 +231,17 @@ class ETYPE_INFO2_ENTRY(univ.Sequence):
             'etype',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.OptionalNamedType(
             'salt',
             KerberosString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.OptionalNamedType(
             's2kparams',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         )
 
 class ETYPE_INFO2(univ.SequenceOf):
@@ -262,22 +262,22 @@ class Ticket(univ.Sequence):
             univ.Integer().subtype(
                 subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'realm',
             Realm().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'sname',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.NamedType(
             'enc-part',
             EncryptedData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         )
 
 class TicketFlags(KerberosFlags):
@@ -302,12 +302,12 @@ class TransitedEncoding(univ.Sequence):
             'tr-type',
             Int32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'contents',
             univ.OctetString().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         )
 
 class EncTicketPart(univ.Sequence):
@@ -319,57 +319,57 @@ class EncTicketPart(univ.Sequence):
             'flags',
             TicketFlags().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'key',
             EncryptionKey().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'crealm',
             Realm().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.NamedType(
             'cname',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         namedtype.NamedType(
             'transited',
             TransitedEncoding().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 4))),
+                                    tag.tagFormatConstructed, 4))),
         namedtype.NamedType(
             'authtime',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 5))),
+                                    tag.tagFormatConstructed, 5))),
         namedtype.OptionalNamedType(
             'starttime',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 6))),
+                                    tag.tagFormatConstructed, 6))),
         namedtype.NamedType(
             'endtime',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 7))),
+                                    tag.tagFormatConstructed, 7))),
         namedtype.OptionalNamedType(
             'renew-till',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 8))),
+                                    tag.tagFormatConstructed, 8))),
         namedtype.OptionalNamedType(
             'caddr',
             HostAddresses().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 9))),
+                                    tag.tagFormatConstructed, 9))),
         namedtype.OptionalNamedType(
             'authorization-data',
             AuthorizationData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 10))),
+                                    tag.tagFormatConstructed, 10))),
         )
 
 # 5.4.1.  KRB_KDC_REQ Definition
@@ -395,62 +395,62 @@ class KDC_REQ_BODY(univ.Sequence):
             'kdc-options',
             KDCOptions().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.OptionalNamedType(
             'principal-name',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'realm',
             Realm().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.OptionalNamedType(
             'sname',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         namedtype.OptionalNamedType(
             'from',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 4))),
+                                    tag.tagFormatConstructed, 4))),
         namedtype.NamedType(
             'till',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 5))),
+                                    tag.tagFormatConstructed, 5))),
         namedtype.OptionalNamedType(
             'rtime',
             KerberosTime().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 6))),
+                                    tag.tagFormatConstructed, 6))),
         namedtype.NamedType(
             'nonce',
             UInt32().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 7))),
+                                    tag.tagFormatConstructed, 7))),
         namedtype.NamedType(
             'etype',
             univ.SequenceOf(componentType=Int32()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 8))),
+                                    tag.tagFormatConstructed, 8))),
         namedtype.OptionalNamedType(
             'addresses',
             HostAddresses().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 9))),
+                                    tag.tagFormatConstructed, 9))),
         namedtype.OptionalNamedType(
             'enc-authorization-data',
             EncryptedData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 10))),
+                                    tag.tagFormatConstructed, 10))),
         namedtype.OptionalNamedType(
             'additional-tickets',
             univ.SequenceOf(componentType=Ticket()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 11))),
+                                    tag.tagFormatConstructed, 11))),
         )
     
 class KDC_REQ(univ.Sequence):
@@ -460,23 +460,23 @@ class KDC_REQ(univ.Sequence):
             univ.Integer().subtype(
                 subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'msg-type',
             univ.Integer().subtype(
                 subtypeSpec=constraint.SingleValueConstraint(10, 12),
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.OptionalNamedType(
             'padata',
             univ.SequenceOf(componentType=PA_DATA()).subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         namedtype.NamedType(
             'req-body',
             KDC_REQ_BODY().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 4))),
+                                    tag.tagFormatConstructed, 4))),
         )
 
     # msg-type values
@@ -513,28 +513,28 @@ class AP_REQ(univ.Sequence):
             univ.Integer().subtype(
                 subtypeSpec=constraint.SingleValueConstraint(5),
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 0))),
+                                    tag.tagFormatConstructed, 0))),
         namedtype.NamedType(
             'msg-type',
             univ.Integer().subtype(
                 subtypeSpec=constraint.SingleValueConstraint(14),
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 1))),
+                                    tag.tagFormatConstructed, 1))),
         namedtype.NamedType(
             'ap-options',
             APOptions().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 2))),
+                                    tag.tagFormatConstructed, 2))),
         namedtype.NamedType(
             'ticket',
             Ticket().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 3))),
+                                    tag.tagFormatConstructed, 3))),
         namedtype.NamedType(
             'authenticator',
             EncryptedData().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
-                                    tag.tagFormatSimple, 4))),
+                                    tag.tagFormatConstructed, 4))),
         )
 
 # Skipping Authenticator.
