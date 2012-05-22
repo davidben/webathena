@@ -47,6 +47,11 @@ class WebKDC(object):
 
     def __init__(self, realm=settings.REALM):
         self.realm = realm
+        # TODO: Move these out of the URL. It should be POST data or
+        # something. Ideally something that form posts can't send
+        # (Content-Type: application/json) so that we don't have to
+        # care about those DDoS that involve a bunch of visitors all
+        # submitting forms and stuff.
         self.url_map = Map([
             Rule('/v1/AS_REQ/<req_b64>', endpoint=('AS_REQ', krb_asn1.AS_REQ)),
             Rule('/v1/TGS_REQ/<req_b64>', endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
