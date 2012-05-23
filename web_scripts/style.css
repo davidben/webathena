@@ -1,16 +1,25 @@
 html, body {
     margin: 0;
     padding: 0;
-    background-color: honeydew;
+    max-width: 800px;
+    margin: auto;
     text-transform: lowercase;
     font-family: 'Alegreya', serif;
+    background: honeydew;
+    background: -moz-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
+    background: -webkit-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
+    background: -ms-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
+    background: -o-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
+}
+
+* {
+    font-size: 14pt;
 }
 
 #whatis {
     text-align: right;
     margin-right: 20px;
     margin-top: 8px;
-    font-size: 14pt;
 }
 
 #whatis a {
@@ -22,6 +31,7 @@ html, body {
     padding: 0.5em;
     margin-bottom: 24px;
     text-transform: none;
+    font-size: 12pt;
 }
 
 header {
@@ -47,8 +57,8 @@ h1 {
     background-color: #666;
     color: honeydew;
     text-align: right;
-    margin: 0;
-    padding-right: 20px;
+    margin: 0 -10px;
+    padding-right: 30px;
     font-family: 'Overlock', sans-serif;
     font-size: 48pt;
     box-shadow: 1pt 1pt 4pt black;
@@ -69,7 +79,7 @@ h1 {
 }
 
 #login td {
-    height: 30pt;
+    height: 40pt;
 }
 
 #login .container {
@@ -82,8 +92,7 @@ h1 {
 
 #login .error {
     position: absolute;
-    line-height: 16pt;
-    top: -25%;
+    top: -4pt;
     left: 100%;
     margin-left: 4pt;
     white-space: pre;
