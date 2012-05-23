@@ -23,6 +23,7 @@ KDC.asReq = function(username, success, error) {
     var asReq = {};
     asReq.pvno = krb.pvno;
     asReq.msgType = krb.KRB_MT_AS_REQ;
+    // TODO: Implement pre-authentication and everything.
     // asReq.padata = []; // Omit if empty.
 
     // FIXME: This is obnoxious. Also constants.
@@ -30,6 +31,8 @@ KDC.asReq = function(username, success, error) {
     asReq.reqBody.kdcOptions = [];
     for(var i = 0; i < 32; i++)
         asReq.reqBody.kdcOptions.push(0);
+    // TODO: Pick a reasonable set of keys. These are just taken from
+    // a wireshark trace.
     asReq.reqBody.kdcOptions[krb.KDCOptions.forwardable] = 1;
     asReq.reqBody.kdcOptions[krb.KDCOptions.proxiable] = 1;
     asReq.reqBody.kdcOptions[krb.KDCOptions.renewable_ok] = 1;
