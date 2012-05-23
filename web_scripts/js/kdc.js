@@ -6,18 +6,20 @@ $.ajaxSetup({
     type: 'POST',
 });
 
+Crypto = {};
+
+Crypto.toBase64 = function(str) {
+    return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Latin1.parse(str));
+};
+
+Crypto.fromBase64 = function(str) {
+    return CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Base64.parse(str));
+};
+
 KDC = {};
 
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
-
-KDC.toBase64 = function(str) {
-    return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Latin1.parse(str));
-};
-
-KDC.fromBase64 = function(str) {
-    return CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Base64.parse(str));
-};
 
 KDC.asReq = function(username, success, error) {
     var asReq = {};
@@ -62,7 +64,7 @@ KDC.asReq = function(username, success, error) {
     asReq.reqBody.etype = [18, 17, 16, 23, 1, 3, 2];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
-        data: KDC.toBase64(krb.AS_REQ.encodeDER(asReq)),
+        data: Crypto.toBase64(krb.AS_REQ.encodeDER(asReq)),
         error: function(xhr, status, error) {
             var msg = status || 'unknown error';
             if(error)
@@ -78,7 +80,7 @@ KDC.asReq = function(username, success, error) {
                     error('KDC connection timed out');
                     break;
                 case 'OK':
-                    var der = KDC.fromBase64(data.reply);
+                    var der = Crypto.fromBase64(data.reply);
                     success(krb.AS_REP_OR_ERROR.decodeDER(der)[1]);
                     break;
             }
