@@ -33,9 +33,3 @@ KDC = {
         });
     },
 };
-
-KDC.asReq(function(reply) {
-    console.log(reply);
-}, function(error) {
-    alert(error);
-});

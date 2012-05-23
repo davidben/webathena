@@ -6,9 +6,26 @@ html, body {
     font-family: 'Alegreya', serif;
 }
 
+#whatis {
+    text-align: right;
+    margin-right: 20px;
+    margin-top: 8px;
+    font-size: 14pt;
+}
+
+#whatis a {
+    text-decoration: none;
+}
+
+#info {
+    display: none;
+    padding: 0.5em;
+    margin-bottom: 24px;
+    text-transform: none;
+}
+
 header {
     position: relative;
-    margin-top: 40px;
 }
 
 #logo {
@@ -38,20 +55,12 @@ h1 {
     text-shadow: 2pt 2pt 3pt #888, -2pt -2pt 3pt #444;
 }
 
-#whatis {
-    position: absolute;
-    top: 4px;
-    right: 20px;
-    font-size: 14pt;
-    text-decoration: none;
-}
-
 #login {
     margin: auto;
     text-align: right;
     margin-top: 2em;
     padding: 0.5em;
-    box-shadow: 2pt 2pt 5pt black;
+    box-shadow: 1pt 1pt 4pt black;
     background: tomato;
     background: -moz-linear-gradient(top, salmon, tomato);
     background: -webkit-linear-gradient(top, salmon, tomato);
@@ -59,13 +68,31 @@ h1 {
     background: -o-linear-gradient(top, salmon, tomato);
 }
 
+#login td {
+    position: relative;
+    height: 24pt;
+}
+
+#login input {
+    border: 2px inset chocolate;
+}
+
+#login .error {
+    position: absolute;
+    line-height: 16pt;
+    top: 0;
+    left: 100%;
+    white-space: pre;
+    padding: 4pt;
+    background-color: orange;
+    box-shadow: 2pt 2pt 5pt black;
+    border-radius: 12pt;
+    display: none;
+}
+
 #login button {
     width: 100%;
     text-transform: lowercase;
     font-family: 'Alegreya', serif;
     font-size: 1em;
-}
-
-input {
-    border: 2px inset chocolate;
 }

@@ -13,9 +13,31 @@
         <script src="js/crypto-js/components/enc-utf16-min.js"></script>
         <script src="js/crypto-js/components/enc-base64-min.js"></script>
         <script src="js/kdc.js"></script>
+        <script src="js/ui.js"></script>
     </head>
     <body>
-        <a id="whatis" href="#">What is Webathena?</a>
+        <div id="whatis">
+            <a href="#">What is Webathena?</a>
+        </div>
+        <div id="info">
+Lorem ipsum dolor sit amet and crap like that.
+
+Why not nspluginwrapper?
+
+nspluginwrapper is not a sandboxing mechanism
+An NPAPI plugin relies on unrestricted access to the underlying operating system, so a general plugin cannot be easily sandboxed. nspluginwrapper will only push the plug-in into a separate process; the child process itself is still fully priviledged.
+nspluginwrapper is not a generic out-of-process plugin framework
+While nspluginwrapper does push plugins out-of-process, modern browsers like Mozilla Firefox and Google Chrome natively support out-of-process plugins and, by doing so at the browser level, can do a better job.
+It is not recommended to use nspluginwrapper for plugins which already run natively out-of-process in a modern browser. They should still work, but it only adds overhead.
+
+Why nspluginwrapper?
+
+nspluginwrapper is currently the only means to run a plugin in a browser of a different architecture. It is most commonly used to run a 32-bit plugin built for x86 in a 64-bit browser built for x86-64, but other combinations are possible with QEMU. While there is no reason browsers could not better solve this with existing out-of-process plugin, they currently do not. nspluginwrapper is developed primarily with filling this use case in mind.
+
+nspluginwrapper also makes a good tracing utility for NPAPI plugins.
+
+This is some text that in the future should describe Webathena, but right now does not. I think.
+        </div>
         <header>
             <img src="logo.png" id="logo">
             <h1>Webathena</h1>
@@ -28,6 +50,7 @@
                     </td>
                     <td>
                         <input name="username" id="username" autofocus>
+                        <div class="error">&#x25C0;   Please enter your username</div>
                     </td>
                 </tr>
                 <tr>
@@ -36,11 +59,12 @@
                     </td>
                     <td>
                         <input name="password" id="password">
+                        <div class="error">&#x25C0;   Please enter your password</div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan=2>
-                        <button>Log in to Athena</button>
+                        <button name="submit" id="submit">Log in to Athena</button>
                     </td>
                 </tr>
             </table>
