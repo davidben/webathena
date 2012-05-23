@@ -5,11 +5,11 @@ html, body {
     margin: auto;
     text-transform: lowercase;
     font-family: 'Alegreya', serif;
-    background: honeydew;
-    background: -moz-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
-    background: -webkit-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
-    background: -ms-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
-    background: -o-linear-gradient(left, honeydew, honeydew) repeat-y, #bbd;
+    background: white;
+    background: -moz-linear-gradient(left, white, white) repeat-y, #909098;
+    background: -webkit-linear-gradient(left, white, white) repeat-y, #909098;
+    background: -ms-linear-gradient(left, white, white) repeat-y, #909098;
+    background: -o-linear-gradient(left, white, white) repeat-y, #909098;
 }
 
 * {
@@ -54,15 +54,15 @@ header {
 
 h1 {
     position: relative;
-    background-color: #666;
-    color: honeydew;
+    background-color: #444;
+    color: white;
     text-align: right;
     margin: 0 -10px;
     padding-right: 30px;
     font-family: 'Overlock', sans-serif;
     font-size: 48pt;
     box-shadow: 1pt 1pt 4pt black;
-    text-shadow: 2pt 2pt 3pt #888, -2pt -2pt 3pt #444;
+    text-shadow: 2pt 2pt 3pt #666, -2pt -2pt 3pt #222;
 }
 
 #login table {
