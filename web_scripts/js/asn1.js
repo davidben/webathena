@@ -129,9 +129,9 @@ asn1.encodeLengthDER = function (length) {
  * Decodes an ASN.1 TLV tuple.
  *
  * @param {String|asn1.SubString} data The data to decode.
- * @return {Array} A tuple [tag, value, offset] containing the tag as
- *    a Number, the value as an asn1.SubString, and the offset read up
- *    to as a Number.
+ * @return {Array} A tuple [tag, value, rest] containing the tag as a
+ *    Number, the value as an asn1.SubString, and the unread data as
+ *    an asn1.SubString.
  */
 asn1.decodeTagLengthValueDER = function (data) {
     var off = 0;
@@ -169,7 +169,7 @@ asn1.decodeTagLengthValueDER = function (data) {
     // And return everything.
     if (off + length > data.length)
 	throw "Length too large!";
-    return [tag, data.substr(off, length), off + length];
+    return [tag, data.substr(off, length), data.substr(off + length)];
 }
 
 
@@ -209,23 +209,23 @@ asn1.Type.prototype.encodeDER = function (object) {
  * @return {Object} The decoded object.
  */
 asn1.Type.prototype.decodeDER = function (data) {
-    var objOffset = this.decodeDERPrefix(data);
-    if (objOffset[1] != data.length)
+    var objRest = this.decodeDERPrefix(data);
+    if (objRest[1].length != 0)
 	throw "Excess data!";
-    return objOffset[0];
+    return objRest[0];
 };
 
 /**
  * Decodes DER-encoded data according to this type.
  *
  * @param {String|asn1.SubString} data The data to decode.
- * @return {Array} A tuple of the decoded object and the offset read.
+ * @return {Array} A tuple of the decoded object and the unread data.
  */
 asn1.Type.prototype.decodeDERPrefix = function (data) {
-    var tvo = asn1.decodeTagLengthValueDER(data);
-    if (tvo[0] != this.tag)
+    var tvr = asn1.decodeTagLengthValueDER(data);
+    if (tvr[0] != this.tag)
 	throw "Tag mismatch!";
-    return [this.decodeDERValue(tvo[1]), tvo[2]];
+    return [this.decodeDERValue(tvr[1]), tvr[2]];
 };
 
 /**
@@ -530,9 +530,9 @@ asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
     var off = 0;
     var ret = [];
     while (data.length) {
-	var objOff = this.componentType.decodeDERPrefix(data);
-	ret.push(objOff[0]);
-	data = data.substr(objOff[1]);
+	var objRest = this.componentType.decodeDERPrefix(data);
+	ret.push(objRest[0]);
+	data = objRest[1];
     }
     return ret;
 };
