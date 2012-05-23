@@ -318,7 +318,7 @@ asn1.BIT_STRING.encodeDERValue = function (object) {
 	for (var j = 0; j < 8; j++) {
 	    octet |= (object[i + j] || 0) << (7-j);
 	}
-	ret.push(octet);
+	ret.push(String.fromCharCode(octet));
     }
     return ret.join("");
 };
