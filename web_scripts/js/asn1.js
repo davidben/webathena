@@ -299,6 +299,46 @@ asn1.INTEGER.decodeDERValue = function (data) {
 };
 
 
+/**
+ * ASN.1 BIT STRING type. We'll represent it as an Array of 0s and 1s,
+ * though a bitmask works fine for Kerberos.
+ */
+asn1.BIT_STRING = new asn1.Type(
+    asn1.tag(0x03, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.BIT_STRING.encodeDERValue = function (object) {
+    var remainder = 8 - (object.length % 8);
+    if (remainder == 8) remainder = 0;
+
+    var ret = [];
+    ret.push(String.fromCharCode(remainder));
+    for (var i = 0; i < object.length; i += 8) {
+	var octet = 0;
+	// Bit zero ends up in the high-order bit of the first octet.
+	for (var j = 0; j < 8; j++) {
+	    octet |= (object[i + j] || 0) << (7-j);
+	}
+	ret.push(octet);
+    }
+    return ret.join("");
+};
+
+asn1.BIT_STRING.decodeDERValue = function (data) {
+    var remainder = data.charCodeAt(0);
+    var ret = [];
+    for (var i = 1; i < data.length; i++) {
+	var octet = data.charCodeAt(i);
+	for (var j = 7; j >= 0; j--) {
+	    ret.push((octet & (1 << j)) ? 1 : 0);
+	}
+    }
+    // Chop off the extra bits.
+    for (var i = 0; i < remainder; i++)
+	ret.pop();
+    return ret;
+};
+
+
 /** ASN.1 OCTET STRING type. */
 asn1.OCTET_STRING = new asn1.Type(
     asn1.tag(0x04, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
