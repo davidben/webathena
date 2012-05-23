@@ -431,3 +431,62 @@ asn1.GeneralString.encodeDERValue = function (object) {
 asn1.GeneralString.decodeDERValue = function (data) {
     return String(data);
 };
+
+
+/** ASN.1 GeneralizedTime type. */
+asn1.GeneralizedTime = new asn1.Type(
+    asn1.tag(0x18, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.GeneralizedTime.encodeDERValue = function (object) {
+    // Date.toISOString exists, but we have to be more careful about
+    // stripping off trailing zeros on the fractional part in
+    // DER. (Not that KerberosTime supports fractional seconds
+    // anyway...)
+
+    function pad(number, len) {
+	if (len == undefined) len = 2;
+        var r = String(number);
+        while (r.length < len) {
+            r = '0' + r;
+        }
+        return r;
+    }
+    var ret = (object.getUTCFullYear() + '-'
+	       + pad(object.getUTCMonth() + 1) + '-'
+	       + pad(object.getUTCDate()) + 'T'
+	       + pad(object.getUTCHours()) + ':'
+	       + pad(object.getUTCMinutes()) + ':'
+	       + pad(object.getUTCSeconds()));
+    if (object.getUTCMilliseconds() != 0) {
+	var ms = pad(object.getUTCMilliseconds(), 3);
+	while (ms[ms.length - 1] == '0') {
+	    ms = ms.substr(0, ms.length - 1);
+	}
+	ret += "." + ms;
+    }
+    ret += "Z";
+    return ret;
+};
+
+asn1.GeneralizedTime.decodeDERValue = function (data) {
+    // The Internet claims new Date(iso8601Str) isn't implemented
+    // everywhere?
+    var re = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.(\d{1,3}))?Z$/;
+    var match = String(data).match(re);
+    if (!match)
+	throw "Bad date format";
+    var date = new Date(Number(match[1]),
+			Number(match[2]) - 1,
+			Number(match[3]),
+			Number(match[4]),
+			Number(match[5]),
+			Number(match[6]));
+    console.log(match);
+    if (match[8]) {
+	var ms = match[8];
+	while (ms.length < 3)
+	    ms = ms + "0";
+	date.setMilliseconds(Number(ms));
+    }
+    return date;
+};
