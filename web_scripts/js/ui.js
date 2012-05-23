@@ -74,15 +74,13 @@ $(function() {
 	    // pre-authentication data, is the concatenation of the
 	    // principal's realm and name components, in order, with
 	    // no separators.
-/*
-	    var salt = username + KDC.realm;
+	    var salt = KDC.realm + username;
 	    var key = krb.stringToKey(reply.encPart.etype, password, salt);
 
 	    // The client decrypts the encrypted part of the response
 	    // using its secret key...
 	    var encPart = krb.decryptEncrypedData(
 		reply.encPart, krb.EncASRepPart, key);
-*/
 
             reset();
         }, function(error) {
