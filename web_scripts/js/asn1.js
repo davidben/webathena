@@ -567,12 +567,12 @@ asn1.SEQUENCE.prototype = new asn1.Type();
 asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
     var out = [];
     for (var i = 0; i < this.componentSpec.length; i++) {
-	var id = this.componentSpec[i].id;
-	if (id in object) {
-	    out.push(this.componentSpec[i].type.encodeDER(object[id]));
-	} else if (!this.componentSpec[i].optional) {
-	    throw "Field " + id + " missing!";
-	}
+        var id = this.componentSpec[i].id;
+        if (id in object) {
+            out.push(this.componentSpec[i].type.encodeDER(object[id]));
+        } else if (!this.componentSpec[i].optional) {
+            throw "Field " + id + " missing!";
+        }
     }
     return out.join("");
 };
@@ -581,34 +581,34 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
     var ret = {};
     var nextSpec = 0;
     while (data.length) {
-	// Peek ahead at the tag.
-	var tvr = asn1.decodeTagLengthValueDER(data);
-	var tag = tvr[0], value = tvr[1], rest = tvr[2];
+        // Peek ahead at the tag.
+        var tvr = asn1.decodeTagLengthValueDER(data);
+        var tag = tvr[0], value = tvr[1], rest = tvr[2];
 
-	// See which field this corresponds to.
-	while (nextSpec < this.componentSpec.length &&
-	       this.componentSpec[nextSpec].type.tag != tag) {
-	    // Skip this one, if we can.
-	    if (!this.componentSpec[nextSpec].optional)
-		throw ("Missing required field " +
-		       this.componentSpec[nextSpec].id);
-	    nextSpec++;
-	}
-	if (nextSpec >= this.componentSpec.length)
-	    throw "Unexpected tag " + tag;
+        // See which field this corresponds to.
+        while (nextSpec < this.componentSpec.length &&
+               this.componentSpec[nextSpec].type.tag != tag) {
+            // Skip this one, if we can.
+            if (!this.componentSpec[nextSpec].optional)
+                throw ("Missing required field " +
+                       this.componentSpec[nextSpec].id);
+            nextSpec++;
+        }
+        if (nextSpec >= this.componentSpec.length)
+            throw "Unexpected tag " + tag;
 
-	// Tag matches. Go use this one.
-	ret[this.componentSpec[nextSpec].id] =
-	    this.componentSpec[nextSpec].type.decodeDERValue(value);
-	data = rest;
-	nextSpec++;
+        // Tag matches. Go use this one.
+        ret[this.componentSpec[nextSpec].id] =
+            this.componentSpec[nextSpec].type.decodeDERValue(value);
+        data = rest;
+        nextSpec++;
     }
 
     // Make sure we didn't miss any non-optional fields.
     while (nextSpec < this.componentSpec.length) {
-	if (!this.componentSpec[nextSpec].optional)
-	    throw "Missing required field " + this.componentSpec[nextSpec].id;
-	nextSpec++;
+        if (!this.componentSpec[nextSpec].optional)
+            throw "Missing required field " + this.componentSpec[nextSpec].id;
+        nextSpec++;
     }
 
     return ret;
