@@ -327,6 +327,25 @@ asn1.INTEGER.decodeDERValue = function (data) {
     return ret;
 };
 
+asn1.INTEGER.valueConstrained = function () {
+    var allowed = [];
+    for (var i = 0; i < arguments.length; i++) {
+	allowed.push(arguments[i]);
+    }
+
+    return this.constrained(function (v) {
+	if (allowed.indexOf(v) == -1)
+	    throw "Invalid value: " + v;
+    });
+}
+
+asn1.INTEGER.rangeConstrained = function (lo, hi) {
+    return this.constrained(function (v) {
+	if (v < lo || v > hi)
+	    throw "Invalid value: " + v;
+    });
+}
+
 
 /**
  * ASN.1 BIT STRING type. We'll represent it as an Array of 0s and 1s,
