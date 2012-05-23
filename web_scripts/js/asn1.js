@@ -488,7 +488,6 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
                         Number(match[4]),
                         Number(match[5]),
                         Number(match[6]));
-    console.log(match);
     if (match[8]) {
         var ms = match[8];
         while (ms.length < 3)
