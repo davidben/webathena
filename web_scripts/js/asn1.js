@@ -527,12 +527,89 @@ asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
 };
 
 asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
-    var off = 0;
     var ret = [];
     while (data.length) {
         var objRest = this.componentType.decodeDERPrefix(data);
         ret.push(objRest[0]);
         data = objRest[1];
     }
+    return ret;
+};
+
+
+/**
+ * ASN.1 SEQUENCE type.
+ *
+ * Takes in a compontentSpec of the form:
+ * [ { 'id': 'patimestamp',
+ *     'type': krb.KerberosTime.tagged(asn1.tag(0)) },
+ *   { 'id': 'pausec',
+ *     'type': krb.Microseconds.tagged(asn1.tag(1)),
+ *     'optional': true } ]
+ *
+ * This deviates from the proper ASN.1 sequence somewhat in that the
+ * JavaScript representation of a SEQUENCE is Object, not Array. All
+ * components are required to have unique identifiers. This is mostly
+ * for API convenience.
+ *
+ * Optional types are supported. Defaults are not for now.
+ *
+ * @param {Object} componentSpec A specification of the sequence's
+ *     components, as described above.
+ * @class
+ */
+asn1.SEQUENCE = function (componentSpec) {
+    this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
+    this.componentSpec = componentSpec;
+};
+asn1.SEQUENCE.prototype = new asn1.Type();
+
+asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
+    var out = [];
+    for (var i = 0; i < this.componentSpec.length; i++) {
+	var id = this.componentSpec[i].id;
+	if (id in object) {
+	    out.push(this.componentSpec[i].type.encodeDER(object[id]));
+	} else if (!this.componentSpec[i].optional) {
+	    throw "Field " + id + " missing!";
+	}
+    }
+    return out.join("");
+};
+
+asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
+    var ret = {};
+    var nextSpec = 0;
+    while (data.length) {
+	// Peek ahead at the tag.
+	var tvr = asn1.decodeTagLengthValueDER(data);
+	var tag = tvr[0], value = tvr[1], rest = tvr[2];
+
+	// See which field this corresponds to.
+	while (nextSpec < this.componentSpec.length &&
+	       this.componentSpec[nextSpec].type.tag != tag) {
+	    // Skip this one, if we can.
+	    if (!this.componentSpec[nextSpec].optional)
+		throw ("Missing required field " +
+		       this.componentSpec[nextSpec].id);
+	    nextSpec++;
+	}
+	if (nextSpec >= this.componentSpec.length)
+	    throw "Unexpected tag " + tag;
+
+	// Tag matches. Go use this one.
+	ret[this.componentSpec[nextSpec].id] =
+	    this.componentSpec[nextSpec].type.decodeDERValue(value);
+	data = rest;
+	nextSpec++;
+    }
+
+    // Make sure we didn't miss any non-optional fields.
+    while (nextSpec < this.componentSpec.length) {
+	if (!this.componentSpec[nextSpec].optional)
+	    throw "Missing required field " + this.componentSpec[nextSpec].id;
+	nextSpec++;
+    }
+
     return ret;
 };
