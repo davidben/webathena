@@ -69,8 +69,11 @@ h1 {
 }
 
 #login td {
+    height: 30pt;
+}
+
+#login .container {
     position: relative;
-    height: 24pt;
 }
 
 #login input {
@@ -80,8 +83,9 @@ h1 {
 #login .error {
     position: absolute;
     line-height: 16pt;
-    top: 0;
+    top: -25%;
     left: 100%;
+    margin-left: 4pt;
     white-space: pre;
     padding: 4pt;
     background-color: orange;
