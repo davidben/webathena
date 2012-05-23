@@ -605,3 +605,42 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
 
     return ret;
 };
+
+
+/**
+ * ASN.1 CHOICE type. This is going to be a little funny. It exists
+ * only so that we can do things like distinguish between AS_REQ or
+ * KRB_ERROR. JavaScript representation is a pair of [type,
+ * object]. It almost certainly doesn't work outside the top level
+ * since it has no TLV and everything expects one. If we really need
+ * it, passing the tag to decodeDERValue might do the trick?
+ *
+ * @param {Array.<asn1.Type>} choices A list of possible types.
+ * @class
+ */
+asn1.CHOICE = function (choices) {
+    this.choices = choices;
+};
+asn1.CHOICE.prototype = new asn1.Type();
+
+asn1.CHOICE.prototype.encodeDER = function (object) {
+    var type = object[0], realObj = object[1];
+    if (this.choices.indexOf(type) == -1)
+	throw "Invalid type";
+    return type.encodeDER(realObj);
+};
+
+asn1.CHOICE.prototype.decodeDERPrefix = function (data) {
+    // Peek ahead at the tag.
+    var tvr = asn1.decodeTagLengthValueDER(data);
+    var tag = tvr[0], value = tvr[1], rest = tvr[2];
+
+    for (var i = 0; i < this.choices.length; i++) {
+	if (tag == this.choices[i].tag) {
+	    // Found it!
+	    return [[this.choices[i],
+		     this.choices[i].decodeDERValue(value)], rest];
+	}
+    }
+    throw "Unexpected tag " + tag;
+};

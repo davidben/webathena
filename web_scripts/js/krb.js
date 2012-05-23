@@ -142,6 +142,30 @@ krb.EncTicketPart = new asn1.SEQUENCE(
       optional: true}]
 ).tagged(asn1.tag(3, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
 
+// 5.9.1.  KRB_ERROR Definition
+krb.KRB_ERROR = new asn1.SEQUENCE(
+    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'msgType',
+      type: asn1.INTEGER.valueConstrained(30).tagged(asn1.tag(1))},
+     {id: 'ctime', type: krb.KerberosTime.tagged(asn1.tag(2)), optional: true},
+     {id: 'cusec', type: krb.Microseconds.tagged(asn1.tag(3)), optional: true},
+     {id: 'stime', type: krb.KerberosTime.tagged(asn1.tag(4))},
+     {id: 'susec', type: krb.Microseconds.tagged(asn1.tag(5))},
+     {id: 'errorCode', type: krb.Int32.tagged(asn1.tag(6))},
+     {id: 'crealm', type: krb.Realm.tagged(asn1.tag(7)), optional: true},
+     {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(8)), optional: true},
+     {id: 'realm', type: krb.Realm.tagged(asn1.tag(9))},
+     {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(10))},
+     {id: 'eText', type: krb.KerberosString.tagged(asn1.tag(11)),
+      optional: true},
+     {id: 'eData', type: asn1.OCTET_STRING.tagged(asn1.tag(12)),
+      optional: true}]
+).tagged(asn1.tag(30, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+krb.TYPED_DATA = new asn1.SEQUENCE(
+    [{id: 'dataType', type: krb.Int32.tagged(asn1.tag(0))},
+     {id: 'dataValue', type: asn1.OCTET_STRING.tagged(asn1.tag(1)),
+      optional: true}]);
+
 // 5.4.1.  KRB_KDC_REQ Definition
 krb.KDCOptions = krb.KerberosFlags;
 krb.KDCOptions.reserved = 0;
@@ -209,6 +233,10 @@ krb.AS_REP = krb.KDC_REP.tagged(asn1.tag(11, asn1.TAG_CONSTRUCTED,
                                          asn1.TAG_APPLICATION));
 krb.TGS_REP = krb.KDC_REP.tagged(asn1.tag(13, asn1.TAG_CONSTRUCTED,
                                           asn1.TAG_APPLICATION));
+
+krb.AS_REP_OR_ERROR = new asn1.CHOICE([krb.AS_REP, krb.KRB_ERROR]);
+krb.TGS_REP_OR_ERROR = new asn1.CHOICE([krb.TGS_REP, krb.KRB_ERROR]);
+
 krb.LastReq = new asn1.SEQUENCE_OF(new asn1.SEQUENCE(
     [{id: 'lrType', type: krb.Int32.tagged(asn1.tag(0))},
      {id: 'lrValue', type: krb.KerberosTime.tagged(asn1.tag(1))}]));
@@ -243,30 +271,6 @@ krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
 // TODO: 5.7.1.  KRB_PRIV Definition
 
 // TODO: 5.8.1.  KRB_CRED Definition
-
-// 5.9.1.  KRB_ERROR Definition
-krb.KRB_ERROR = new asn1.SEQUENCE(
-    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
-     {id: 'msgType',
-      type: asn1.INTEGER.valueConstrained(30).tagged(asn1.tag(1))},
-     {id: 'ctime', type: krb.KerberosTime.tagged(asn1.tag(2)), optional: true},
-     {id: 'cusec', type: krb.Microseconds.tagged(asn1.tag(3)), optional: true},
-     {id: 'stime', type: krb.KerberosTime.tagged(asn1.tag(4))},
-     {id: 'susec', type: krb.Microseconds.tagged(asn1.tag(5))},
-     {id: 'errorCode', type: krb.Int32.tagged(asn1.tag(6))},
-     {id: 'crealm', type: krb.Realm.tagged(asn1.tag(7)), optional: true},
-     {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(8)), optional: true},
-     {id: 'realm', type: krb.Realm.tagged(asn1.tag(9))},
-     {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(10))},
-     {id: 'eText', type: krb.KerberosString.tagged(asn1.tag(11)),
-      optional: true},
-     {id: 'eData', type: asn1.OCTET_STRING.tagged(asn1.tag(12)),
-      optional: true}]
-).tagged(asn1.tag(30, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
-krb.TYPED_DATA = new asn1.SEQUENCE(
-    [{id: 'dataType', type: krb.Int32.tagged(asn1.tag(0))},
-     {id: 'dataValue', type: asn1.OCTET_STRING.tagged(asn1.tag(1)),
-      optional: true}]);
 
 // TODO: 7.5.1.  Key Usage Numbers
 
