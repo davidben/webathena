@@ -396,7 +396,7 @@ asn1.OCTET_STRING.encodeDERValue = function (object) {
 };
 
 asn1.OCTET_STRING.decodeDERValue = function (data) {
-    return data;
+    return String(data);
 };
 
 
@@ -414,4 +414,20 @@ asn1.NULL.decodeDERValue = function (data) {
     if (data.length > 0)
 	throw "Bad encoding";
     return null;
+};
+
+
+/** ASN.1 GeneralString type. */
+asn1.GeneralString = new asn1.Type(
+    asn1.tag(0x1b, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.GeneralString.encodeDERValue = function (object) {
+    // TODO: Is this correct? Do we need to check anything? Not that
+    // it matters a whole lot since KerberosString is limited to
+    // IA5String's characters for compatibility.
+    return String(object);
+};
+
+asn1.GeneralString.decodeDERValue = function (data) {
+    return String(data);
 };
