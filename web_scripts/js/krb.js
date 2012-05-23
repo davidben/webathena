@@ -1,3 +1,5 @@
+"use strict";
+
 var krb = { };
 
 // 5.2.1.  KerberosString

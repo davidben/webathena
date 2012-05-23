@@ -1,3 +1,5 @@
+"use strict";
+
 $.ajaxSetup({
     cache: false,
     contentType: 'text/plain',
@@ -6,7 +8,7 @@ $.ajaxSetup({
     type: 'POST',
 });
 
-Crypto = {};
+var Crypto = {};
 
 Crypto.toBase64 = function(str) {
     return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Latin1.parse(str));
@@ -16,7 +18,7 @@ Crypto.fromBase64 = function(str) {
     return CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Base64.parse(str));
 };
 
-KDC = {};
+var KDC = {};
 
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX

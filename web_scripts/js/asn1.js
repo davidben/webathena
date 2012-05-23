@@ -4,6 +4,8 @@
  * @author davidben@mit.edu (David Benjamin)
  */
 
+"use strict";
+
 /** @namespace Functionality related to ASN.1 */
 var asn1 = { };
 
