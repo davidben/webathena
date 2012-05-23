@@ -310,3 +310,20 @@ asn1.OCTET_STRING.encodeDERValue = function (object) {
 asn1.OCTET_STRING.decodeDERValue = function (data) {
     return data;
 };
+
+
+/** ASN.1 NULL type. */
+asn1.NULL = new asn1.Type(
+    asn1.tag(0x05, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.NULL.encodeDERValue = function (object) {
+    if (object !== null)
+	throw "Bad value";
+    return "";
+};
+
+asn1.NULL.decodeDERValue = function (data) {
+    if (data.length > 0)
+	throw "Bad encoding";
+    return null;
+};
