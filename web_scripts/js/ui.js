@@ -20,18 +20,26 @@ $(function() {
         } else {
             $('#password + .error').fadeOut();
         }
-        if(!fail) {
-            console.log(username, password);
-            $(this.submit).attr('disabled', 'true').text('.');
-            setInterval(function() {
-              $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
-            }, 500);
-            KDC.asReq(function(reply) {
-                console.log(reply);
-            }, function(error) {
-                console.log("Error in AS_REQ: " + error);
-            });
-        }
+        if(fail)
+            return false;
+        
+        var text = $('#submit').text();
+        $('#submit').attr('disabled', 'disabled').text('.');
+        var interval = setInterval(function() {
+          $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
+        }, 500);
+        var reset = function() {
+            clearInterval(interval);
+            $('#submit').attr('disabled', null).text(text);
+        };
+        KDC.asReq(username, function(reply) {
+            console.log(username);
+            console.log(reply);
+            reset();
+        }, function(error) {
+            console.log("Error in AS_REQ: " + error); // TODO actual error reporting
+            reset();
+        });
         return false;
     });
 });

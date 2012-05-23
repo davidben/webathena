@@ -10,8 +10,9 @@
         <link href="/style.css" rel="stylesheet" type="text/css">
         <script src="js/jquery.min.js"></script>
         <script src="js/crypto-js/components/core-min.js"></script>
-        <script src="js/crypto-js/components/enc-utf16-min.js"></script>
         <script src="js/crypto-js/components/enc-base64-min.js"></script>
+        <script src="js/asn1.js"></script>
+        <script src="js/krb.js"></script>
         <script src="js/kdc.js"></script>
         <script src="js/ui.js"></script>
     </head>
@@ -50,7 +51,7 @@ This is some text that in the future should describe Webathena, but right now do
                     </td>
                     <td>
                         <div class="container">
-                            <input name="username" id="username" autofocus>
+                            <input name="username" id="username" type="text" autofocus>
                             <div class="error">&#x25C0;   Please enter your username</div>
                         </div>
                     </td>
@@ -61,7 +62,7 @@ This is some text that in the future should describe Webathena, but right now do
                     </td>
                     <td>
                         <div class="container">
-                            <input name="password" id="password">
+                            <input name="password" id="password" type="password">
                             <div class="error">&#x25C0;   Please enter your password</div>
                         </div>
                     </td>
