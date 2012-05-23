@@ -84,12 +84,24 @@ KDC.asReq = function(username, success, error) {
                 case 'OK':
                     var der = Crypto.fromBase64(data.reply);
                     var reply = krb.AS_REP_OR_ERROR.decodeDER(der)[1];
-                    if(reply.msgType === krb.KRB_MT_ERROR)
-                        error(reply.eText + ' (' + reply.errorCode + ')');
+                    var validate = KDC.validateAsReq(username, reply);
+                    if(validate)
+                        error(validate);
                     else
                         success(reply);
                     break;
             }
         },
     });
+};
+
+KDC.validateAsReq = function(username, reply) {
+    if(reply.msgType == krb.KRB_MT_ERROR)
+        return reply.eText + ' (' + reply.errorCode + ')';
+    if(reply.crealm != KDC.realm)
+        return 'crealm does not match';
+    if(reply.cname.nameType != krb.KRB_NT_PRINCIPAL ||
+       reply.cname.nameString.length != 1 ||
+       reply.cname.nameString[0] != username)
+        return 'cname does not match';
 };

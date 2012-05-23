@@ -69,17 +69,17 @@ h1 {
     margin: auto;
     text-align: right;
     margin-top: 2em;
-    padding: 0.5em;
+    padding: 1em;
     box-shadow: 1pt 1pt 4pt black;
     background: tomato;
-    background: -moz-linear-gradient(top, salmon, tomato);
-    background: -webkit-linear-gradient(top, salmon, tomato);
-    background: -ms-linear-gradient(top, salmon, tomato);
-    background: -o-linear-gradient(top, salmon, tomato);
+    background: -moz-linear-gradient(top, lightsalmon, tomato);
+    background: -webkit-linear-gradient(top, lightsalmon, tomato);
+    background: -ms-linear-gradient(top, lightsalmon, tomato);
+    background: -o-linear-gradient(top, lightsalmon, tomato);
 }
 
 #login td {
-    height: 40pt;
+    height: 30pt;
 }
 
 #login .container {
@@ -104,15 +104,29 @@ h1 {
     display: none;
 }
 
-#login button {
+button {
     width: 100%;
     text-transform: lowercase;
     font-family: 'Alegreya', serif;
     font-size: 1em;
 }
 
-footer {
-    margin-top: 2em;
-    font-size: 12pt;
+#authed {
+    margin: auto;
     text-align: center;
+    margin-top: 2em;
+    padding: 1em;
+    box-shadow: 1pt 1pt 4pt black;
+    background: olivedrab;
+    background: -moz-linear-gradient(top, limegreen, olivedrab);
+    background: -webkit-linear-gradient(top, limegreen, olivedrab);
+    background: -ms-linear-gradient(top, limegreen, olivedrab);
+    background: -o-linear-gradient(top, limegreen, olivedrab);
+}
+
+#authed #principal {
+    text-transform: none;
+    font-family: 'PT Mono', monospace;
+    font-size: 18pt;
+    padding-bottom: 1em;
 }
