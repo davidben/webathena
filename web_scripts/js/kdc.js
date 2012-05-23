@@ -96,6 +96,11 @@ KDC.asReq = function(username, success, error) {
 };
 
 KDC.validateAsReq = function(username, reply) {
+    // TODO: Rearrange this code to interpret this error and stuff. We
+    // may get a request for pre-authentication, in which case we
+    // retry with pre-auth after prompting for the password. (We
+    // already have the password, but I believe in theory this could
+    // be written so that we prompt on demand.)
     if(reply.msgType == krb.KRB_MT_ERROR)
         return reply.eText + ' (' + reply.errorCode + ')';
     if(reply.crealm != KDC.realm)
