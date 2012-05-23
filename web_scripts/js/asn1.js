@@ -210,9 +210,10 @@ asn1.Type.prototype.encodeDER = function (object) {
  */
 asn1.Type.prototype.decodeDER = function (data) {
     var objRest = this.decodeDERPrefix(data);
-    if (objRest[1].length != 0)
+    var obj = objRest[0], rest = objRest[1];
+    if (rest.length != 0)
         throw "Excess data!";
-    return objRest[0];
+    return obj;
 };
 
 /**
@@ -223,9 +224,10 @@ asn1.Type.prototype.decodeDER = function (data) {
  */
 asn1.Type.prototype.decodeDERPrefix = function (data) {
     var tvr = asn1.decodeTagLengthValueDER(data);
-    if (tvr[0] != this.tag)
+    var tag = tvr[0], value = tvr[1], rest = tvr[2];
+    if (tag != this.tag)
         throw "Tag mismatch!";
-    return [this.decodeDERValue(tvr[1]), tvr[2]];
+    return [this.decodeDERValue(value), rest];
 };
 
 /**
