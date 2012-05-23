@@ -132,12 +132,12 @@ class AD_KDCIssued(univ.Sequence):
             Checksum().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatConstructed, 0))),
-        namedtype.NamedType(
+        namedtype.OptionalNamedType(
             'i-realm',
             Realm().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
                                     tag.tagFormatConstructed, 1))),
-        namedtype.NamedType(
+        namedtype.OptionalNamedType(
             'i-sname',
             PrincipalName().subtype(
                 explicitTag=tag.Tag(tag.tagClassContext,
@@ -313,7 +313,7 @@ class TransitedEncoding(univ.Sequence):
 class EncTicketPart(univ.Sequence):
     tagSet = univ.Sequence.tagSet.tagExplicitly(
         tag.Tag(tag.tagClassApplication,
-                tag.tagFormatConstructed, 1))
+                tag.tagFormatConstructed, 3))
     componentType = namedtype.NamedTypes(
         namedtype.NamedType(
             'flags',
