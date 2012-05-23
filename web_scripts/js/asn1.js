@@ -58,6 +58,10 @@ asn1.SubString.prototype.substr = function (start, length) {
     return new asn1.SubString(this, start, length);
 };
 
+asn1.SubString.prototype.toString = function () {
+    return this.str.substr(this.start, this.length);
+};
+
 
 /** @const */ asn1.TAG_UNIVERSAL   = 0x0 << 6;
 /** @const */ asn1.TAG_APPLICATION = 0x1 << 6;
