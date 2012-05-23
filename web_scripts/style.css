@@ -1,0 +1,71 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: honeydew;
+    text-transform: lowercase;
+    font-family: 'Alegreya', serif;
+}
+
+header {
+    position: relative;
+    margin-top: 40px;
+}
+
+#logo {
+    position: absolute;
+    z-index: 1;
+    top: -24px;
+    left: 1em;
+    border-radius: 1em;
+    box-shadow: 2pt 2pt 5pt black;
+    background: white;
+    background: -moz-linear-gradient(top, #fff, #ddd);
+    background: -webkit-linear-gradient(top, #fff, #ddd);
+    background: -ms-linear-gradient(top, #fff, #ddd);
+    background: -o-linear-gradient(top, #fff, #ddd);
+}
+
+h1 {
+    position: relative;
+    background-color: #666;
+    color: honeydew;
+    text-align: right;
+    margin: 0;
+    padding-right: 20px;
+    font-family: 'Overlock', sans-serif;
+    font-size: 48pt;
+    box-shadow: 1pt 1pt 4pt black;
+    text-shadow: 2pt 2pt 3pt #888, -2pt -2pt 3pt #444;
+}
+
+#whatis {
+    position: absolute;
+    top: 4px;
+    right: 20px;
+    font-size: 14pt;
+    text-decoration: none;
+}
+
+#login {
+    margin: auto;
+    text-align: right;
+    margin-top: 2em;
+    padding: 0.5em;
+    box-shadow: 2pt 2pt 5pt black;
+    background: tomato;
+    background: -moz-linear-gradient(top, salmon, tomato);
+    background: -webkit-linear-gradient(top, salmon, tomato);
+    background: -ms-linear-gradient(top, salmon, tomato);
+    background: -o-linear-gradient(top, salmon, tomato);
+}
+
+#login button {
+    width: 100%;
+    text-transform: lowercase;
+    font-family: 'Alegreya', serif;
+    font-size: 1em;
+}
+
+input {
+    border: 2px inset chocolate;
+}
