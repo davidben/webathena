@@ -244,7 +244,29 @@ krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
 
 // TODO: 5.8.1.  KRB_CRED Definition
 
-// TODO: 5.9.1.  KRB_ERROR Definition
+// 5.9.1.  KRB_ERROR Definition
+krb.KRB_ERROR = new asn1.SEQUENCE(
+    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'msgType',
+      type: asn1.INTEGER.valueConstrained(30).tagged(asn1.tag(1))},
+     {id: 'ctime', type: krb.KerberosTime.tagged(asn1.tag(2)), optional: true},
+     {id: 'cusec', type: krb.Microseconds.tagged(asn1.tag(3)), optional: true},
+     {id: 'stime', type: krb.KerberosTime.tagged(asn1.tag(4))},
+     {id: 'susec', type: krb.Microseconds.tagged(asn1.tag(5))},
+     {id: 'errorCode', type: krb.Int32.tagged(asn1.tag(6))},
+     {id: 'crealm', type: krb.Realm.tagged(asn1.tag(7)), optional: true},
+     {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(8)), optional: true},
+     {id: 'realm', type: krb.Realm.tagged(asn1.tag(9))},
+     {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(10))},
+     {id: 'eText', type: krb.KerberosString.tagged(asn1.tag(11)),
+      optional: true},
+     {id: 'eData', type: asn1.OCTET_STRING.tagged(asn1.tag(12)),
+      optional: true}]
+).tagged(asn1.tag(30, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+krb.TYPED_DATA = new asn1.SEQUENCE(
+    [{id: 'dataType', type: krb.Int32.tagged(asn1.tag(0))},
+     {id: 'dataValue', type: asn1.OCTET_STRING.tagged(asn1.tag(1)),
+      optional: true}]);
 
 // TODO: 7.5.1.  Key Usage Numbers
 
@@ -318,16 +340,16 @@ krb.DOMAIN_X500_COMPRESS               = 1;
 krb.pvno                               = 5;
 
 // 7.5.7.  Kerberos Message Types
-krb.KRB_AS_REQ    = 10;
-krb.KRB_AS_REP    = 11;
-krb.KRB_TGS_REQ   = 12;
-krb.KRB_TGS_REP   = 13;
-krb.KRB_AP_REQ    = 14;
-krb.KRB_AP_REP    = 15;
-krb.KRB_SAFE      = 20;
-krb.KRB_PRIV      = 21;
-krb.KRB_CRED      = 22;
-krb.KRB_ERROR     = 30;
+krb.KRB_MT_AS_REQ    = 10;
+krb.KRB_MT_AS_REP    = 11;
+krb.KRB_MT_TGS_REQ   = 12;
+krb.KRB_MT_TGS_REP   = 13;
+krb.KRB_MT_AP_REQ    = 14;
+krb.KRB_MT_AP_REP    = 15;
+krb.KRB_MT_SAFE      = 20;
+krb.KRB_MT_PRIV      = 21;
+krb.KRB_MT_CRED      = 22;
+krb.KRB_MT_ERROR     = 30;
 
 // 7.5.8.  Name Types
 krb.KRB_NT_UNKNOWN        = 0;
