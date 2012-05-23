@@ -16,9 +16,9 @@
   asReq.reqBody.kdcOptions = [];
   for (var i = 0; i < 32; i++)
       asReq.reqBody.kdcOptions.push(0);
-  asReq.reqBody.kdcOptions[1] = 1;
-  asReq.reqBody.kdcOptions[3] = 1;
-  asReq.reqBody.kdcOptions[27] = 1;
+  asReq.reqBody.kdcOptions[krb.KDCOptions.forwardable] = 1;
+  asReq.reqBody.kdcOptions[krb.KDCOptions.proxiable] = 1;
+  asReq.reqBody.kdcOptions[krb.KDCOptions.renewable_ok] = 1;
 
   asReq.reqBody.principalName = {};
   asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;

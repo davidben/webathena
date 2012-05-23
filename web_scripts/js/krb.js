@@ -104,7 +104,23 @@ krb.Ticket = new asn1.SEQUENCE(
      {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(2))},
      {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(3))}]
 ).tagged(asn1.tag(1, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+
 krb.TicketFlags = krb.KerberosFlags;
+krb.TicketFlags.reserved = 0;
+krb.TicketFlags.forwardable = 1;
+krb.TicketFlags.forwarded = 2;
+krb.TicketFlags.proxiable = 3;
+krb.TicketFlags.proxy = 4;
+krb.TicketFlags.may_postdate = 5;
+krb.TicketFlags.postdated = 6;
+krb.TicketFlags.invalid = 7;
+krb.TicketFlags.renewable = 8;
+krb.TicketFlags.initial = 9;
+krb.TicketFlags.pre_authent = 10;
+krb.TicketFlags.hw_authent = 11;
+krb.TicketFlags.transited_policy_checked = 12;
+krb.TicketFlags.ok_as_delegate = 13;
+
 krb.TransitedEncoding = new asn1.SEQUENCE(
     [{id: 'trType', type: krb.Int32.tagged(asn1.tag(0))},
      {id: 'contents', type: asn1.OCTET_STRING.tagged(asn1.tag(1))}]);
@@ -128,6 +144,21 @@ krb.EncTicketPart = new asn1.SEQUENCE(
 
 // 5.4.1.  KRB_KDC_REQ Definition
 krb.KDCOptions = krb.KerberosFlags;
+krb.KDCOptions.reserved = 0;
+krb.KDCOptions.forwardable = 1;
+krb.KDCOptions.forwarded = 2;
+krb.KDCOptions.proxiable = 3;
+krb.KDCOptions.proxy = 4;
+krb.KDCOptions.allow_postdate = 5;
+krb.KDCOptions.postdated = 6;
+krb.KDCOptions.renewable = 8;
+krb.KDCOptions.opt_hardware_auth = 11;
+krb.KDCOptions.disable_transited_check = 26;
+krb.KDCOptions.renewable_ok = 27;
+krb.KDCOptions.enc_tkt_in_skey = 28;
+krb.KDCOptions.renew = 30;
+krb.KDCOptions.validate = 31;
+
 krb.KDC_REQ_BODY = new asn1.SEQUENCE(
     [{id: 'kdcOptions', type: krb.KDCOptions.tagged(asn1.tag(0))},
      {id: 'principalName', type: krb.PrincipalName.tagged(asn1.tag(1)),
