@@ -4,7 +4,7 @@ $(function() {
         return false;
     });
     
-    $('form').submit(function() {
+    $('#login').submit(function() {
         var username = this.username.value,
             password = this.password.value,
             fail = false;

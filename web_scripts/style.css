@@ -65,7 +65,7 @@ h1 {
     text-shadow: 2pt 2pt 3pt #888, -2pt -2pt 3pt #444;
 }
 
-#login {
+#login table {
     margin: auto;
     text-align: right;
     margin-top: 2em;
@@ -88,6 +88,7 @@ h1 {
 
 #login input {
     border: 2px inset chocolate;
+    font-family: 'PT Mono', monospace;
 }
 
 #login .error {
