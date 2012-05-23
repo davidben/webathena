@@ -199,7 +199,6 @@ asn1.Type.prototype.encodeDER = function (object) {
     return out.join("");
 };
 
-
 /**
  * Decodes DER-encoded data according to this type.
  *
@@ -224,6 +223,32 @@ asn1.Type.prototype.decodeDER = function (data) {
  */
 asn1.Type.prototype.tagged = function (tag) {
     return new asn1.ExplicitlyTagged(tag, this);
+};
+
+/**
+ * Creates an constrained version of this type.
+ *
+ * @param {Function} checkValue A function which those an exception if
+ *     a value is invalid.
+ * @return {asn1.Type} An constrained version of this.
+ */
+asn1.Type.prototype.constrained = function (checkValue) {
+    function TempCtor() {
+    }
+    TempCtor.prototype = this;
+    var newType = new TempCtor();
+    var self = this;
+
+    newType.encodeDERValue = function (object) {
+	checkValue.call(this, object);
+	return self.encodeDERValue(object);
+    }
+    newType.decodeDERValue = function (data) {
+	var object = self.decodeDERValue(data);
+	checkValue.call(this, object);
+	return object;
+    }
+    return newType;
 };
 
 
