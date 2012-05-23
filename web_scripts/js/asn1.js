@@ -493,7 +493,7 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
         var ms = match[8];
         while (ms.length < 3)
             ms = ms + "0";
-        date.setMilliseconds(Number(ms));
+        date.setUTCMilliseconds(Number(ms));
     }
     return date;
 };
