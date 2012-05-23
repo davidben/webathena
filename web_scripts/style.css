@@ -109,3 +109,9 @@ h1 {
     font-family: 'Alegreya', serif;
     font-size: 1em;
 }
+
+footer {
+    margin-top: 2em;
+    font-size: 12pt;
+    text-align: center;
+}
