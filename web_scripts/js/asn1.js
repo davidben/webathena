@@ -297,3 +297,16 @@ asn1.INTEGER.decodeDERValue = function (data) {
     }
     return ret;
 };
+
+
+/** ASN.1 OCTET STRING type. */
+asn1.OCTET_STRING = new asn1.Type(
+    asn1.tag(0x04, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.OCTET_STRING.encodeDERValue = function (object) {
+    return String(object);
+};
+
+asn1.OCTET_STRING.decodeDERValue = function (data) {
+    return data;
+};
