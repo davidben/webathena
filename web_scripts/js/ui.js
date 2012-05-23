@@ -1,3 +1,5 @@
+"use strict";
+
 $(function() {
     $('#whatis').click(function() {
         $('#info').slideToggle();

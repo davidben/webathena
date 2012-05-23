@@ -83,7 +83,11 @@ KDC.asReq = function(username, success, error) {
                     break;
                 case 'OK':
                     var der = Crypto.fromBase64(data.reply);
-                    success(krb.AS_REP_OR_ERROR.decodeDER(der)[1]);
+                    var reply = krb.AS_REP_OR_ERROR.decodeDER(der)[1];
+                    if(reply.msgType === krb.KRB_MT_ERROR)
+                        error(reply.eText + ' (' + reply.errorCode + ')');
+                    else
+                        success(reply);
                     break;
             }
         },
