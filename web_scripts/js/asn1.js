@@ -167,6 +167,8 @@ asn1.decodeTagLengthValueDER = function (data) {
     }
 
     // And return everything.
+    if (off + length > data.length)
+	throw "Length too large!";
     return [tag, data.substr(off, length), off + length];
 }
 
@@ -200,18 +202,30 @@ asn1.Type.prototype.encodeDER = function (object) {
 };
 
 /**
- * Decodes DER-encoded data according to this type.
+ * Decodes DER-encoded data according to this type. Throws an
+ * exception if the entire data isn't read.
  *
  * @param {String|asn1.SubString} data The data to decode.
  * @return {Object} The decoded object.
  */
 asn1.Type.prototype.decodeDER = function (data) {
-    var tvo = asn1.decodeTagLengthValueDER(data);
-    if (tvo[2] != data.length)
+    var objOffset = this.decodeDERPrefix(data);
+    if (objOffset[1] != data.length)
 	throw "Excess data!";
+    return objOffset[0];
+};
+
+/**
+ * Decodes DER-encoded data according to this type.
+ *
+ * @param {String|asn1.SubString} data The data to decode.
+ * @return {Array} A tuple of the decoded object and the offset read.
+ */
+asn1.Type.prototype.decodeDERPrefix = function (data) {
+    var tvo = asn1.decodeTagLengthValueDER(data);
     if (tvo[0] != this.tag)
 	throw "Tag mismatch!";
-    return this.decodeDERValue(tvo[1]);
+    return [this.decodeDERValue(tvo[1]), tvo[2]];
 };
 
 /**
@@ -489,4 +503,36 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
 	date.setMilliseconds(Number(ms));
     }
     return date;
+};
+
+
+/**
+ * ASN.1 SEQUENCE OF type.
+ *
+ * @param {asn1.Type} componentType The type we are sequencing.
+ * @class
+ */
+asn1.SEQUENCE_OF = function (componentType) {
+    this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
+    this.componentType = componentType;
+};
+asn1.SEQUENCE_OF.prototype = new asn1.Type();
+
+asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
+    var out = [];
+    for (var i = 0; i < object.length; i++) {
+	out.push(this.componentType.encodeDER(object[i]));
+    }
+    return out.join("");
+};
+
+asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
+    var off = 0;
+    var ret = [];
+    while (data.length) {
+	var objOff = this.componentType.decodeDERPrefix(data);
+	ret.push(objOff[0]);
+	data = data.substr(objOff[1]);
+    }
+    return ret;
 };
