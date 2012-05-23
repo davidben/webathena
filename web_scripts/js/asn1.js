@@ -25,8 +25,8 @@ asn1.SubString = function (str, start, length) {
     length = Math.min(length, str.length - start);
 
     if (str instanceof asn1.SubString) {
-	start += str.start;
-	str = str.str;
+        start += str.start;
+        str = str.str;
     }
     this.str = str;
     this.start = start;
@@ -42,7 +42,7 @@ asn1.SubString = function (str, start, length) {
  */
 asn1.SubString.prototype.charCodeAt = function (i) {
     if (i < 0 || i >= this.length)
-	return NaN;  // Apparently this is what String does.
+        return NaN;  // Apparently this is what String does.
     return this.str.charCodeAt(i + this.start);
 };
 
@@ -83,12 +83,12 @@ asn1.SubString.prototype.toString = function () {
  */
 asn1.tag = function (number, pc, cls) {
     if (pc === undefined)
-	pc = asn1.TAG_CONSTRUCTED;
+        pc = asn1.TAG_CONSTRUCTED;
     if (cls === undefined)
-	cls = asn1.TAG_CONTEXT;
+        cls = asn1.TAG_CONTEXT;
     // We'll implement this if we ever have to deal with it.
     if (number >= 31)
-	throw "High-tag-number form not implemented!";
+        throw "High-tag-number form not implemented!";
     return (cls | pc | number);
 };
 
@@ -111,14 +111,14 @@ asn1.encodeTagDER = function (tag) {
  */
 asn1.encodeLengthDER = function (length) {
     if (length <= 127) {
-	// Short form must be used when possible.
-	return String.fromCharCode(length);
+        // Short form must be used when possible.
+        return String.fromCharCode(length);
     }
     // First, encode in base 256.
     var ret = "";
     while (length > 0) {
-	ret = String.fromCharCode(length & 0xff) + ret;
-	length = length >> 8;
+        ret = String.fromCharCode(length & 0xff) + ret;
+        length = length >> 8;
     }
     // Prepend the number of bytes used.
     ret = String.fromCharCode(ret.length | 0x80) + ret;
@@ -142,7 +142,7 @@ asn1.decodeTagLengthValueDER = function (data) {
     var tagPc = tagOctet & (0x1 << 5);
     var tagCls = tagOctet & (0x3 << 6);
     if (tagNumber == 0x1f)
-	throw "High-tag-number form not implemented!";
+        throw "High-tag-number form not implemented!";
     var tag = asn1.tag(tagNumber, tagPc, tagCls);
     off++;
 
@@ -151,24 +151,24 @@ asn1.decodeTagLengthValueDER = function (data) {
     var length = 0;
     off++;
     if ((lengthOctet & 0x80) == 0) {
-	// Yay, short form.
-	length = lengthOctet;
+        // Yay, short form.
+        length = lengthOctet;
     } else if (lengthOctet == 0x80) {
-	// You're not supposed to use this in DER anyway.
-	throw "Indefinite-length method unsupported!";
+        // You're not supposed to use this in DER anyway.
+        throw "Indefinite-length method unsupported!";
     } else {
-	// Long form. Mask off top bit to charCodeAt number of octets in
-	// length expressed in base 256, big-endian.
-	var numOctets = lengthOctet & 0x7f;
-	for (var i = 0; i < numOctets; i++, off++) {
-	    length *= 256;
-	    length += data.charCodeAt(off);
-	}
+        // Long form. Mask off top bit to charCodeAt number of octets in
+        // length expressed in base 256, big-endian.
+        var numOctets = lengthOctet & 0x7f;
+        for (var i = 0; i < numOctets; i++, off++) {
+            length *= 256;
+            length += data.charCodeAt(off);
+        }
     }
 
     // And return everything.
     if (off + length > data.length)
-	throw "Length too large!";
+        throw "Length too large!";
     return [tag, data.substr(off, length), data.substr(off + length)];
 }
 
@@ -182,7 +182,7 @@ asn1.decodeTagLengthValueDER = function (data) {
  */
 asn1.Type = function (tag) {
     if (tag !== undefined)
-	this.tag = tag;
+        this.tag = tag;
 };
 
 /**
@@ -211,7 +211,7 @@ asn1.Type.prototype.encodeDER = function (object) {
 asn1.Type.prototype.decodeDER = function (data) {
     var objRest = this.decodeDERPrefix(data);
     if (objRest[1].length != 0)
-	throw "Excess data!";
+        throw "Excess data!";
     return objRest[0];
 };
 
@@ -224,7 +224,7 @@ asn1.Type.prototype.decodeDER = function (data) {
 asn1.Type.prototype.decodeDERPrefix = function (data) {
     var tvr = asn1.decodeTagLengthValueDER(data);
     if (tvr[0] != this.tag)
-	throw "Tag mismatch!";
+        throw "Tag mismatch!";
     return [this.decodeDERValue(tvr[1]), tvr[2]];
 };
 
@@ -254,13 +254,13 @@ asn1.Type.prototype.constrained = function (checkValue) {
     var self = this;
 
     newType.encodeDERValue = function (object) {
-	checkValue.call(this, object);
-	return self.encodeDERValue(object);
+        checkValue.call(this, object);
+        return self.encodeDERValue(object);
     }
     newType.decodeDERValue = function (data) {
-	var object = self.decodeDERValue(data);
-	checkValue.call(this, object);
-	return object;
+        var object = self.decodeDERValue(data);
+        checkValue.call(this, object);
+        return object;
     }
     return newType;
 };
@@ -320,11 +320,11 @@ asn1.INTEGER.encodeDERValue = function (object) {
     // Encode in two's-complement, base 256, most sigificant bit
     // first, with the minimum number of bytes needed.
     while ((object >= 0 && (sign != 1 || object > 0)) ||
-	   (object <= -1 && (sign != -1 || object < -1))) {
-	var digit = object & 0xff;
-	ret.push(String.fromCharCode(digit));
-	sign = (digit & 0x80) ? -1 : 1;
-	object = object >> 8;
+           (object <= -1 && (sign != -1 || object < -1))) {
+        var digit = object & 0xff;
+        ret.push(String.fromCharCode(digit));
+        sign = (digit & 0x80) ? -1 : 1;
+        object = object >> 8;
     }
     ret.reverse();
     return ret.join('');
@@ -333,10 +333,10 @@ asn1.INTEGER.encodeDERValue = function (object) {
 asn1.INTEGER.decodeDERValue = function (data) {
     var ret = data.charCodeAt(i);
     if (ret > 127)
-	ret = ret - 256;
+        ret = ret - 256;
     for (var i = 1; i < data.length; i++) {
-	ret *= 256;
-	ret += data.charCodeAt(i);
+        ret *= 256;
+        ret += data.charCodeAt(i);
     }
     return ret;
 };
@@ -344,19 +344,19 @@ asn1.INTEGER.decodeDERValue = function (data) {
 asn1.INTEGER.valueConstrained = function () {
     var allowed = [];
     for (var i = 0; i < arguments.length; i++) {
-	allowed.push(arguments[i]);
+        allowed.push(arguments[i]);
     }
 
     return this.constrained(function (v) {
-	if (allowed.indexOf(v) == -1)
-	    throw "Invalid value: " + v;
+        if (allowed.indexOf(v) == -1)
+            throw "Invalid value: " + v;
     });
 }
 
 asn1.INTEGER.rangeConstrained = function (lo, hi) {
     return this.constrained(function (v) {
-	if (v < lo || v > hi)
-	    throw "Invalid value: " + v;
+        if (v < lo || v > hi)
+            throw "Invalid value: " + v;
     });
 }
 
@@ -375,12 +375,12 @@ asn1.BIT_STRING.encodeDERValue = function (object) {
     var ret = [];
     ret.push(String.fromCharCode(remainder));
     for (var i = 0; i < object.length; i += 8) {
-	var octet = 0;
-	// Bit zero ends up in the high-order bit of the first octet.
-	for (var j = 0; j < 8; j++) {
-	    octet |= (object[i + j] || 0) << (7-j);
-	}
-	ret.push(String.fromCharCode(octet));
+        var octet = 0;
+        // Bit zero ends up in the high-order bit of the first octet.
+        for (var j = 0; j < 8; j++) {
+            octet |= (object[i + j] || 0) << (7-j);
+        }
+        ret.push(String.fromCharCode(octet));
     }
     return ret.join("");
 };
@@ -389,14 +389,14 @@ asn1.BIT_STRING.decodeDERValue = function (data) {
     var remainder = data.charCodeAt(0);
     var ret = [];
     for (var i = 1; i < data.length; i++) {
-	var octet = data.charCodeAt(i);
-	for (var j = 7; j >= 0; j--) {
-	    ret.push((octet & (1 << j)) ? 1 : 0);
-	}
+        var octet = data.charCodeAt(i);
+        for (var j = 7; j >= 0; j--) {
+            ret.push((octet & (1 << j)) ? 1 : 0);
+        }
     }
     // Chop off the extra bits.
     for (var i = 0; i < remainder; i++)
-	ret.pop();
+        ret.pop();
     return ret;
 };
 
@@ -420,13 +420,13 @@ asn1.NULL = new asn1.Type(
 
 asn1.NULL.encodeDERValue = function (object) {
     if (object !== null)
-	throw "Bad value";
+        throw "Bad value";
     return "";
 };
 
 asn1.NULL.decodeDERValue = function (data) {
     if (data.length > 0)
-	throw "Bad encoding";
+        throw "Bad encoding";
     return null;
 };
 
@@ -458,7 +458,7 @@ asn1.GeneralizedTime.encodeDERValue = function (object) {
     // anyway...)
 
     function pad(number, len) {
-	if (len == undefined) len = 2;
+        if (len == undefined) len = 2;
         var r = String(number);
         while (r.length < len) {
             r = '0' + r;
@@ -466,17 +466,17 @@ asn1.GeneralizedTime.encodeDERValue = function (object) {
         return r;
     }
     var ret = (object.getUTCFullYear() + '-'
-	       + pad(object.getUTCMonth() + 1) + '-'
-	       + pad(object.getUTCDate()) + 'T'
-	       + pad(object.getUTCHours()) + ':'
-	       + pad(object.getUTCMinutes()) + ':'
-	       + pad(object.getUTCSeconds()));
+               + pad(object.getUTCMonth() + 1) + '-'
+               + pad(object.getUTCDate()) + 'T'
+               + pad(object.getUTCHours()) + ':'
+               + pad(object.getUTCMinutes()) + ':'
+               + pad(object.getUTCSeconds()));
     if (object.getUTCMilliseconds() != 0) {
-	var ms = pad(object.getUTCMilliseconds(), 3);
-	while (ms[ms.length - 1] == '0') {
-	    ms = ms.substr(0, ms.length - 1);
-	}
-	ret += "." + ms;
+        var ms = pad(object.getUTCMilliseconds(), 3);
+        while (ms[ms.length - 1] == '0') {
+            ms = ms.substr(0, ms.length - 1);
+        }
+        ret += "." + ms;
     }
     ret += "Z";
     return ret;
@@ -488,19 +488,19 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
     var re = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.(\d{1,3}))?Z$/;
     var match = String(data).match(re);
     if (!match)
-	throw "Bad date format";
+        throw "Bad date format";
     var date = new Date(Number(match[1]),
-			Number(match[2]) - 1,
-			Number(match[3]),
-			Number(match[4]),
-			Number(match[5]),
-			Number(match[6]));
+                        Number(match[2]) - 1,
+                        Number(match[3]),
+                        Number(match[4]),
+                        Number(match[5]),
+                        Number(match[6]));
     console.log(match);
     if (match[8]) {
-	var ms = match[8];
-	while (ms.length < 3)
-	    ms = ms + "0";
-	date.setMilliseconds(Number(ms));
+        var ms = match[8];
+        while (ms.length < 3)
+            ms = ms + "0";
+        date.setMilliseconds(Number(ms));
     }
     return date;
 };
@@ -521,7 +521,7 @@ asn1.SEQUENCE_OF.prototype = new asn1.Type();
 asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
     var out = [];
     for (var i = 0; i < object.length; i++) {
-	out.push(this.componentType.encodeDER(object[i]));
+        out.push(this.componentType.encodeDER(object[i]));
     }
     return out.join("");
 };
@@ -529,9 +529,9 @@ asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
 asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
     var ret = [];
     while (data.length) {
-	var objRest = this.componentType.decodeDERPrefix(data);
-	ret.push(objRest[0]);
-	data = objRest[1];
+        var objRest = this.componentType.decodeDERPrefix(data);
+        ret.push(objRest[0]);
+        data = objRest[1];
     }
     return ret;
 };
@@ -567,12 +567,12 @@ asn1.SEQUENCE.prototype = new asn1.Type();
 asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
     var out = [];
     for (var i = 0; i < this.componentSpec.length; i++) {
-	var id = this.componentSpec[i].id;
-	if (id in object) {
-	    out.push(this.componentSpec[i].type.encodeDER(object[id]));
-	} else if (!this.componentSpec[i].optional) {
-	    throw "Field " + id + " missing!";
-	}
+        var id = this.componentSpec[i].id;
+        if (id in object) {
+            out.push(this.componentSpec[i].type.encodeDER(object[id]));
+        } else if (!this.componentSpec[i].optional) {
+            throw "Field " + id + " missing!";
+        }
     }
     return out.join("");
 };
@@ -581,34 +581,34 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
     var ret = {};
     var nextSpec = 0;
     while (data.length) {
-	// Peek ahead at the tag.
-	var tvr = asn1.decodeTagLengthValueDER(data);
-	var tag = tvr[0], value = tvr[1], rest = tvr[2];
+        // Peek ahead at the tag.
+        var tvr = asn1.decodeTagLengthValueDER(data);
+        var tag = tvr[0], value = tvr[1], rest = tvr[2];
 
-	// See which field this corresponds to.
-	while (nextSpec < this.componentSpec.length &&
-	       this.componentSpec[nextSpec].type.tag != tag) {
-	    // Skip this one, if we can.
-	    if (!this.componentSpec[nextSpec].optional)
-		throw ("Missing required field " +
-		       this.componentSpec[nextSpec].id);
-	    nextSpec++;
-	}
-	if (nextSpec >= this.componentSpec.length)
-	    throw "Unexpected tag " + tag;
+        // See which field this corresponds to.
+        while (nextSpec < this.componentSpec.length &&
+               this.componentSpec[nextSpec].type.tag != tag) {
+            // Skip this one, if we can.
+            if (!this.componentSpec[nextSpec].optional)
+                throw ("Missing required field " +
+                       this.componentSpec[nextSpec].id);
+            nextSpec++;
+        }
+        if (nextSpec >= this.componentSpec.length)
+            throw "Unexpected tag " + tag;
 
-	// Tag matches. Go use this one.
-	ret[this.componentSpec[nextSpec].id] =
-	    this.componentSpec[nextSpec].type.decodeDERValue(value);
-	data = rest;
-	nextSpec++;
+        // Tag matches. Go use this one.
+        ret[this.componentSpec[nextSpec].id] =
+            this.componentSpec[nextSpec].type.decodeDERValue(value);
+        data = rest;
+        nextSpec++;
     }
 
     // Make sure we didn't miss any non-optional fields.
     while (nextSpec < this.componentSpec.length) {
-	if (!this.componentSpec[nextSpec].optional)
-	    throw "Missing required field " + this.componentSpec[nextSpec].id;
-	nextSpec++;
+        if (!this.componentSpec[nextSpec].optional)
+            throw "Missing required field " + this.componentSpec[nextSpec].id;
+        nextSpec++;
     }
 
     return ret;
