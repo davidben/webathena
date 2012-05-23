@@ -162,7 +162,46 @@ krb.AS_REQ = krb.KDC_REQ.tagged(asn1.tag(10, asn1.TAG_CONSTRUCTED,
 krb.TGS_REQ = krb.KDC_REQ.tagged(asn1.tag(12, asn1.TAG_CONSTRUCTED,
                                          asn1.TAG_APPLICATION));
 
-// TODO: 5.4.2.  KRB_KDC_REP Definition
+// 5.4.2.  KRB_KDC_REP Definition
+krb.KDC_REP = new asn1.SEQUENCE(
+    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'msgType',
+      type: asn1.INTEGER.valueConstrained(11, 13).tagged(asn1.tag(1))},
+     {id: 'padata',
+      type: new asn1.SEQUENCE_OF(krb.PA_DATA).tagged(asn1.tag(2)),
+      optional: true},
+     {id: 'crealm', type: krb.Realm.tagged(asn1.tag(3))},
+     {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(4))},
+     {id: 'ticket', type: krb.Ticket.tagged(asn1.tag(5))},
+     {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(6))}]);
+krb.AS_REP = krb.KDC_REP.tagged(asn1.tag(11, asn1.TAG_CONSTRUCTED,
+                                         asn1.TAG_APPLICATION));
+krb.TGS_REP = krb.KDC_REP.tagged(asn1.tag(13, asn1.TAG_CONSTRUCTED,
+                                          asn1.TAG_APPLICATION));
+krb.LastReq = new asn1.SEQUENCE_OF(new asn1.SEQUENCE(
+    [{id: 'lrType', type: krb.Int32.tagged(asn1.tag(0))},
+     {id: 'lrValue', type: krb.KerberosTime.tagged(asn1.tag(1))}]));
+krb.EncKDCRepPart = new asn1.SEQUENCE(
+    [{id: 'key', type: krb.EncryptionKey.tagged(asn1.tag(0))},
+     {id: 'lastReq', type: krb.LastReq.tagged(asn1.tag(1))},
+     {id: 'nonce', type: krb.UInt32.tagged(asn1.tag(2))},
+     {id: 'keyExpiration', type: krb.KerberosTime.tagged(asn1.tag(3)),
+      optional: true},
+     {id: 'flags', type: krb.TicketFlags.tagged(asn1.tag(4))},
+     {id: 'authtime', type: krb.KerberosTime.tagged(asn1.tag(5))},
+     {id: 'starttime', type: krb.KerberosTime.tagged(asn1.tag(6)),
+      optional: true},
+     {id: 'endtime', type: krb.KerberosTime.tagged(asn1.tag(7))},
+     {id: 'renewTill', type: krb.KerberosTime.tagged(asn1.tag(8)),
+      optional: true},
+     {id: 'srealm', type: krb.Realm.tagged(asn1.tag(9))},
+     {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(10))},
+     {id: 'caddr', type: krb.HostAddresses.tagged(asn1.tag(11)),
+      optional: true}]);
+krb.EncASRepPart = krb.EncKDCRepPart.tagged(asn1.tag(25, asn1.TAG_CONSTRUCTED,
+                                                     asn1.TAG_APPLICATION));
+krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
+                                                      asn1.TAG_APPLICATION));
 
 // TODO: 5.5.1.  KRB_AP_REQ Definition
 
