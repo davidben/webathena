@@ -39,6 +39,8 @@ nspluginwrapper is currently the only means to run a plugin in a browser of a di
 nspluginwrapper also makes a good tracing utility for NPAPI plugins.
 
 This is some text that in the future should describe Webathena, but right now does not. I think.
+
+&copy; 2012 someone and someone else and stuff; there is a license
         </div>
         <header>
             <img src="logo.png" id="logo">
@@ -63,7 +65,7 @@ This is some text that in the future should describe Webathena, but right now do
                     </td>
                     <td>
                         <div class="container">
-                            <input name="password" id="password" type="password">
+                            <input name="password" id="password" type="password" autocomplete="off">
                             <div class="error">&#x25C0;   Please enter your password</div>
                         </div>
                     </td>
@@ -75,8 +77,18 @@ This is some text that in the future should describe Webathena, but right now do
                 </tr>
             </table>
         </form>
-        <footer>
-            &copy; 2012 someone and someone else and stuff; there is a license
-        </footer>
+        <table id="authed">
+            <tr>
+                <td>You are logged in as</td>
+            </tr>
+            <tr>
+                <td id="principal"></td>
+            </tr>
+            <tr>
+                <td id="logout">
+                    <button>Log out</button>
+                </td>
+            </tr>
+        </table>
     </body>
 </html>
