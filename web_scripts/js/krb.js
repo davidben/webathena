@@ -214,3 +214,167 @@ krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
 // TODO: 5.8.1.  KRB_CRED Definition
 
 // TODO: 5.9.1.  KRB_ERROR Definition
+
+// TODO: 7.5.1.  Key Usage Numbers
+
+// 7.5.2.  PreAuthentication Data Types
+krb.PA_TGS_REQ                = 1;
+krb.PA_ENC_TIMESTAMP          = 2;
+krb.PA_PW_SALT                = 3;
+krb.PA_ENC_UNIX_TIME          = 5;
+krb.PA_SANDIA_SECUREID        = 6;
+krb.PA_SESAME                 = 7;
+krb.PA_OSF_DCE                = 8;
+krb.PA_CYBERSAFE_SECUREID     = 9;
+krb.PA_AFS3_SALT              = 10;
+krb.PA_ETYPE_INFO             = 11;
+krb.PA_SAM_CHALLENGE          = 12;
+krb.PA_SAM_RESPONSE           = 13;
+krb.PA_PK_AS_REQ_OLD          = 14;
+krb.PA_PK_AS_REP_OLD          = 15;
+krb.PA_PK_AS_REQ              = 16;
+krb.PA_PK_AS_REP              = 17;
+krb.PA_ETYPE_INFO2            = 19;
+krb.PA_USE_SPECIFIED_KVNO     = 20;
+krb.PA_SAM_REDIRECT           = 21;
+krb.PA_GET_FROM_TYPED_DATA    = 22;
+krb.TD_PADATA                 = 22;
+krb.PA_SAM_ETYPE_INFO         = 23;
+krb.PA_ALT_PRINC              = 24;
+krb.PA_SAM_CHALLENGE2         = 30;
+krb.PA_SAM_RESPONSE2          = 31;
+krb.PA_EXTRA_TGT              = 41;
+krb.TD_PKINIT_CMS_CERTIFICATES= 101;
+krb.TD_KRB_PRINCIPAL          = 102;
+krb.TD_KRB_REALM              = 103;
+krb.TD_TRUSTED_CERTIFIERS     = 104;
+krb.TD_CERTIFICATE_INDEX      = 105;
+krb.TD_APP_DEFINED_ERROR      = 106;
+krb.TD_REQ_NONCE              = 107;
+krb.TD_REQ_SEQ                = 108;
+krb.PA_PAC_REQUEST            = 128;
+
+// 7.5.3.  Address Types
+krb.ADDRESS_IPV4              = 2;
+krb.ADDRESS_DIRECTIONAL       = 3;
+krb.ADDRESS_CHAOSNET          = 5;
+krb.ADDRESS_XNS               = 6;
+krb.ADDRESS_ISO               = 7;
+krb.ADDRESS_DECNET_PHASE_IV   = 12;
+krb.ADDRESS_APPLETALK_UDP     = 16;
+krb.ADDRESS_NETBIOS           = 20;
+krb.ADDRESS_IPV6              = 24;
+
+// 7.5.4.  Authorization Data Types
+krb.AD_IF_RELEVANT                     = 1;
+krb.AD_INTENDED_FOR_SERVER             = 2;
+krb.AD_INTENDED_FOR_APPLICATION_CLASS  = 3;
+krb.AD_KDC_ISSUED                      = 4;
+krb.AD_AND_OR                          = 5;
+krb.AD_MANDATORY_TICKET_EXTENSIONS     = 6;
+krb.AD_IN_TICKET_EXTENSIONS            = 7;
+krb.AD_MANDATORY_FOR_KDC               = 8;
+krb.OSF_DCE                            = 64;
+krb.SESAME                             = 65;
+krb.AD_OSF_DCE_PKI_CERTID              = 66;
+krb.AD_WIN2K_PAC                       = 128;
+krb.AD_ETYPE_NEGOTIATION               = 129;
+
+// 7.5.5.  Transited Encoding Types
+krb.DOMAIN_X500_COMPRESS               = 1;
+
+// 7.5.6.  Protocol Version Number
+krb.pvno                               = 5;
+
+// 7.5.7.  Kerberos Message Types
+krb.KRB_AS_REQ    = 10;
+krb.KRB_AS_REP    = 11;
+krb.KRB_TGS_REQ   = 12;
+krb.KRB_TGS_REP   = 13;
+krb.KRB_AP_REQ    = 14;
+krb.KRB_AP_REP    = 15;
+krb.KRB_SAFE      = 20;
+krb.KRB_PRIV      = 21;
+krb.KRB_CRED      = 22;
+krb.KRB_ERROR     = 30;
+
+// 7.5.8.  Name Types
+krb.KRB_NT_UNKNOWN        = 0;
+krb.KRB_NT_PRINCIPAL      = 1;
+krb.KRB_NT_SRV_INST       = 2;
+krb.KRB_NT_SRV_HST        = 3;
+krb.KRB_NT_SRV_XHST       = 4;
+krb.KRB_NT_UID            = 5;
+krb.KRB_NT_X500_PRINCIPAL = 6;
+krb.KRB_NT_SMTP_NAME      = 7;
+krb.KRB_NT_ENTERPRISE     = 10;
+
+// 7.5.9.  Error Codes
+krb.KDC_ERR_NONE                          = 0;
+krb.KDC_ERR_NAME_EXP                      = 1;
+krb.KDC_ERR_SERVICE_EXP                   = 2;
+krb.KDC_ERR_BAD_PVNO                      = 3;
+krb.KDC_ERR_C_OLD_MAST_KVNO               = 4;
+krb.KDC_ERR_S_OLD_MAST_KVNO               = 5;
+krb.KDC_ERR_C_PRINCIPAL_UNKNOWN           = 6;
+krb.KDC_ERR_S_PRINCIPAL_UNKNOWN           = 7;
+krb.KDC_ERR_PRINCIPAL_NOT_UNIQUE          = 8;
+krb.KDC_ERR_NULL_KEY                      = 9;
+krb.KDC_ERR_CANNOT_POSTDATE               = 10;
+krb.KDC_ERR_NEVER_VALID                   = 11;
+krb.KDC_ERR_POLICY                        = 12;
+krb.KDC_ERR_BADOPTION                     = 13;
+krb.KDC_ERR_ETYPE_NOSUPP                  = 14;
+krb.KDC_ERR_SUMTYPE_NOSUPP                = 15;
+krb.KDC_ERR_PADATA_TYPE_NOSUPP            = 16;
+krb.KDC_ERR_TRTYPE_NOSUPP                 = 17;
+krb.KDC_ERR_CLIENT_REVOKED                = 18;
+krb.KDC_ERR_SERVICE_REVOKED               = 19;
+krb.KDC_ERR_TGT_REVOKED                   = 20;
+krb.KDC_ERR_CLIENT_NOTYET                 = 21;
+krb.KDC_ERR_SERVICE_NOTYET                = 22;
+krb.KDC_ERR_KEY_EXPIRED                   = 23;
+krb.KDC_ERR_PREAUTH_FAILED                = 24;
+krb.KDC_ERR_PREAUTH_REQUIRED              = 25;
+krb.KDC_ERR_SERVER_NOMATCH                = 26;
+krb.KDC_ERR_MUST_USE_USER2USER            = 27;
+krb.KDC_ERR_PATH_NOT_ACCEPTED             = 28;
+krb.KDC_ERR_SVC_UNAVAILABLE               = 29;
+krb.KRB_AP_ERR_BAD_INTEGRITY              = 31;
+krb.KRB_AP_ERR_TKT_EXPIRED                = 32;
+krb.KRB_AP_ERR_TKT_NYV                    = 33;
+krb.KRB_AP_ERR_REPEAT                     = 34;
+krb.KRB_AP_ERR_NOT_US                     = 35;
+krb.KRB_AP_ERR_BADMATCH                   = 36;
+krb.KRB_AP_ERR_SKEW                       = 37;
+krb.KRB_AP_ERR_BADADDR                    = 38;
+krb.KRB_AP_ERR_BADVERSION                 = 39;
+krb.KRB_AP_ERR_MSG_TYPE                   = 40;
+krb.KRB_AP_ERR_MODIFIED                   = 41;
+krb.KRB_AP_ERR_BADORDER                   = 42;
+krb.KRB_AP_ERR_BADKEYVER                  = 44;
+krb.KRB_AP_ERR_NOKEY                      = 45;
+krb.KRB_AP_ERR_MUT_FAIL                   = 46;
+krb.KRB_AP_ERR_BADDIRECTION               = 47;
+krb.KRB_AP_ERR_METHOD                     = 48;
+krb.KRB_AP_ERR_BADSEQ                     = 49;
+krb.KRB_AP_ERR_INAPP_CKSUM                = 50;
+krb.KRB_AP_PATH_NOT_ACCEPTED              = 51;
+krb.KRB_ERR_RESPONSE_TOO_BIG              = 52;
+krb.KRB_ERR_GENERIC                       = 60;
+krb.KRB_ERR_FIELD_TOOLONG                 = 61;
+krb.KDC_ERROR_CLIENT_NOT_TRUSTED          = 62;
+krb.KDC_ERROR_KDC_NOT_TRUSTED             = 63;
+krb.KDC_ERROR_INVALID_SIG                 = 64;
+krb.KDC_ERR_KEY_TOO_WEAK                  = 65;
+krb.KDC_ERR_CERTIFICATE_MISMATCH          = 66;
+krb.KRB_AP_ERR_NO_TGT                     = 67;
+krb.KDC_ERR_WRONG_REALM                   = 68;
+krb.KRB_AP_ERR_USER_TO_USER_REQUIRED      = 69;
+krb.KDC_ERR_CANT_VERIFY_CERTIFICATE       = 70;
+krb.KDC_ERR_INVALID_CERTIFICATE           = 71;
+krb.KDC_ERR_REVOKED_CERTIFICATE           = 72;
+krb.KDC_ERR_REVOCATION_STATUS_UNKNOWN     = 73;
+krb.KDC_ERR_REVOCATION_STATUS_UNAVAILABLE = 74;
+krb.KDC_ERR_CLIENT_NAME_MISMATCH          = 75;
+krb.KDC_ERR_KDC_NAME_MISMATCH             = 76;

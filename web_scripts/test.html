@@ -7,8 +7,8 @@
 <script src="js/crypto-js/components/enc-base64.js"></script>
 <script>
   var asReq = {};
-  asReq.pvno = 5;
-  asReq.msgType = 10;
+  asReq.pvno = krb.pvno;
+  asReq.msgType = krb.KRB_AS_REQ;
   // asReq.padata = []; // Omit if empty.
 
   // FIXME: This is obnoxious. Also constants.
@@ -21,13 +21,13 @@
   asReq.reqBody.kdcOptions[27] = 1;
 
   asReq.reqBody.principalName = {};
-  asReq.reqBody.principalName.nameType = 1;
+  asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
   asReq.reqBody.principalName.nameString = ["davidben"];
 
   asReq.reqBody.realm = "ATHENA.MIT.EDU";
 
   asReq.reqBody.sname = {};
-  asReq.reqBody.sname.nameType = 2;
+  asReq.reqBody.sname.nameType = krb.KRB_NT_SRV_INST;
   asReq.reqBody.sname.nameString = ['krbtgt', 'ATHENA.MIT.EDU'];
 
   var now = new Date();
