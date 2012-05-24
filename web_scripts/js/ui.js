@@ -36,20 +36,23 @@ $(function() {
         var interval = setInterval(function() {
           $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
         }, 500);
-        var reset = function() {
+        var resetForm = function() {
             clearInterval(interval);
             $('#submit').attr('disabled', null).text(text);
         };
+        var onError = function(error) {
+            // TODO actual error reporting
+            console.log("Error in AS_REQ: " + error);
+            resetForm();
+        };
+        
         KDC.asReq(username, function(reply) {
-            console.log(username);
-            console.log(reply);
-
             // 3.1.5.  Receipt of KRB_AS_REP Message
 
             // If any padata fields are present, they may be used to
             // derive the proper secret key to decrypt the message.
             if (reply.padata) {
-	        // TODO: Do something about this one.
+                // TODO: Do something about this one.
             }
 
             // The default salt string, if none is provided via
@@ -59,8 +62,7 @@ $(function() {
             var salt = KDC.realm + username;
             var encProfile = krb.encProfiles[reply.encPart.etype];
             if (encProfile === undefined) {
-                console.log("Unsupported enctype " + reply.encPart.etype)
-                reset();
+                onError('Unsupported enctype ' + reply.encPart.etype);
                 return;
             }
 
@@ -72,24 +74,27 @@ $(function() {
 
             // The client decrypts the encrypted part of the response
             // using its secret key...
-	    var t = encProfile.decrypt(
-                derivedKey,
-                encProfile.initialCipherState(derivedKey, false),
-                reply.encPart.cipher);
+            try {
+                var t = encProfile.decrypt(
+                    derivedKey,
+                    encProfile.initialCipherState(derivedKey, false),
+                    reply.encPart.cipher);
+            } catch(e) {
+                alert(e);
+                resetForm();
+                return;
+            }
             // Some ciphers add padding, so we can't abort if there is
             // data left over. Also allow an EncTGSRepPart because the
             // MIT KDC is screwy.
             var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
             console.log(encRepPart);
 
-            reset();
+            resetForm();
             $('#login').slideUp();
             $('#authed').slideDown();
             $('#principal').text(reply.cname.nameString + '@' + reply.crealm);
-        }, function(error) {
-            console.log("Error in AS_REQ: " + error); // TODO actual error reporting
-            reset();
-        });
+        }, onError);
         return false;
     });
 });
