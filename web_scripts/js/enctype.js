@@ -9,7 +9,7 @@
 //    keyGenerationSeedLength: <Number K>,
 //    stringToKey: function (pass, salt, opaque) -> protocolKey,
 //    randomToKey: function (bitstring[K) -> protocolKey,
-//    keyDerivation: function (protocolKey, Number) -> specificKey,
+//    deriveKey: function (protocolKey, Number) -> specificKey,
 //    defaultStringToKeyParameters: <octet string>,
 //    initialCipherState: function (specificKey, direction) -> state,
 //    encrypt: function (specificKey, state, string) -> [state, string],
@@ -61,7 +61,7 @@ krb.cryptosystemFromSimplifiedProfile = function (simplifiedProfile) {
         },
         stringToKey: simplifiedProfile.stringToKey,
         randomToKey: simplifiedProfile.randomToKey,
-        keyDerivation: function (protocolKey, number) {
+        deriveKey: function (protocolKey, number) {
         }
     };
     return encryptionProfile;
@@ -239,6 +239,46 @@ krb.DesCbcCrcProfile = { };
 krb.DesCbcCrcProfile.stringToKey = function (password, salt, params) {
     return krb._des_string_to_key(password, salt, params);
 };
+krb.DesCbcCrcProfile.deriveKey = function (key, usage) {
+    return key;
+};
+krb.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
+    return key;
+};
+krb.DesCbcCrcProfile.decrypt = function (key, state, data) {
+    // data is a String where only the last byte matters.
+    data = CryptoJS.enc.Latin1.parse(data);
+    var cipherParams = CryptoJS.lib.CipherParams.create({
+        ciphertext: data
+    });
+
+    var decrypted = CryptoJS.DES.decrypt(
+        cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
+    if (decrypted.sigBytes < 12)
+        throw "Bad format";
+
+    // First 8 bytes are the confounder.
+    var confounder = CryptoJS.lib.WordArray.create([decrypted.words[0],
+                                                    decrypted.words[1]]);
+    // Next 4 bytes are a checksum.
+    // TODO: Make this code independent of the checksum; it's used in
+    // a lot of profiles, though the checksum size may be different.
+    var checksum = CryptoJS.lib.WordArray.create([decrypted.words[2]]);
+
+    // Rest are the message (plus padding).
+    var message = CryptoJS.lib.WordArray.create(decrypted.words.slice(3),
+                                                decrypted.sigBytes - 12);
+
+    // Check the checksum.
+    var checksumData = decrypted.clone();
+    checksumData.words[2] = 0;
+    // FIXME: Actually check this thing!
+
+    // New cipher state is the last block of the ciphertext.
+    return [CryptoJS.lib.WordArray.create([data.words[data.words.length - 2],
+                                           data.words[data.words.length - 1]]),
+            CryptoJS.enc.Latin1.stringify(message)];
+};
 
 // 8.  Assigned Numbers
 krb.enctype = {};
@@ -282,30 +322,3 @@ krb.sumtype.hmac_sha1_96_aes256           = 16;
 // The supported encryption types.
 krb.encProfiles = { };
 krb.encProfiles[krb.enctype.des_cbc_crc] = krb.DesCbcCrcProfile;
-
-krb.stringToKey = function (enctype, password, salt, params) {
-    var encProfile = krb.encProfiles[enctype];
-    if (encProfile == undefined)
-        throw "Unsupported enctype " + enctype;
-
-    return {
-        keytype: enctype,
-        keyvalue: encProfile.stringToKey(password, salt, params)
-    };
-}
-
-krb.decryptEncrypedData = function (encPart, asn1Type, key) {
-    var data = krb.decryptEncrypedDataRaw(encPart, key);
-    return asn1Type.decodeDER(data);
-};
-
-krb.decryptEncrypedDataRaw = function (encPart, key) {
-    var encProfile = krb.encProfiles[encPart.etype];
-    if (encProfile == undefined)
-        throw "Unsupported enctype " + etype;
-    if (key.keytype != encPart.etype)
-        throw "Key type does not match: " + key.keytype;
-
-    throw "Not implemented";
-};
-
