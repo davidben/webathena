@@ -257,54 +257,65 @@ krb._des_string_to_key = function (password, salt, params) {
     }
 };
 
+krb._makeDesEncryptionProfile = function (checksum) {
+    if (checksum.checksumBytes % 4 != 0)
+        throw "Checksum not an integer number of words";
+    var checksumWords = checksum.checksumBytes / 4;
+
+    var profile = {};
+    profile.stringToKey = krb._des_string_to_key;
+    profile.deriveKey = function (key, usage) {
+        return key;
+    };
+    // profile.initialCipherState varies.
+    profile.checksum = checksum;
+    profile.decrypt = function (key, state, data) {
+        // data is a String where only the last byte matters.
+        data = CryptoJS.enc.Latin1.parse(data);
+        var cipherParams = CryptoJS.lib.CipherParams.create({
+            ciphertext: data
+        });
+
+        var decrypted = CryptoJS.DES.decrypt(
+            cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
+        if (decrypted.sigBytes < 12)
+            throw "Bad format";
+
+        // First 2 words (8 bytes) are the confounder.
+
+        // Next checksumWords words are a checksum.
+        var checksum = CryptoJS.lib.WordArray.create(
+            decrypted.words.slice(2, 2 + checksumWords));
+
+        // Rest are the message (plus padding).
+        var message = CryptoJS.lib.WordArray.create(
+            decrypted.words.slice(2 + checksumWords),
+            decrypted.sigBytes - 12);
+
+        // Check the checksum.
+        var checksumData = decrypted.clone();
+        for (var i = 0; i < checksumWords; i++) {
+            checksumData.words[2 + i] = 0;
+        }
+        if (!this.checksum.verifyMic(
+            key, CryptoJS.enc.Latin1.stringify(checksumData),
+            CryptoJS.enc.Latin1.stringify(checksum)))
+            throw "Checksum mismatch!";
+
+        // New cipher state is the last block of the ciphertext.
+        return [
+            CryptoJS.lib.WordArray.create([data.words[data.words.length - 2],
+                                           data.words[data.words.length - 1]]),
+            CryptoJS.enc.Latin1.stringify(message)
+        ];
+    };
+    return profile;
+};
+
 // 6.2.3.  DES with CRC
-krb.DesCbcCrcProfile = { };
-krb.DesCbcCrcProfile.stringToKey = function (password, salt, params) {
-    return krb._des_string_to_key(password, salt, params);
-};
-krb.DesCbcCrcProfile.deriveKey = function (key, usage) {
-    return key;
-};
+krb.DesCbcCrcProfile = krb._makeDesEncryptionProfile(krb.Crc32Checksum);
 krb.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
     return key;
-};
-krb.DesCbcCrcProfile.checksum = krb.Crc32Checksum;
-krb.DesCbcCrcProfile.decrypt = function (key, state, data) {
-    // data is a String where only the last byte matters.
-    data = CryptoJS.enc.Latin1.parse(data);
-    var cipherParams = CryptoJS.lib.CipherParams.create({
-        ciphertext: data
-    });
-
-    var decrypted = CryptoJS.DES.decrypt(
-        cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
-    if (decrypted.sigBytes < 12)
-        throw "Bad format";
-
-    // First 8 bytes are the confounder.
-    var confounder = CryptoJS.lib.WordArray.create([decrypted.words[0],
-                                                    decrypted.words[1]]);
-    // Next 4 bytes are a checksum.
-    // TODO: Make this code independent of the checksum; it's used in
-    // a lot of profiles, though the checksum size may be different.
-    var checksum = CryptoJS.lib.WordArray.create([decrypted.words[2]]);
-
-    // Rest are the message (plus padding).
-    var message = CryptoJS.lib.WordArray.create(decrypted.words.slice(3),
-                                                decrypted.sigBytes - 12);
-
-    // Check the checksum.
-    var checksumData = decrypted.clone();
-    checksumData.words[2] = 0;
-    if (!this.checksum.verifyMic(key,
-                                 CryptoJS.enc.Latin1.stringify(checksumData),
-                                 CryptoJS.enc.Latin1.stringify(checksum)))
-        throw "Checksum mismatch!";
-
-    // New cipher state is the last block of the ciphertext.
-    return [CryptoJS.lib.WordArray.create([data.words[data.words.length - 2],
-                                           data.words[data.words.length - 1]]),
-            CryptoJS.enc.Latin1.stringify(message)];
 };
 
 // 8.  Assigned Numbers
