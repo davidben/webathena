@@ -76,7 +76,6 @@ $(function() {
                 derivedKey,
                 encProfile.initialCipherState(derivedKey, false),
                 reply.encPart.cipher);
-            console.log(t[1].toString());
             // Some ciphers add padding, so we can't abort if there is
             // data left over. Also allow an EncTGSRepPart because the
             // MIT KDC is screwy.
