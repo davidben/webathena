@@ -285,7 +285,34 @@ krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
 // The MIT KDC uses the wrong tag. Sigh.
 krb.EncASorTGSRepPart = new asn1.CHOICE([krb.EncASRepPart, krb.EncTGSRepPart]);
 
-// TODO: 5.5.1.  KRB_AP_REQ Definition
+// 5.5.1.  KRB_AP_REQ Definition
+krb.APOptions = krb.KerberosFlags.subtype();
+krb.APOptions.use_session_key = 1;
+krb.APOptions.mutual_required = 2;
+krb.AP_REQ = new asn1.SEQUENCE(
+    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'msgType',
+      type: asn1.INTEGER.valueConstrained(14).tagged(asn1.tag(1))},
+     {id: 'apOptions', type: krb.APOptions.tagged(asn1.tag(2))},
+     {id: 'ticket', type: krb.Ticket.tagged(asn1.tag(3))},
+     {id: 'authenticator', type: krb.EncryptedData.tagged(asn1.tag(4))}]
+).tagged(asn1.tag(14, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+
+krb.Authenticator = new asn1.SEQUENCE(
+    [{id: 'authenticatorVno',
+      type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'crealm', type: krb.Realm.tagged(asn1.tag(1))},
+     {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(2))},
+     {id: 'cksum', type: krb.Checksum.tagged(asn1.tag(3)), optional: true},
+     {id: 'cusec', type: krb.Microseconds.tagged(asn1.tag(4))},
+     {id: 'ctime', type: krb.KerberosTime.tagged(asn1.tag(5))},
+     {id: 'subkey', type: krb.EncryptionKey.tagged(asn1.tag(6)),
+      optional: true},
+     {id: 'seqNumber', type: krb.UInt32.tagged(asn1.tag(7)), optional: true},
+     {id: 'authorizationData', type: krb.AuthorizationData.tagged(asn1.tag(8)),
+      optional: true}]
+).tagged(asn1.tag(2, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+
 
 // TODO: 5.5.2.  KRB_AP_REP Definition
 
