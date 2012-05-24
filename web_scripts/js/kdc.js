@@ -29,8 +29,7 @@ Crypto.randomNonce = function() {
         if (e instanceof sjcl.exception.notReady) {
             // TODO: We should retry a little later. We can also
             // adjust the paranoia argument.
-            window.setTimeout(function () { alert(String(e)); });
-            return;
+            throw 'not enough randomness';
         }
         throw e;
     }
@@ -77,7 +76,11 @@ KDC.asReq = function(username, success, error) {
                                   now.getUTCSeconds()));
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    asReq.reqBody.nonce = Crypto.randomNonce();
+    try {
+        asReq.reqBody.nonce = Crypto.randomNonce();
+    } catch(e) {
+        error(e);
+    }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
@@ -258,5 +261,9 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     // TODO: Flags?
     tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
     // TODO: The rest of this function.
-    tgsReq.reqBody.nonce = Crypto.randomNonce();
+    try {
+        tgsReq.reqBody.nonce = Crypto.randomNonce();
+    } catch(e) {
+        error(e);
+    }
 };

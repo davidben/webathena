@@ -37,7 +37,7 @@ $(function() {
         // Even if we throw an exception, don't submit the form.
         e.preventDefault();
 
-        $('#alert').slideUp();
+        $('#alert').slideUp(100);
         var username = $('#username')[0].value,
             password = $('#password')[0].value,
             fail = false;
@@ -67,6 +67,7 @@ $(function() {
             $('#submit').attr('disabled', null).text(text);
         };
         var onError = function(error) {
+            error = String(error);
             switch(error) {
                 case 'Checksum mismatch!':
                     error = 'Incorrect password!';
@@ -76,7 +77,7 @@ $(function() {
                     break;
             }
             $('#alert #content').html('<b>Error logging in:</b><br>' + error);
-            $('#alert').slideDown();
+            $('#alert').slideDown(100);
             resetForm();
         };
         
