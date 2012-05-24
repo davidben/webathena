@@ -61,10 +61,17 @@ KDC.asReq = function(username, success, error) {
                          now.getUTCSeconds());
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    // TODO: SJCL can throw if we don't have enough entropy. In that
-    // case we should retry a little later. We can also adjust the
-    // paranoia argument as necessary.
-    asReq.reqBody.nonce = sjcl.random.randomWords(1)[0];
+    try {
+	// Avoid negative numbers... ASN.1 errors and stuff.
+	asReq.reqBody.nonce = sjcl.random.randomWords(1)[0] & 0x7fffffff;
+    } catch (e) {
+	if (e instanceof sjcl.exception.notReady) {
+	    // TODO: We should retry a little later. We can also
+	    // adjust the paranoia argument.
+	    window.setTimeout(function () { error(String(e)); });
+	    return;
+	}
+    }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
