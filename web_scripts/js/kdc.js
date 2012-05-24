@@ -26,7 +26,7 @@ Crypto.randomNonce = function() {
         if (e instanceof sjcl.exception.notReady) {
             // TODO: We should retry a little later. We can also
             // adjust the paranoia argument.
-            window.setTimeout(function () { error(String(e)); });
+            window.setTimeout(function () { alert(String(e)); });
             return;
         }
         throw e;
@@ -104,13 +104,23 @@ KDC.asReq = function(username, success, error) {
 
 KDC.getTGTSession = function (username, password, success, error) {
     KDC.asReq(username, function (asReq, asRep) {
-        var validate = KDC.validateAsRep(username, asRep);
-        if (validate) {
-            error(validate);
-            return;
-        }
+        // TODO: Rearrange this code to interpret this error and stuff. We
+        // may get a request for pre-authentication, in which case we
+        // retry with pre-auth after prompting for the password. (We
+        // already have the password, but I believe in theory this could
+        // be written so that we prompt on demand.)
+        if(asRep.msgType == krb.KRB_MT_ERROR)
+            return error(asRep.eText + ' (' + asRep.errorCode + ')');
 
         // 3.1.5.  Receipt of KRB_AS_REP Message
+
+        // If the reply message type is KRB_AS_REP, then the
+        // client verifies that the cname and crealm fields in the
+        // cleartext portion of the reply match what it requested.
+        if(asRep.crealm != asReq.reqBody.realm)
+            return error('crealm does not match');
+        if(!krb.principalNamesEqual(asReq.reqBody.principalName, asRep.cname))
+            return error('cname does not match');
 
         // If any padata fields are present, they may be used to
         // derive the proper secret key to decrypt the message.
@@ -122,12 +132,10 @@ KDC.getTGTSession = function (username, password, success, error) {
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with
         // no separators.
-        var salt = KDC.realm + username;
+        var salt = asReq.reqBody.realm + username;
         var encProfile = krb.encProfiles[asRep.encPart.etype];
-        if (encProfile === undefined) {
-            error('Unsupported enctype ' + asRep.encPart.etype);
-            return;
-        }
+        if (encProfile === undefined)
+            return error('Unsupported enctype ' + asRep.encPart.etype);
 
         var key = encProfile.stringToKey(password, salt);
         // The key usage value for encrypting this field is 3 in
@@ -143,64 +151,37 @@ KDC.getTGTSession = function (username, password, success, error) {
                 encProfile.initialCipherState(derivedKey, false),
                 asRep.encPart.cipher);
         } catch(e) {
-            error(e);
-            return;
+            return error(e);
         }
+
         // Some ciphers add padding, so we can't abort if there is
         // data left over. Also allow an EncTGSRepPart because the
         // MIT KDC is screwy.
         var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
 
-	// ...and verifies that the nonce in the encrypted part
-	// matches the nonce it supplied in its request (to detect
-	// replays).
-        console.log(asReq);
-        console.log(encRepPart);
-	if (asReq.reqBody.nonce != encRepPart.nonce) {
-	    error('Bad nonce');
-	    return;
-	}
+        // ...and verifies that the nonce in the encrypted part
+        // matches the nonce it supplied in its request (to detect
+        // replays).
+        console.log('asReq', asReq);
+        console.log('encRepPart', encRepPart);
+        if (asReq.reqBody.nonce != encRepPart.nonce)
+            return error('nonce does not match');
 
-	// It also verifies that the sname and srealm in the
-	// response match those in the request (or are otherwise
-	// expected values), and that the host address field is
-	// also correct.
-	if (!krb.principalNamesEqual(asReq.reqBody.sname, encRepPart.sname)) {
-	    error('Bad sname');
-	    return;
-	}
+        // It also verifies that the sname and srealm in the
+        // response match those in the request (or are otherwise
+        // expected values), and that the host address field is
+        // also correct.
+        if (!krb.principalNamesEqual(asReq.reqBody.sname, encRepPart.sname))
+            return error('sname does not match');
 
-	// It then stores the ticket, session key, start and
-	// expiration times, and other information for later use.
-	success(new KDC.Session(asRep, encRepPart));
+        // It then stores the ticket, session key, start and
+        // expiration times, and other information for later use.
+        success(new KDC.Session(asRep, encRepPart));
 
-	// TODO: Do we want to do anything with last-req and
-	// authtime?
+        // TODO: Do we want to do anything with last-req and
+        // authtime?
     }, error);
 };
-
-KDC.validateAsRep = function(username, reply) {
-    // TODO: Rearrange this code to interpret this error and stuff. We
-    // may get a request for pre-authentication, in which case we
-    // retry with pre-auth after prompting for the password. (We
-    // already have the password, but I believe in theory this could
-    // be written so that we prompt on demand.)
-    if(reply.msgType == krb.KRB_MT_ERROR)
-        return reply.eText + ' (' + reply.errorCode + ')';
-
-    // 3.1.5.  Receipt of KRB_AS_REP Message
-
-    // If the reply message type is KRB_AS_REP, then the
-    // client verifies that the cname and crealm fields in the
-    // cleartext portion of the reply match what it requested.
-    if(reply.crealm != KDC.realm)
-        return 'crealm does not match';
-    if(reply.cname.nameType != krb.KRB_NT_PRINCIPAL ||
-       reply.cname.nameString.length != 1 ||
-       reply.cname.nameString[0] != username)
-        return 'cname does not match';
-};
-
 
 KDC.Session = function (asRep, encRepPart) {
     // Just store everything. Whatever.
