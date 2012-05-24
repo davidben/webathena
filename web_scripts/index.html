@@ -54,10 +54,10 @@
                         Kerberos provides a secure means for <b>users</b> and <b>services</b> to prove their identities to each other, even over insecure networks.
                     </td>
                     <td>
-                        It ensures that your password <b>never leaves this page</b> in any form, and that services <b>never have more permissions</b> than they need.
+                        It ensures that your password <b>never leaves this page</b> in any form, and services <b>never have more permissions</b> than they need.
                     </td>
                     <td>
-                        Webathena is a project of the MIT <b><a href="http://sipb.mit.edu/">Student Information Processing Board</a></b>. &copy;2012 davidben and cesium, released under the <b>MIT license</b>.
+                        Webathena is a project of MIT <b><a href="http://sipb.mit.edu/">SIPB</a></b>. &copy;2012 davidben and cesium, released under the <b>MIT license</b>.
                     </td>
                 </tr>
             </table>
@@ -66,8 +66,14 @@
             <div id="logo"></div>
             <h1>Webathena</h1>
         </header>
+        <table id="alert" class="error body">
+            <tr>
+                <td>&#x26A0;</td>
+                <td id="content">hello!</td>
+            </tr>
+        </table>
         <form id="login" action="about:blank">
-            <table>
+            <table class="body">
                 <tr>
                     <td>
                         <label for="username">Username</label>
@@ -97,7 +103,7 @@
                 </tr>
             </table>
         </form>
-        <table id="authed">
+        <table id="authed" class="body">
             <tr>
                 <td>You are logged in as</td>
             </tr>

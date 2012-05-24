@@ -113,7 +113,8 @@ KDC.getTGTSession = function (username, password, success, error) {
         // already have the password, but I believe in theory this could
         // be written so that we prompt on demand.)
         if(asRep.msgType == krb.KRB_MT_ERROR)
-            return error(asRep.eText + ' (' + asRep.errorCode + ')');
+            return error((asRep.eText || 'unknown').replace(/\0/g, '')
+                         + ' (' + asRep.errorCode + ')');
 
         // 3.1.5.  Receipt of KRB_AS_REP Message
 
