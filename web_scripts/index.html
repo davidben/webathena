@@ -31,25 +31,36 @@
             <a href="#">What is Webathena?</a>
         </div>
         <div id="info">
-Lorem ipsum dolor sit amet and crap like that.
-
-Why not nspluginwrapper?
-
-nspluginwrapper is not a sandboxing mechanism
-An NPAPI plugin relies on unrestricted access to the underlying operating system, so a general plugin cannot be easily sandboxed. nspluginwrapper will only push the plug-in into a separate process; the child process itself is still fully priviledged.
-nspluginwrapper is not a generic out-of-process plugin framework
-While nspluginwrapper does push plugins out-of-process, modern browsers like Mozilla Firefox and Google Chrome natively support out-of-process plugins and, by doing so at the browser level, can do a better job.
-It is not recommended to use nspluginwrapper for plugins which already run natively out-of-process in a modern browser. They should still work, but it only adds overhead.
-
-Why nspluginwrapper?
-
-nspluginwrapper is currently the only means to run a plugin in a browser of a different architecture. It is most commonly used to run a 32-bit plugin built for x86 in a 64-bit browser built for x86-64, but other combinations are possible with QEMU. While there is no reason browsers could not better solve this with existing out-of-process plugin, they currently do not. nspluginwrapper is developed primarily with filling this use case in mind.
-
-nspluginwrapper also makes a good tracing utility for NPAPI plugins.
-
-This is some text that in the future should describe Webathena, but right now does not. I think.
-
-&copy; 2012 someone and someone else and stuff; there is a license
+            <table>
+                <tr>
+                    <td>
+                        <img src="about1.png">
+                    </td>
+                    <td>
+                        <img src="about2.png">
+                    </td>
+                    <td>
+                        <img src="about3.png">
+                    </td>
+                    <td>
+                        <img src="about4.png">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <b>Webathena</b> is a browser-centric implementation of the <b><a href="http://web.mit.edu/kerberos/">Kerberos</a></b> network authentication protocol.
+                    </td>
+                    <td>
+                        Kerberos provides a secure means for <b>users</b> and <b>services</b> to prove their identities to each other, even over insecure networks.
+                    </td>
+                    <td>
+                        It ensures that your password <b>never leaves this page</b> in any form, and that services <b>never have more permissions</b> than they need.
+                    </td>
+                    <td>
+                        Webathena is a project of the MIT <b><a href="http://sipb.mit.edu/">Student Information Processing Board</a></b>. &copy;2012 davidben and cesium, released under the <b>MIT license</b>.
+                    </td>
+                </tr>
+            </table>
         </div>
         <header>
             <div id="logo"></div>

@@ -23,7 +23,10 @@ $(function() {
     });
     
     $('#whatis a').click(function() {
-        $('#info').slideToggle();
+        $('#info').slideToggle(0)
+                  .css('height', $('#info').height())
+                  .slideToggle(0)
+                  .slideToggle();
         return false;
     });
     $('#logout button').click(function() {
@@ -58,7 +61,7 @@ $(function() {
         var text = $('#submit').text();
         $('#submit').attr('disabled', 'disabled').text('.');
         var interval = setInterval(function() {
-          $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
+            $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
         }, 500);
         var resetForm = function() {
             clearInterval(interval);
