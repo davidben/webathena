@@ -77,7 +77,7 @@ krb.Crc32Checksum = {
         // x**k is omitted, and the final remainder is not
         // ones-complemented.
 
-        // This seems to be correct.
+        // This seems to be correct. (It's also what pykrb5 does.)
         var checksum = crc32(msg, 0xffffffff) ^ 0xffffffff;
         // Get it into a string, little-endian.
         return String.fromCharCode(checksum & 0xff,
@@ -296,8 +296,9 @@ krb.DesCbcCrcProfile.decrypt = function (key, state, data) {
     // Check the checksum.
     var checksumData = decrypted.clone();
     checksumData.words[2] = 0;
-    if (this.checksum.getMic(key, CryptoJS.enc.Latin1.stringify(checksumData))
-        != CryptoJS.enc.Latin1.stringify(checksum))
+    if (!this.checksum.verifyMic(key,
+                                 CryptoJS.enc.Latin1.stringify(checksumData),
+                                 CryptoJS.enc.Latin1.stringify(checksum)))
         throw "Checksum mismatch!";
 
     // New cipher state is the last block of the ciphertext.
