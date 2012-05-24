@@ -18,6 +18,21 @@ Crypto.fromBase64 = function(str) {
     return CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Base64.parse(str));
 };
 
+Crypto.randomNonce = function() {
+    try {
+        // Avoid negative numbers... ASN.1 errors and stuff.
+        return sjcl.random.randomWords(1)[0] & 0x7fffffff;
+    } catch (e) {
+        if (e instanceof sjcl.exception.notReady) {
+            // TODO: We should retry a little later. We can also
+            // adjust the paranoia argument.
+            window.setTimeout(function () { error(String(e)); });
+            return;
+        }
+        throw e;
+    }
+};
+
 var KDC = {};
 
 KDC.urlBase = '/kdc/v1/';
@@ -59,18 +74,7 @@ KDC.asReq = function(username, success, error) {
                                   now.getUTCSeconds()));
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    try {
-	// Avoid negative numbers... ASN.1 errors and stuff.
-	asReq.reqBody.nonce = sjcl.random.randomWords(1)[0] & 0x7fffffff;
-    } catch (e) {
-	if (e instanceof sjcl.exception.notReady) {
-	    // TODO: We should retry a little later. We can also
-	    // adjust the paranoia argument.
-	    window.setTimeout(function () { error(String(e)); });
-	    return;
-	}
-	throw e;
-    }
+    asReq.reqBody.nonce = Crypto.randomNonce();
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
@@ -227,19 +231,5 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     // TODO: Flags?
     tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
     // TODO: The rest of this function.
-
-
-    try {
-	// Avoid negative numbers... ASN.1 errors and stuff.
-	asReq.reqBody.nonce = sjcl.random.randomWords(1)[0] & 0x7fffffff;
-    } catch (e) {
-	if (e instanceof sjcl.exception.notReady) {
-	    // TODO: We should retry a little later. We can also
-	    // adjust the paranoia argument.
-	    window.setTimeout(function () { error(String(e)); });
-	    return;
-	}
-	throw e;
-    }
-
+    tgsReq.reqBody.nonce = Crypto.randomNonce();
 };
