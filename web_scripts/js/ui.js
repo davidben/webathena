@@ -32,7 +32,10 @@ $(function() {
     
     $('#authed').fadeOut(0);
     
-    $('#login').submit(function() {
+    $('#login').submit(function(e) {
+	// Even if we throw an exception, don't submit the form.
+	e.preventDefault();
+
         var username = $('#username')[0].value,
             password = $('#password')[0].value,
             fail = false;

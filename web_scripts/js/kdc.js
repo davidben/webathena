@@ -71,6 +71,7 @@ KDC.asReq = function(username, success, error) {
 	    window.setTimeout(function () { error(String(e)); });
 	    return;
 	}
+	throw e;
     }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
