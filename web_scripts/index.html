@@ -12,13 +12,12 @@
         <script src="js/jquery.min.js"></script>
         <script src="js/sjcl.js"></script>
         <script>
+            sjcl.random.startCollectors();
             window.getRandomBytes = function(nBytes) {
                 return sjcl.random.randomWords(Math.ceil(nBytes / 4));
             };
         </script>
         <script src="js/crypto-js/rollups/tripledes.js"></script>
-        <script src="js/crypto-js/components/core-min.js"></script>
-        <script src="js/crypto-js/components/enc-base64-min.js"></script>
         <script src="js/crypto-js/components/pad-nopadding-min.js"></script>
         <script src="js/crc32.js"></script>
         <script src="js/asn1.js"></script>
@@ -67,7 +66,7 @@
             <div id="logo"></div>
             <h1>Webathena</h1>
         </header>
-        <form id="login">
+        <form id="login" action="about:blank">
             <table>
                 <tr>
                     <td>
@@ -75,7 +74,7 @@
                     </td>
                     <td>
                         <div class="container">
-                            <input name="username" id="username" type="text" autofocus>
+                            <input id="username" type="text" autofocus>
                             <div class="error">&#x25C0;   Please enter your username</div>
                         </div>
                     </td>
@@ -86,7 +85,7 @@
                     </td>
                     <td>
                         <div class="container">
-                            <input name="password" id="password" type="password" autocomplete="off">
+                            <input id="password" type="password" autocomplete="off">
                             <div class="error">&#x25C0;   Please enter your password</div>
                         </div>
                     </td>

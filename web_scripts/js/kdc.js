@@ -61,8 +61,18 @@ KDC.asReq = function(username, success, error) {
                          now.getUTCSeconds());
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    // FIXME: Cryptographically secure nonce.
-    asReq.reqBody.nonce = Math.floor(Math.random() * (1<<32));
+    try {
+	// Avoid negative numbers... ASN.1 errors and stuff.
+	asReq.reqBody.nonce = sjcl.random.randomWords(1)[0] & 0x7fffffff;
+    } catch (e) {
+	if (e instanceof sjcl.exception.notReady) {
+	    // TODO: We should retry a little later. We can also
+	    // adjust the paranoia argument.
+	    window.setTimeout(function () { error(String(e)); });
+	    return;
+	}
+	throw e;
+    }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
