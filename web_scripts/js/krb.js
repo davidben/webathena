@@ -111,11 +111,22 @@ krb.KerberosFlags = asn1.BIT_STRING.constrained(function (bs) {
 });
 krb.KerberosFlags.makeZeroFlags = function (num) {
     num = num || 32;
-    var words = [];
+    var bits = [];
     for (var i = 0; i < num; i++) {
-        words.push(0);
+        bits.push(0);
     }
-    return words;
+    return bits;
+};
+krb.KerberosFlags.make = function () {
+    var num = 32;
+    for (var i = 0; i < arguments.length; i++) {
+        num = Math.max(num, arguments[i]);
+    }
+    var bits = this.makeZeroFlags(num);
+    for (var i = 0; i < arguments.length; i++) {
+        bits[arguments[i]] = 1;
+    }
+    return bits;
 };
 
 // 5.3.  Tickets

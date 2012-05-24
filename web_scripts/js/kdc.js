@@ -32,12 +32,12 @@ KDC.asReq = function(username, success, error) {
 
     // FIXME: This is obnoxious. Also constants.
     asReq.reqBody = {};
-    asReq.reqBody.kdcOptions = krb.KerberosFlags.makeZeroFlags(32);
     // TODO: Pick a reasonable set of flags. These are just taken from
     // a wireshark trace.
-    asReq.reqBody.kdcOptions[krb.KDCOptions.forwardable] = 1;
-    asReq.reqBody.kdcOptions[krb.KDCOptions.proxiable] = 1;
-    asReq.reqBody.kdcOptions[krb.KDCOptions.renewable_ok] = 1;
+    asReq.reqBody.kdcOptions = krb.KDCOptions.make(
+        krb.KDCOptions.forwardable,
+        krb.KDCOptions.proxiable,
+        krb.KDCOptions.renewable_ok);
 
     asReq.reqBody.principalName = {};
     asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
@@ -224,7 +224,8 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     tgsReq.padata = /* FIXME */ undefined;
 
     tgsReq.reqBody = { };
-    tgsReq.reqBody.kdcOptions = krb.KerberosFlags.makeZeroFlags(32);
+    // TODO: Flags?
+    tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
     // TODO: The rest of this function.
 
 
