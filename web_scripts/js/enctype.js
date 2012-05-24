@@ -5,7 +5,7 @@
 // An encryption profile includes the following methods:
 // 
 //  var encryptionProfile = {
-//    checksumMechanism: <a checksum profile>,
+//    checksum: <a checksum profile>,
 //    keyGenerationSeedLength: <Number K>,
 //    stringToKey: function (pass, salt, opaque) -> protocolKey,
 //    randomToKey: function (bitstring[K) -> protocolKey,
@@ -65,6 +65,29 @@ krb.cryptosystemFromSimplifiedProfile = function (simplifiedProfile) {
         }
     };
     return encryptionProfile;
+};
+
+// 6.1.3.  CRC-32 Checksum
+krb.Crc32Checksum = {
+    checksumBytes: 4,
+    getMic: function (key, msg) {
+        // The CRC-32 checksum used in the des-cbc-crc encryption mode
+        // is identical to the 32-bit FCS described in ISO 3309 with
+        // two exceptions: The sum with the all-ones polynomial times
+        // x**k is omitted, and the final remainder is not
+        // ones-complemented.
+
+        // This seems to be correct.
+        var checksum = crc32(msg, 0xffffffff) ^ 0xffffffff;
+        // Get it into a string, little-endian.
+        return String.fromCharCode(checksum & 0xff,
+                                   (checksum >>> 8) & 0xff,
+                                   (checksum >>> 16) & 0xff,
+                                   (checksum >>> 24) & 0xff);
+    },
+    verifyMic: function (key, msg, token) {
+        return token == this.getMic(key, msg);
+    }
 };
 
 // 6.2.  DES-Based Encryption and Checksum Types
@@ -245,6 +268,7 @@ krb.DesCbcCrcProfile.deriveKey = function (key, usage) {
 krb.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
     return key;
 };
+krb.DesCbcCrcProfile.checksum = krb.Crc32Checksum;
 krb.DesCbcCrcProfile.decrypt = function (key, state, data) {
     // data is a String where only the last byte matters.
     data = CryptoJS.enc.Latin1.parse(data);
@@ -272,7 +296,9 @@ krb.DesCbcCrcProfile.decrypt = function (key, state, data) {
     // Check the checksum.
     var checksumData = decrypted.clone();
     checksumData.words[2] = 0;
-    // FIXME: Actually check this thing!
+    if (this.checksum.getMic(key, CryptoJS.enc.Latin1.stringify(checksumData))
+        != CryptoJS.enc.Latin1.stringify(checksum))
+        throw "Checksum mismatch!";
 
     // New cipher state is the last block of the ciphertext.
     return [CryptoJS.lib.WordArray.create([data.words[data.words.length - 2],
