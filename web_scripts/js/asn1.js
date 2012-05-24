@@ -494,12 +494,12 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
     var match = String(data).match(re);
     if (!match)
         throw "Bad date format";
-    var date = new Date(Number(match[1]),
-                        Number(match[2]) - 1,
-                        Number(match[3]),
-                        Number(match[4]),
-                        Number(match[5]),
-                        Number(match[6]));
+    var date = new Date(Date.UTC(Number(match[1]),
+                                 Number(match[2]) - 1,
+                                 Number(match[3]),
+                                 Number(match[4]),
+                                 Number(match[5]),
+                                 Number(match[6])));
     if (match[8]) {
         var ms = match[8];
         while (ms.length < 3)

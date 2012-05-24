@@ -51,12 +51,12 @@ KDC.asReq = function(username, success, error) {
 
     var now = new Date();
     now.setUTCMilliseconds(0);
-    var later = new Date(now.getUTCFullYear(),
-                         now.getUTCMonth(),
-                         now.getUTCDay() + 1,
-                         now.getUTCHours(),
-                         now.getUTCMinutes(),
-                         now.getUTCSeconds());
+    var later = new Date(Date.UTC(now.getUTCFullYear(),
+                                  now.getUTCMonth(),
+                                  now.getUTCDate() + 1,
+                                  now.getUTCHours(),
+                                  now.getUTCMinutes(),
+                                  now.getUTCSeconds()));
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
     try {
