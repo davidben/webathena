@@ -61,8 +61,10 @@ KDC.asReq = function(username, success, error) {
                          now.getUTCSeconds());
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    // FIXME: Cryptographically secure nonce.
-    asReq.reqBody.nonce = Math.floor(Math.random() * (1<<32));
+    // TODO: SJCL can throw if we don't have enough entropy. In that
+    // case we should retry a little later. We can also adjust the
+    // paranoia argument as necessary.
+    asReq.reqBody.nonce = sjcl.random.randomWords(1)[0];
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
