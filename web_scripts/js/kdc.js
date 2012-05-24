@@ -29,8 +29,7 @@ Crypto.randomNonce = function() {
         if (e instanceof sjcl.exception.notReady) {
             // TODO: We should retry a little later. We can also
             // adjust the paranoia argument.
-            window.setTimeout(function () { alert(String(e)); });
-            return;
+            throw 'not enough randomness';
         }
         throw e;
     }
@@ -77,7 +76,11 @@ KDC.asReq = function(username, success, error) {
                                   now.getUTCSeconds()));
     asReq.reqBody.from = now;
     asReq.reqBody.till = later;
-    asReq.reqBody.nonce = Crypto.randomNonce();
+    try {
+        asReq.reqBody.nonce = Crypto.randomNonce();
+    } catch(e) {
+        return error(e);
+    }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
@@ -113,7 +116,8 @@ KDC.getTGTSession = function (username, password, success, error) {
         // already have the password, but I believe in theory this could
         // be written so that we prompt on demand.)
         if(asRep.msgType == krb.KRB_MT_ERROR)
-            return error(asRep.eText + ' (' + asRep.errorCode + ')');
+            return error((asRep.eText || 'unknown').replace(/\0/g, '')
+                         + ' (' + asRep.errorCode + ')');
 
         // 3.1.5.  Receipt of KRB_AS_REP Message
 
@@ -266,7 +270,14 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
     tgsReq.reqBody.from = now;
     tgsReq.reqBody.till = later;
 
-    tgsReq.reqBody.nonce = Crypto.randomNonce();
+    try {
+        tgsReq.reqBody.nonce = Crypto.randomNonce();
+    } catch(e) {
+        // FIXME: Do we want this to be a normal exception? Also, it's poor
+        // form for the callback to be called sometimes on a new event loop
+        // iteration and sometimes not. You can get weird re-entrancy bugs.
+        return error(e);
+    }
     tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc];
 
     // Checksum the reqBody. Note: if our DER encoder isn't completely

@@ -37,6 +37,7 @@ $(function() {
         // Even if we throw an exception, don't submit the form.
         e.preventDefault();
 
+        $('#alert').slideUp(100);
         var username = $('#username')[0].value,
             password = $('#password')[0].value,
             fail = false;
@@ -66,10 +67,17 @@ $(function() {
             $('#submit').attr('disabled', null).text(text);
         };
         var onError = function(error) {
-            // TODO actual error reporting
-            if(error == 'Checksum mismatch!')
-                alert('Incorrect password!');
-            console.log("Error in AS_REQ: " + error);
+            error = String(error);
+            switch(error) {
+                case 'Checksum mismatch!':
+                    error = 'Incorrect password!';
+                    break;
+                case 'Client not found in Kerberos database (6)':
+                    error = 'Username does not exist!';
+                    break;
+            }
+            $('#alert #content').html('<b>Error logging in:</b><br>' + error);
+            $('#alert').slideDown(100);
             resetForm();
         };
         

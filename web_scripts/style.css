@@ -60,7 +60,7 @@ header {
     height: 160px;
     border-radius: 1em;
     box-shadow: 2pt 2pt 5pt black;
-    background: url(logo.png), white;
+    background: url(logo.png), #ddd;
     background: url(logo.png), -moz-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -webkit-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -ms-linear-gradient(top, #fff, #ddd);
@@ -84,8 +84,37 @@ h1 {
     text-shadow: 2pt 2pt 3pt #666, -2pt -2pt 3pt #222;
 }
 
-#login *, #authed * {
+header ~ * * {
     font-size: 14pt;
+}
+
+.error {
+    padding: 4pt;
+    box-shadow: 2pt 2pt 5pt black;
+    border-radius: 12pt;
+    display: none;
+    background: darkorange;
+    background: -moz-linear-gradient(top, orange, darkorange);
+    background: -webkit-linear-gradient(top, orange, darkorange);
+    background: -ms-linear-gradient(top, orange, darkorange);
+    background: -o-linear-gradient(top, orange, darkorange);
+}
+
+table.body {
+    margin: auto;
+    margin-top: 2em;
+    padding: 1em;
+}
+
+#alert td:first-child {
+    text-align: center;
+    font-size: 2em;
+    padding-right: 0.3em;
+}
+
+#alert #content {
+    text-align: left;
+    max-width: 300px;
 }
 
 #login {
@@ -95,10 +124,7 @@ h1 {
 }
 
 #login table {
-    margin: auto;
     text-align: right;
-    margin-top: 2em;
-    padding: 1em;
     box-shadow: 1pt 1pt 4pt black;
     background: tomato;
     background: -moz-linear-gradient(top, lightsalmon, tomato);
@@ -126,11 +152,6 @@ h1 {
     left: 100%;
     margin-left: 4pt;
     white-space: pre;
-    padding: 4pt;
-    background-color: orange;
-    box-shadow: 2pt 2pt 5pt black;
-    border-radius: 12pt;
-    display: none;
 }
 
 button {
@@ -141,10 +162,7 @@ button {
 }
 
 #authed {
-    margin: auto;
     text-align: center;
-    margin-top: 2em;
-    padding: 1em;
     display: none;
     box-shadow: 1pt 1pt 4pt black;
     background: olivedrab;
