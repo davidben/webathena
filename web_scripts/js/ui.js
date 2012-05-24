@@ -69,14 +69,14 @@ $(function() {
         };
         var onError = function(error) {
             // TODO actual error reporting
-	    if (error == "Checksum mismatch!")
-		alert(error);
+            if (error == "Checksum mismatch!")
+	        alert(error);
             console.log("Error in AS_REQ: " + error);
             resetForm();
         };
         
         KDC.getTGTSession(username, password, function(session) {
-	    console.log(session);
+            console.log(session);
 
             resetForm();
             $('#login').fadeOut();
