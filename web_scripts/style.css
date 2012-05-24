@@ -12,10 +12,6 @@ html, body {
     background: -o-linear-gradient(left, white, white) repeat-y, #909098;
 }
 
-* {
-    font-size: 14pt;
-}
-
 #whatis {
     text-align: right;
     margin-right: 20px;
@@ -24,6 +20,7 @@ html, body {
 
 #whatis a {
     text-decoration: none;
+    font-size: 16pt;
 }
 
 #info {
@@ -32,6 +29,22 @@ html, body {
     margin-bottom: 24px;
     text-transform: none;
     font-size: 12pt;
+}
+
+#info table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+#info table tr:nth-child(1) {
+    text-align: center;
+}
+#info table tr:nth-child(2) {
+    text-align: left;
+}
+
+#info td {
+    padding: 0 1em;
 }
 
 header {
@@ -69,6 +82,10 @@ h1 {
     font-size: 48pt;
     box-shadow: 1pt 1pt 4pt black;
     text-shadow: 2pt 2pt 3pt #666, -2pt -2pt 3pt #222;
+}
+
+#login *, #authed * {
+    font-size: 14pt;
 }
 
 #login {
