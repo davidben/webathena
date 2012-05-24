@@ -23,6 +23,22 @@ var KDC = {};
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
 
+KDC.Session = function (asRep, encRepPart) {
+    // Just store everything. Whatever.
+    this.crealm = asRep.crealm;
+    this.cname = asRep.cname;
+    this.ticket = asRep.ticket;
+
+    this.key = encRepPart.key;
+    this.flags = encRepPart.flags;
+    this.starttime = encRepPart.starttime;
+    this.endtime = encRepPart.endtime;
+    this.renewTill = encRepPart.renewTill;
+    this.srealm = encRepPart.srealm;
+    this.sname = encRepPart.sname;
+    this.caddr = encRepPart.caddr;
+};
+
 KDC.asReq = function(username, success, error) {
     var asReq = {};
     asReq.pvno = krb.pvno;
@@ -93,19 +109,91 @@ KDC.asReq = function(username, success, error) {
                     break;
                 case 'OK':
                     var der = Crypto.fromBase64(data.reply);
-                    var reply = krb.AS_REP_OR_ERROR.decodeDER(der)[1];
-                    var validate = KDC.validateAsReq(username, reply);
-                    if(validate)
-                        error(validate);
-                    else
-                        success(asReq, reply);
+                    success(asReq, krb.AS_REP_OR_ERROR.decodeDER(der)[1]);
                     break;
             }
         },
     });
 };
 
-KDC.validateAsReq = function(username, reply) {
+KDC.getTGTSession = function (username, password, success, error) {
+    KDC.asReq(username, function (asReq, asRep) {
+        var validate = KDC.validateAsRep(username, asRep);
+        if (validate) {
+            error(validate);
+            return;
+        }
+
+        // 3.1.5.  Receipt of KRB_AS_REP Message
+
+        // If any padata fields are present, they may be used to
+        // derive the proper secret key to decrypt the message.
+        if (asRep.padata) {
+            // TODO: Do something about this one.
+        }
+
+        // The default salt string, if none is provided via
+        // pre-authentication data, is the concatenation of the
+        // principal's realm and name components, in order, with
+        // no separators.
+        var salt = KDC.realm + username;
+        var encProfile = krb.encProfiles[asRep.encPart.etype];
+        if (encProfile === undefined) {
+            error('Unsupported enctype ' + asRep.encPart.etype);
+            return;
+        }
+
+        var key = encProfile.stringToKey(password, salt);
+        // The key usage value for encrypting this field is 3 in
+        // an AS-REP message, using the client's long-term key or
+        // another key selected via pre-authentication mechanisms.
+        var derivedKey = encProfile.deriveKey(key, krb.KU_AS_REQ_ENC_PART);
+
+        // The client decrypts the encrypted part of the response
+        // using its secret key...
+        try {
+            var t = encProfile.decrypt(
+                derivedKey,
+                encProfile.initialCipherState(derivedKey, false),
+                asRep.encPart.cipher);
+        } catch(e) {
+            error(e);
+            return;
+        }
+        // Some ciphers add padding, so we can't abort if there is
+        // data left over. Also allow an EncTGSRepPart because the
+        // MIT KDC is screwy.
+        var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
+
+	// ...and verifies that the nonce in the encrypted part
+	// matches the nonce it supplied in its request (to detect
+	// replays).
+        console.log(asReq);
+        console.log(encRepPart);
+	if (asReq.reqBody.nonce != encRepPart.nonce) {
+	    error('Bad nonce');
+	    return;
+	}
+
+	// It also verifies that the sname and srealm in the
+	// response match those in the request (or are otherwise
+	// expected values), and that the host address field is
+	// also correct.
+	if (!krb.principalNamesEqual(asReq.reqBody.sname, encRepPart.sname)) {
+	    error('Bad sname');
+	    return;
+	}
+
+	// It then stores the ticket, session key, start and
+	// expiration times, and other information for later use.
+	success(new KDC.Session(asRep, encRepPart));
+
+	// TODO: Do we want to do anything with last-req and
+	// authtime?
+    }, error);
+};
+
+KDC.validateAsRep = function(username, reply) {
     // TODO: Rearrange this code to interpret this error and stuff. We
     // may get a request for pre-authentication, in which case we
     // retry with pre-auth after prompting for the password. (We

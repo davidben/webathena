@@ -69,82 +69,19 @@ $(function() {
         };
         var onError = function(error) {
             // TODO actual error reporting
+	    if (error == "Checksum mismatch!")
+		alert(error);
             console.log("Error in AS_REQ: " + error);
             resetForm();
         };
         
-        KDC.asReq(username, function(asReq, reply) {
-            // 3.1.5.  Receipt of KRB_AS_REP Message
-
-            // If any padata fields are present, they may be used to
-            // derive the proper secret key to decrypt the message.
-            if (reply.padata) {
-                // TODO: Do something about this one.
-            }
-
-            // The default salt string, if none is provided via
-            // pre-authentication data, is the concatenation of the
-            // principal's realm and name components, in order, with
-            // no separators.
-            var salt = KDC.realm + username;
-            var encProfile = krb.encProfiles[reply.encPart.etype];
-            if (encProfile === undefined) {
-                onError('Unsupported enctype ' + reply.encPart.etype);
-                return;
-            }
-
-            var key = encProfile.stringToKey(password, salt);
-            // The key usage value for encrypting this field is 3 in
-            // an AS-REP message, using the client's long-term key or
-            // another key selected via pre-authentication mechanisms.
-            var derivedKey = encProfile.deriveKey(key, krb.KU_AS_REQ_ENC_PART);
-
-            // The client decrypts the encrypted part of the response
-            // using its secret key...
-            try {
-                var t = encProfile.decrypt(
-                    derivedKey,
-                    encProfile.initialCipherState(derivedKey, false),
-                    reply.encPart.cipher);
-            } catch(e) {
-                alert(e);
-                resetForm();
-                return;
-            }
-            // Some ciphers add padding, so we can't abort if there is
-            // data left over. Also allow an EncTGSRepPart because the
-            // MIT KDC is screwy.
-            var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
-            console.log(encRepPart);
-
-	    // ...and verifies that the nonce in the encrypted part
-	    // matches the nonce it supplied in its request (to detect
-	    // replays).
-	    if (asReq.nonce != encRepPart.nonce) {
-		onError('Bad nonce');
-		return;
-	    }
-
-	    // It also verifies that the sname and srealm in the
-	    // response match those in the request (or are otherwise
-	    // expected values), and that the host address field is
-	    // also correct.
-	    if (!krb.principalNamesEqual(asReq.sname, encRepPart.sname)) {
-		onError('Bad sname');
-		return;
-	    }
-
-	    // It then stores the ticket, session key, start and
-	    // expiration times, and other information for later use.
-	    // TODO: Actually do this.
-
-	    // TODO: Do we want to do anything with last-req and
-	    // authtime?
+        KDC.getTGTSession(username, password, function(session) {
+	    console.log(session);
 
             resetForm();
             $('#login').fadeOut();
             $('#authed').fadeIn();
-            $('#principal').text(reply.cname.nameString + '@' + reply.crealm);
+            $('#principal').text(session.cname.nameString + '@' + session.crealm);
         }, onError);
         return false;
     });
