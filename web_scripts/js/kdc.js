@@ -21,10 +21,10 @@ Crypto.fromBase64 = function(str) {
 Crypto.randomNonce = function() {
     try {
         var word = sjcl.random.randomWords(1)[0];
-	// Twos-complement it if negative.
-	if (word < 0)
-	    word += 0x80000000;
-	return word;
+        // Twos-complement it if negative.
+        if (word < 0)
+            word += 0x80000000;
+        return word;
     } catch (e) {
         if (e instanceof sjcl.exception.notReady) {
             // TODO: We should retry a little later. We can also
