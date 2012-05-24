@@ -30,14 +30,12 @@ $(function() {
         return false;
     });
     $('#logout button').click(function() {
-        window.location.reload();
+        window.location.reload(); // XXX
     });
     
-    $('#authed').fadeOut(0);
-    
     $('#login').submit(function(e) {
-	// Even if we throw an exception, don't submit the form.
-	e.preventDefault();
+        // Even if we throw an exception, don't submit the form.
+        e.preventDefault();
 
         var username = $('#username')[0].value,
             password = $('#password')[0].value,
@@ -70,7 +68,7 @@ $(function() {
         var onError = function(error) {
             // TODO actual error reporting
             if (error == "Checksum mismatch!")
-	        alert(error);
+                alert(error);
             console.log("Error in AS_REQ: " + error);
             resetForm();
         };

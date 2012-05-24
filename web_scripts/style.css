@@ -145,6 +145,7 @@ button {
     text-align: center;
     margin-top: 2em;
     padding: 1em;
+    display: none;
     box-shadow: 1pt 1pt 4pt black;
     background: olivedrab;
     background: -moz-linear-gradient(top, limegreen, olivedrab);
