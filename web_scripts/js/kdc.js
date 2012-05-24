@@ -40,6 +40,33 @@ var KDC = {};
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
 
+KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
+    $.ajax(KDC.urlBase + target, {
+        data: Crypto.toBase64(data),
+        error: function(xhr, status, error) {
+            var msg = status || 'unknown error';
+            if(error)
+                msg += ': ' + error;
+            error(msg);
+        },
+        success: function(data, status, xhr) {
+            switch(data.status) {
+            case 'ERROR':
+                error(data.msg);
+                break;
+            case 'TIMEOUT':
+                error('KDC connection timed out');
+                break;
+            case 'OK':
+                var der = Crypto.fromBase64(data.reply);
+                var reply = outputType.decodeDER(der)[1];
+                success(reply);
+                break;
+            }
+        },
+    });
+};
+
 KDC.asReq = function(username, success, error) {
     var asReq = {};
     asReq.pvno = krb.pvno;
@@ -82,30 +109,11 @@ KDC.asReq = function(username, success, error) {
         return error(e);
     }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
-    
-    $.ajax(KDC.urlBase + 'AS_REQ', {
-        data: Crypto.toBase64(krb.AS_REQ.encodeDER(asReq)),
-        error: function(xhr, status, error) {
-            var msg = status || 'unknown error';
-            if(error)
-                msg += ': ' + error;
-            error(msg);
-        },
-        success: function(data, status, xhr) {
-            switch(data.status) {
-                case 'ERROR':
-                    error(data.msg);
-                    break;
-                case 'TIMEOUT':
-                    error('KDC connection timed out');
-                    break;
-                case 'OK':
-                    var der = Crypto.fromBase64(data.reply);
-                    success(asReq, krb.AS_REP_OR_ERROR.decodeDER(der)[1]);
-                    break;
-            }
-        },
-    });
+
+    KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
+                        'AS_REQ', krb.AS_REP_OR_ERROR,
+                        function (asRep) { success(asReq, asRep); },
+                        error);
 };
 
 KDC.getTGTSession = function (username, password, success, error) {
@@ -304,28 +312,8 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
     tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                        padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
-    $.ajax(KDC.urlBase + 'TGS_REQ', {
-        data: Crypto.toBase64(krb.TGS_REQ.encodeDER(tgsReq)),
-        error: function(xhr, status, error) {
-            var msg = status || 'unknown error';
-            if(error)
-                msg += ': ' + error;
-            error(msg);
-        },
-        success: function(data, status, xhr) {
-            switch(data.status) {
-            case 'ERROR':
-                error(data.msg);
-                break;
-            case 'TIMEOUT':
-                error('KDC connection timed out');
-                break;
-            case 'OK':
-                var der = Crypto.fromBase64(data.reply);
-                var reply = krb.TGS_REP_OR_ERROR.decodeDER(der)[1];
-                console.log('TGS_REP', reply);
-                break;
-            }
-        },
-    });
+    KDC.kdcProxyRequest(krb.TGS_REQ.encodeDER(tgsReq),
+                        'TGS_REQ', krb.TGS_REP_OR_ERROR,
+                        function (tgsRep) { console.log(tgsRep); },
+                        error);
 };
