@@ -44,31 +44,7 @@ $(function() {
             console.log(username);
             console.log(reply);
 
-            if (reply.msgType == krb.KRB_MT_ERROR) {
-	        // TODO: Do something with this.
-	        console.log("Got KRB_ERROR");
-	        reset();
-	        return;
-            }
-
             // 3.1.5.  Receipt of KRB_AS_REP Message
-
-            // If the reply message type is KRB_AS_REP, then the
-            // client verifies that the cname and crealm fields in the
-            // cleartext portion of the reply match what it requested.
-            if (reply.crealm != KDC.realm) {
-                console.log("AS_REQ crealm does not match");
-                reset();
-                return;
-            }
-            if (reply.cname.nameType != krb.KRB_NT_PRINCIPAL ||
-                reply.cname.nameString.length != 1 ||
-                reply.cname.nameString[0] != username) {
-                console.log("AS_REQ cname does not match");
-                reset();
-                return;
-            }
-
 
             // If any padata fields are present, they may be used to
             // derive the proper secret key to decrypt the message.

@@ -103,6 +103,12 @@ KDC.validateAsReq = function(username, reply) {
     // be written so that we prompt on demand.)
     if(reply.msgType == krb.KRB_MT_ERROR)
         return reply.eText + ' (' + reply.errorCode + ')';
+
+    // 3.1.5.  Receipt of KRB_AS_REP Message
+
+    // If the reply message type is KRB_AS_REP, then the
+    // client verifies that the cname and crealm fields in the
+    // cleartext portion of the reply match what it requested.
     if(reply.crealm != KDC.realm)
         return 'crealm does not match';
     if(reply.cname.nameType != krb.KRB_NT_PRINCIPAL ||
