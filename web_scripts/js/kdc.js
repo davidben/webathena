@@ -222,7 +222,7 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
     auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
     auth.ctime.setUTCMilliseconds(0);
     if (subkey !== undefined) auth.subkey = subkey;
-    auth.seqNumber = seqNumber;
+    if (seqNumber !== undefined) auth.seqNumber = seqNumber;
 
     // Encode the authenticator.
     // FIXME: This is kinda tedious.
