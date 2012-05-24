@@ -263,6 +263,8 @@ krb.EncASRepPart = krb.EncKDCRepPart.tagged(asn1.tag(25, asn1.TAG_CONSTRUCTED,
                                                      asn1.TAG_APPLICATION));
 krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
                                                       asn1.TAG_APPLICATION));
+// The MIT KDC uses the wrong tag. Sigh.
+krb.EncASorTGSRepPart = new asn1.CHOICE([krb.EncASRepPart, krb.EncTGSRepPart]);
 
 // TODO: 5.5.1.  KRB_AP_REQ Definition
 
@@ -274,7 +276,10 @@ krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
 
 // TODO: 5.8.1.  KRB_CRED Definition
 
-// TODO: 7.5.1.  Key Usage Numbers
+// 7.5.1.  Key Usage Numbers
+// TODO: Transcribe the rest of these...
+krb.KU_AS_REQ_ENC_PART = 3;
+
 
 // 7.5.2.  PreAuthentication Data Types
 krb.PA_TGS_REQ                = 1;

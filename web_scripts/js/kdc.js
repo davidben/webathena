@@ -63,7 +63,7 @@ KDC.asReq = function(username, success, error) {
     asReq.reqBody.till = later;
     // FIXME: Cryptographically secure nonce.
     asReq.reqBody.nonce = Math.floor(Math.random() * (1<<32));
-    asReq.reqBody.etype = [18, 17, 16, 23, 1, 3, 2];
+    asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
         data: Crypto.toBase64(krb.AS_REQ.encodeDER(asReq)),
@@ -103,6 +103,12 @@ KDC.validateAsReq = function(username, reply) {
     // be written so that we prompt on demand.)
     if(reply.msgType == krb.KRB_MT_ERROR)
         return reply.eText + ' (' + reply.errorCode + ')';
+
+    // 3.1.5.  Receipt of KRB_AS_REP Message
+
+    // If the reply message type is KRB_AS_REP, then the
+    // client verifies that the cname and crealm fields in the
+    // cleartext portion of the reply match what it requested.
     if(reply.crealm != KDC.realm)
         return 'crealm does not match';
     if(reply.cname.nameType != krb.KRB_NT_PRINCIPAL ||
