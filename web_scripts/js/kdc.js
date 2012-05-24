@@ -199,6 +199,41 @@ KDC.Session = function (asRep, encRepPart) {
     this.caddr = encRepPart.caddr;
 };
 
+KDC.Session.prototype.makeAPReq = function (keyUsage,
+                                            cksum,
+                                            subkey,
+                                            seqNumber) {
+    var apReq = { };
+    apReq.pvno = krb.pvno;
+    apReq.msgType = krb.KRB_MT_AP_REQ;
+    apReq.apOptions = krb.APOptions.make();
+    apReq.ticket = this.ticket;
+
+    var auth = { };
+    auth.authenticatorVno = krb.pvno;
+    auth.crealm = this.crealm;
+    auth.cname = this.cname;
+    if (cksum !== undefined) auth.cksum = cksum;
+    auth.ctime = new Date();
+    auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
+    auth.ctime.setUTCMilliseconds(0);
+    if (subkey !== undefined) auth.subkey = subkey;
+    auth.seqNumber = seqNumber;
+
+    // Encode the authenticator.
+    // FIXME: This is kinda tedious.
+    var encProfile = krb.encProfiles[this.key.keytype];
+    if (encProfile === undefined)
+        throw "Unknown enctype " + this.key.keytype;
+    var derivedKey = encProfile.deriveKey(this.key.keyvalue, keyUsage);
+    apReq.authenticator = encProfile.encrypt(
+        derivedKey,
+        encProfile.initialCipherState(derivedKey, true),
+        krb.Authenticator.encodeDER(auth))[1];
+
+    return apReq;
+};
+
 KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     var tgsReq = { };
     tgsReq.pvno = krb.pvno;
@@ -206,7 +241,14 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
 
     // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
     // padata of PA-TGS-REQ.
-    tgsReq.padata = /* FIXME */ undefined;
+
+    // FIXME: Do we need a subkey and stuff? We can't forward the TGT
+    // session key to the random server. I'm still unclear on whether
+    // we have to do anything interesting to achieve that.
+    // TODO: Checksum the reqBody and pass it in.
+    var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ);
+    tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
+                       padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
     tgsReq.reqBody = { };
     // TODO: Flags?

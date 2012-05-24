@@ -41,8 +41,47 @@
 //  };
 //
 
+// 8.  Assigned Numbers
+krb.enctype = {};
+krb.enctype.des_cbc_crc                     =  1;
+krb.enctype.des_cbc_md4                     =  2;
+krb.enctype.des_cbc_md5                     =  3;
+krb.enctype.des3_cbc_md5                    =  5;
+krb.enctype.des3_cbc_sha1                   =  7;
+krb.enctype.dsaWithSHA1_CmsOID              =  9;
+krb.enctype.md5WithRSAEncryption_CmsOID     = 10;
+krb.enctype.sha1WithRSAEncryption_CmsOID    = 11;
+krb.enctype.rc2CBC_EnvOID                   = 12;
+krb.enctype.rsaEncryption_EnvOID            = 13;
+krb.enctype.rsaES_OAEP_ENV_OID              = 14;
+krb.enctype.des_ede3_cbc_Env_OID            = 15;
+krb.enctype.des3_cbc_sha1_kd                = 16;
+krb.enctype.aes128_cts_hmac_sha1_96         = 17;
+krb.enctype.aes256_cts_hmac_sha1_96         = 18;
+krb.enctype.rc4_hmac                        = 23;
+krb.enctype.rc4_hmac_exp                    = 24;
+krb.enctype.subkey_keymaterial              = 65;
+
+krb.sumtype = {};
+krb.sumtype.CRC32                         =  1;
+krb.sumtype.rsa_md4                       =  2;
+krb.sumtype.rsa_md4_des                   =  3;
+krb.sumtype.des_mac                       =  4;
+krb.sumtype.des_mac_k                     =  5;
+krb.sumtype.rsa_md4_des_k                 =  6;
+krb.sumtype.rsa_md5                       =  7;
+krb.sumtype.rsa_md5_des                   =  8;
+krb.sumtype.rsa_md5_des3                  =  9;
+krb.sumtype.sha1                          = 10;
+krb.sumtype.hmac_sha1_des3_kd             = 12;
+krb.sumtype.hmac_sha1_des3                = 13;
+krb.sumtype.sha1_2                        = 14;
+krb.sumtype.hmac_sha1_96_aes128           = 15;
+krb.sumtype.hmac_sha1_96_aes256           = 16;
+
 // 6.1.3.  CRC-32 Checksum
 krb.Crc32Checksum = {
+    sumtype: krb.sumtype.CRC32,
     checksumBytes: 4,
     getMic: function (key, msg) {
         // The CRC-32 checksum used in the des-cbc-crc encryption mode
@@ -288,49 +327,14 @@ krb._makeDesEncryptionProfile = function (checksum) {
 
 // 6.2.3.  DES with CRC
 krb.DesCbcCrcProfile = krb._makeDesEncryptionProfile(krb.Crc32Checksum);
+krb.DesCbcCrcProfile.enctype = krb.enctype.des_cbc_crc;
 krb.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
     return key;
 };
 
-// 8.  Assigned Numbers
-krb.enctype = {};
-krb.enctype.des_cbc_crc                     =  1;
-krb.enctype.des_cbc_md4                     =  2;
-krb.enctype.des_cbc_md5                     =  3;
-krb.enctype.des3_cbc_md5                    =  5;
-krb.enctype.des3_cbc_sha1                   =  7;
-krb.enctype.dsaWithSHA1_CmsOID              =  9;
-krb.enctype.md5WithRSAEncryption_CmsOID     = 10;
-krb.enctype.sha1WithRSAEncryption_CmsOID    = 11;
-krb.enctype.rc2CBC_EnvOID                   = 12;
-krb.enctype.rsaEncryption_EnvOID            = 13;
-krb.enctype.rsaES_OAEP_ENV_OID              = 14;
-krb.enctype.des_ede3_cbc_Env_OID            = 15;
-krb.enctype.des3_cbc_sha1_kd                = 16;
-krb.enctype.aes128_cts_hmac_sha1_96         = 17;
-krb.enctype.aes256_cts_hmac_sha1_96         = 18;
-krb.enctype.rc4_hmac                        = 23;
-krb.enctype.rc4_hmac_exp                    = 24;
-krb.enctype.subkey_keymaterial              = 65;
-
-// Where are these numbers used?
-krb.sumtype = {};
-krb.sumtype.CRC32                         =  1;
-krb.sumtype.rsa_md4                       =  2;
-krb.sumtype.rsa_md4_des                   =  3;
-krb.sumtype.des_mac                       =  4;
-krb.sumtype.des_mac_k                     =  5;
-krb.sumtype.rsa_md4_des_k                 =  6;
-krb.sumtype.rsa_md5                       =  7;
-krb.sumtype.rsa_md5_des                   =  8;
-krb.sumtype.rsa_md5_des3                  =  9;
-krb.sumtype.sha1                          = 10;
-krb.sumtype.hmac_sha1_des3_kd             = 12;
-krb.sumtype.hmac_sha1_des3                = 13;
-krb.sumtype.sha1_2                        = 14;
-krb.sumtype.hmac_sha1_96_aes128           = 15;
-krb.sumtype.hmac_sha1_96_aes256           = 16;
-
 // The supported encryption types.
 krb.encProfiles = { };
-krb.encProfiles[krb.enctype.des_cbc_crc] = krb.DesCbcCrcProfile;
+krb.encProfiles[krb.DesCbcCrcProfile.enctype] = krb.DesCbcCrcProfile;
+
+krb.checksumProfiles = { };
+krb.checksumProfiles[krb.Crc32Checksum.sumtype] = krb.Crc32Checksum;
