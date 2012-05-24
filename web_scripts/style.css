@@ -65,6 +65,12 @@ h1 {
     text-shadow: 2pt 2pt 3pt #666, -2pt -2pt 3pt #222;
 }
 
+#login {
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
 #login table {
     margin: auto;
     text-align: right;

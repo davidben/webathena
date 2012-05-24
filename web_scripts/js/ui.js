@@ -9,7 +9,7 @@ $(function() {
         window.location.reload();
     });
     
-    $('#authed').slideUp(0);
+    $('#authed').fadeOut(0);
     
     $('#login').submit(function() {
         var username = this.username.value,
@@ -91,8 +91,8 @@ $(function() {
             console.log(encRepPart);
 
             resetForm();
-            $('#login').slideUp();
-            $('#authed').slideDown();
+            $('#login').fadeOut();
+            $('#authed').fadeIn();
             $('#principal').text(reply.cname.nameString + '@' + reply.crealm);
         }, onError);
         return false;
