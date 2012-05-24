@@ -126,7 +126,7 @@ krb.Ticket = new asn1.SEQUENCE(
      {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(3))}]
 ).tagged(asn1.tag(1, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
 
-krb.TicketFlags = krb.KerberosFlags;
+krb.TicketFlags = krb.KerberosFlags.subtype();
 krb.TicketFlags.reserved = 0;
 krb.TicketFlags.forwardable = 1;
 krb.TicketFlags.forwarded = 2;
@@ -188,7 +188,7 @@ krb.TYPED_DATA = new asn1.SEQUENCE(
       optional: true}]);
 
 // 5.4.1.  KRB_KDC_REQ Definition
-krb.KDCOptions = krb.KerberosFlags;
+krb.KDCOptions = krb.KerberosFlags.subtype();
 krb.KDCOptions.reserved = 0;
 krb.KDCOptions.forwardable = 1;
 krb.KDCOptions.forwarded = 2;

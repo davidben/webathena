@@ -251,10 +251,7 @@ asn1.Type.prototype.tagged = function (tag) {
  * @return {asn1.Type} An constrained version of this.
  */
 asn1.Type.prototype.constrained = function (checkValue) {
-    function TempCtor() {
-    }
-    TempCtor.prototype = this;
-    var newType = new TempCtor();
+    var newType = this.subtype();
     var self = this;
 
     newType.encodeDERValue = function (object) {
@@ -267,6 +264,17 @@ asn1.Type.prototype.constrained = function (checkValue) {
         return object;
     }
     return newType;
+};
+
+/**
+ * Creates a new version of this type.
+ *
+ * @return {asn1.Type} A subtype of this type.
+ */
+asn1.Type.prototype.subtype = function () {
+    function TempCtor() { }
+    TempCtor.prototype = this;
+    return new TempCtor();
 };
 
 
