@@ -248,7 +248,13 @@ krb._mit_des_string_to_key = function (password, salt) {
                                              (keyWord2 & 0xfefefefe) >>> 1]);
     add_parity_bits(key);
     key_correction(key);
-    return key;
+    // These guys get serialized to/from ASN.1, so we need to end with
+    // strings.
+
+    // TODO: Add functions to the encryption profile to convert
+    // between a key's OCTET STRING form and the native one. This is a
+    // little silly.
+    return CryptoJS.enc.Latin1.stringify(key);
 };
 
 krb._des_string_to_key = function (password, salt, params) {
@@ -283,6 +289,9 @@ krb._makeDesEncryptionProfile = function (checksum) {
     // profile.initialCipherState varies.
     profile.checksum = checksum;
     profile.decrypt = function (key, state, data) {
+        key = CryptoJS.enc.Latin1.parse(key);
+        state = CryptoJS.enc.Latin1.parse(state);
+
         // data is a String where only the last byte matters.
         data = CryptoJS.enc.Latin1.parse(data);
         var cipherParams = CryptoJS.lib.CipherParams.create({
@@ -316,10 +325,62 @@ krb._makeDesEncryptionProfile = function (checksum) {
             throw "Checksum mismatch!";
 
         // New cipher state is the last block of the ciphertext.
+        state = CryptoJS.lib.WordArray.create(
+            [data.words[data.words.length - 2],
+             data.words[data.words.length - 1]]);
         return [
-            CryptoJS.lib.WordArray.create([data.words[data.words.length - 2],
-                                           data.words[data.words.length - 1]]),
+            CryptoJS.enc.Latin1.stringify(state),
             CryptoJS.enc.Latin1.stringify(message)
+        ];
+    };
+    profile.encrypt = function (key, state, data) {
+        key = CryptoJS.enc.Latin1.parse(key);
+        state = CryptoJS.enc.Latin1.parse(state);
+
+        // First, add a confounder and space for the checksum.
+        var words = sjcl.random.randomWords(2);
+        for (var i = 0; i < checksumWords; i++) {
+            words.push(0);
+        }
+
+        var plaintext = CryptoJS.lib.WordArray.create(words);
+        // Now the message. It's our usual String-as-byte-array.
+        plaintext.concat(CryptoJS.enc.Latin1.parse(data));
+
+        // Pad with random gunk to 8 octets.
+        var remainder = 8 - (plaintext.sigBytes % 8);
+        if (remainder == 8)
+            remainder = 0;
+        var remainderWords = remainder + 3;
+        remainderWords -= (remainderWords % 4);
+        remainderWords /= 4;
+        plaintext.concat(CryptoJS.lib.WordArray.create(
+            sjcl.random.randomWords(remainderWords),
+            remainder));
+
+        // Compute a checksum of the message, and stick it in the
+        // plaintext.
+        // FIXME: This converts between string and WordArray a
+        // lot. Perhaps we should just standardize on the latter, much
+        // of a pain as it is to use sometimes.
+        var cksum = CryptoJS.enc.Latin1.parse(
+            this.checksum.getMic(
+                key, CryptoJS.enc.Latin1.stringify(plaintext)));
+        for (var i = 0; i < checksumWords; i++) {
+            plaintext.words[2 + i] = cksum.words[i];
+        }
+
+        // Finally, encrypt the checksummed plaintext.
+        var encrypted = CryptoJS.DES.encrypt(
+            plaintext, key, { iv: state, padding: CryptoJS.pad.NoPadding });
+
+        // New cipher state is the last block of the ciphertext.
+        state = CryptoJS.lib.WordArray.create(
+            [encrypted.ciphertext[encrypted.ciphertext.words.length - 2],
+             encrypted.ciphertext[encrypted.ciphertext.words.length - 1]]);
+        return [
+            CryptoJS.enc.Latin1.stringify(state),
+            CryptoJS.enc.Latin1.stringify(encrypted.ciphertext)
         ];
     };
     return profile;
