@@ -33,8 +33,8 @@ $(function() {
     $('#authed').fadeOut(0);
     
     $('#login').submit(function() {
-        var username = this.username.value,
-            password = this.password.value,
+        var username = $('#username')[0].value,
+            password = $('#password')[0].value,
             fail = false;
         if(!username) {
             $('#username + .error').fadeIn();
@@ -51,7 +51,7 @@ $(function() {
         if(fail)
             return false;
         
-        this.password.value = '';
+        $('#password')[0].value = '';
         var text = $('#submit').text();
         $('#submit').attr('disabled', 'disabled').text('.');
         var interval = setInterval(function() {
