@@ -1,5 +1,5 @@
 /*
-CryptoJS v3.0.1
+CryptoJS v3.x
 code.google.com/p/crypto-js
 (c) 2009-2012 by Jeff Mott. All rights reserved.
 code.google.com/p/crypto-js/wiki/License
@@ -76,6 +76,9 @@ code.google.com/p/crypto-js/wiki/License
          *     var wordArray = CryptoJS.enc.Base64.parse(base64String);
          */
         parse: function (base64Str) {
+            // Remove newlines
+            base64Str = base64Str.replace(/[\r\n]/g, '');
+
             // Shortcuts
             var base64StrLength = base64Str.length;
             var map = this._map;
