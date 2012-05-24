@@ -23,22 +23,6 @@ var KDC = {};
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
 
-KDC.Session = function (asRep, encRepPart) {
-    // Just store everything. Whatever.
-    this.crealm = asRep.crealm;
-    this.cname = asRep.cname;
-    this.ticket = asRep.ticket;
-
-    this.key = encRepPart.key;
-    this.flags = encRepPart.flags;
-    this.starttime = encRepPart.starttime;
-    this.endtime = encRepPart.endtime;
-    this.renewTill = encRepPart.renewTill;
-    this.srealm = encRepPart.srealm;
-    this.sname = encRepPart.sname;
-    this.caddr = encRepPart.caddr;
-};
-
 KDC.asReq = function(username, success, error) {
     var asReq = {};
     asReq.pvno = krb.pvno;
@@ -211,4 +195,50 @@ KDC.validateAsRep = function(username, reply) {
        reply.cname.nameString.length != 1 ||
        reply.cname.nameString[0] != username)
         return 'cname does not match';
+};
+
+
+KDC.Session = function (asRep, encRepPart) {
+    // Just store everything. Whatever.
+    this.crealm = asRep.crealm;
+    this.cname = asRep.cname;
+    this.ticket = asRep.ticket;
+
+    this.key = encRepPart.key;
+    this.flags = encRepPart.flags;
+    this.starttime = encRepPart.starttime;
+    this.endtime = encRepPart.endtime;
+    this.renewTill = encRepPart.renewTill;
+    this.srealm = encRepPart.srealm;
+    this.sname = encRepPart.sname;
+    this.caddr = encRepPart.caddr;
+};
+
+KDC.Session.prototype.getServiceSession = function (blah, success, error) {
+    var tgsReq = { };
+    tgsReq.pvno = krb.pvno;
+    tgsReq.msgType = krb.KRB_MT_TGS_REQ;
+
+    // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
+    // padata of PA-TGS-REQ.
+    tgsReq.padata = /* FIXME */ undefined;
+
+    tgsReq.reqBody = { };
+    tgsReq.reqBody.kdcOptions = krb.KerberosFlags.makeZeroFlags(32);
+    // TODO: The rest of this function.
+
+
+    try {
+	// Avoid negative numbers... ASN.1 errors and stuff.
+	asReq.reqBody.nonce = sjcl.random.randomWords(1)[0] & 0x7fffffff;
+    } catch (e) {
+	if (e instanceof sjcl.exception.notReady) {
+	    // TODO: We should retry a little later. We can also
+	    // adjust the paranoia argument.
+	    window.setTimeout(function () { error(String(e)); });
+	    return;
+	}
+	throw e;
+    }
+
 };
