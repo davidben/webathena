@@ -16,6 +16,17 @@ krb.PrincipalName = new asn1.SEQUENCE(
     [{id: 'nameType', type: krb.Int32.tagged(asn1.tag(0))},
      {id: 'nameString',
       type: new asn1.SEQUENCE_OF(krb.KerberosString).tagged(asn1.tag(1))}]);
+krb.principalNamesEqual = function (a, b) {
+    if (a.nameType != b.nameType)
+        return false;
+    if (a.nameString.length != b.nameString.length)
+        return false;
+    for (var i = 0; i < a.nameString.length; i++) {
+        if (a.nameString[i] != b.nameString[i])
+            return false;
+    }
+    return true;
+}
 
 // 5.2.3.  KerberosTime
 krb.KerberosTime = asn1.GeneralizedTime.constrained(function (date) {

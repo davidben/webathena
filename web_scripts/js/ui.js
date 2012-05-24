@@ -73,7 +73,7 @@ $(function() {
             resetForm();
         };
         
-        KDC.asReq(username, function(reply) {
+        KDC.asReq(username, function(asReq, reply) {
             // 3.1.5.  Receipt of KRB_AS_REP Message
 
             // If any padata fields are present, they may be used to
@@ -116,6 +116,30 @@ $(function() {
             // MIT KDC is screwy.
             var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
             console.log(encRepPart);
+
+	    // ...and verifies that the nonce in the encrypted part
+	    // matches the nonce it supplied in its request (to detect
+	    // replays).
+	    if (asReq.nonce != encRepPart.nonce) {
+		onError('Bad nonce');
+		return;
+	    }
+
+	    // It also verifies that the sname and srealm in the
+	    // response match those in the request (or are otherwise
+	    // expected values), and that the host address field is
+	    // also correct.
+	    if (!krb.principalNamesEqual(asReq.sname, encRepPart.sname)) {
+		onError('Bad sname');
+		return;
+	    }
+
+	    // It then stores the ticket, session key, start and
+	    // expiration times, and other information for later use.
+	    // TODO: Actually do this.
+
+	    // TODO: Do we want to do anything with last-req and
+	    // authtime?
 
             resetForm();
             $('#login').fadeOut();

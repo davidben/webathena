@@ -98,7 +98,7 @@ KDC.asReq = function(username, success, error) {
                     if(validate)
                         error(validate);
                     else
-                        success(reply);
+                        success(asReq, reply);
                     break;
             }
         },
