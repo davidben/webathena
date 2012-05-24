@@ -1,6 +1,27 @@
 "use strict";
 
 $(function() {
+    $('<img src="eye-small.png">').css({ left: 78, top: 12 })
+                                  .appendTo('#logo');
+    $('<img src="eye-large.png">').css({ left: 87, top: 16 })
+                                  .appendTo('#logo');
+    $('<img src="eye-large.png">').css({ left: 105, top: 16 })
+                                  .appendTo('#logo');
+    $('<img src="eye-small.png">').css({ left: 121, top: 12 })
+                                  .appendTo('#logo');
+    $(document).mousemove(function(event) {
+        $('#logo img').each(function() {
+            var dx = event.pageX - $(this).offset().left - $(this).width() / 2,
+                dy = event.pageY - $(this).offset().top - $(this).height() / 2,
+                transform = 'rotate(' + Math.atan2(dx, -dy) + 'rad)';
+            $(this).css({ transform: transform,
+                          '-moz-transform': transform,
+                          '-webkit-transform': transform,
+                          '-ms-transform': transform,
+                          '-o-transform': transform });
+        });
+    });
+    
     $('#whatis a').click(function() {
         $('#info').slideToggle();
         return false;

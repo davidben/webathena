@@ -43,13 +43,19 @@ header {
     z-index: 1;
     top: -24px;
     left: 1em;
+    width: 160px;
+    height: 160px;
     border-radius: 1em;
     box-shadow: 2pt 2pt 5pt black;
-    background: white;
-    background: -moz-linear-gradient(top, #fff, #ddd);
-    background: -webkit-linear-gradient(top, #fff, #ddd);
-    background: -ms-linear-gradient(top, #fff, #ddd);
-    background: -o-linear-gradient(top, #fff, #ddd);
+    background: url(logo.png), white;
+    background: url(logo.png), -moz-linear-gradient(top, #fff, #ddd);
+    background: url(logo.png), -webkit-linear-gradient(top, #fff, #ddd);
+    background: url(logo.png), -ms-linear-gradient(top, #fff, #ddd);
+    background: url(logo.png), -o-linear-gradient(top, #fff, #ddd);
+}
+
+#logo img {
+    position: absolute;
 }
 
 h1 {
