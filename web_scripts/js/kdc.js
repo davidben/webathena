@@ -79,7 +79,7 @@ KDC.asReq = function(username, success, error) {
     try {
         asReq.reqBody.nonce = Crypto.randomNonce();
     } catch(e) {
-        error(e);
+        return error(e);
     }
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
     
@@ -264,6 +264,6 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     try {
         tgsReq.reqBody.nonce = Crypto.randomNonce();
     } catch(e) {
-        error(e);
+        return error(e);
     }
 };
