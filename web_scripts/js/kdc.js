@@ -229,18 +229,59 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
     if (encProfile === undefined)
         throw "Unknown enctype " + this.key.keytype;
     var derivedKey = encProfile.deriveKey(this.key.keyvalue, keyUsage);
-    apReq.authenticator = encProfile.encrypt(
-        derivedKey,
-        encProfile.initialCipherState(derivedKey, true),
-        krb.Authenticator.encodeDER(auth))[1];
+    apReq.authenticator = {
+        etype: encProfile.enctype,
+        // kvno??
+        cipher: encProfile.encrypt(
+            derivedKey,
+            encProfile.initialCipherState(derivedKey, true),
+            krb.Authenticator.encodeDER(auth))[1]
+    };
 
     return apReq;
 };
 
-KDC.Session.prototype.getServiceSession = function (blah, success, error) {
+KDC.Session.prototype.getServiceSession = function (service, success, error) {
     var tgsReq = { };
     tgsReq.pvno = krb.pvno;
     tgsReq.msgType = krb.KRB_MT_TGS_REQ;
+
+    tgsReq.reqBody = { };
+    // TODO: What flags?
+    tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
+    // For now just pass service in a pair of [PrincipalName,
+    // Realm]. We need to be able to parse these things though.
+    tgsReq.reqBody.sname = service[0];
+    tgsReq.reqBody.realm = service[1];
+
+    // TODO: Don't hardcode this either?
+    var now = new Date();
+    now.setUTCMilliseconds(0);
+    var later = new Date(Date.UTC(now.getUTCFullYear(),
+                                  now.getUTCMonth(),
+                                  now.getUTCDate() + 1,
+                                  now.getUTCHours(),
+                                  now.getUTCMinutes(),
+                                  now.getUTCSeconds()));
+    tgsReq.reqBody.from = now;
+    tgsReq.reqBody.till = later;
+
+    tgsReq.reqBody.nonce = Crypto.randomNonce();
+    tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc];
+
+    // Checksum the reqBody. Note: if our DER encoder isn't completely
+    // correct, the proxy will re-encode it and possibly mess up the
+    // checksum. This is probably a little poor.
+    var encProfile = krb.encProfiles[this.key.keytype];
+    if (encProfile === undefined)
+        throw "Unknown enctype " + this.key.keytype;
+    var derivedKey = encProfile.deriveKey(this.key.keyvalue,
+                                          krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM);
+    var checksum = {
+        cksumtype: encProfile.checksum.sumtype,
+        checksum: encProfile.checksum.getMic(
+            derivedKey, krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody))
+    };
 
     // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
     // padata of PA-TGS-REQ.
@@ -248,14 +289,32 @@ KDC.Session.prototype.getServiceSession = function (blah, success, error) {
     // FIXME: Do we need a subkey and stuff? We can't forward the TGT
     // session key to the random server. I'm still unclear on whether
     // we have to do anything interesting to achieve that.
-    // TODO: Checksum the reqBody and pass it in.
-    var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ);
+    var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
     tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                        padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
-    tgsReq.reqBody = { };
-    // TODO: Flags?
-    tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
-    // TODO: The rest of this function.
-    tgsReq.reqBody.nonce = Crypto.randomNonce();
+    $.ajax(KDC.urlBase + 'TGS_REQ', {
+        data: Crypto.toBase64(krb.TGS_REQ.encodeDER(tgsReq)),
+        error: function(xhr, status, error) {
+            var msg = status || 'unknown error';
+            if(error)
+                msg += ': ' + error;
+            error(msg);
+        },
+        success: function(data, status, xhr) {
+            switch(data.status) {
+            case 'ERROR':
+                error(data.msg);
+                break;
+            case 'TIMEOUT':
+                error('KDC connection timed out');
+                break;
+            case 'OK':
+                var der = Crypto.fromBase64(data.reply);
+                var reply = krb.TGS_REP_OR_ERROR.decodeDER(der)[1];
+                console.log('TGS_REP', reply);
+                break;
+            }
+        },
+    });
 };

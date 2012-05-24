@@ -73,13 +73,13 @@ $(function() {
             resetForm();
         };
         
-        KDC.getTGTSession(username, password, function(session) {
-            console.log(session);
+        KDC.getTGTSession(username, password, function(tgtSession) {
+            console.log(tgtSession);
 
             resetForm();
             $('#login').fadeOut();
             $('#authed').fadeIn();
-            $('#principal').text(session.cname.nameString + '@' + session.crealm);
+            $('#principal').text(tgtSession.cname.nameString + '@' + tgtSession.crealm);
         }, onError);
         return false;
     });

@@ -276,10 +276,12 @@ krb._des_string_to_key = function (password, salt, params) {
     }
 };
 
-krb._makeDesEncryptionProfile = function (checksum) {
-    if (checksum.checksumBytes % 4 != 0)
+krb._makeDesEncryptionProfile = function (checksumProfile) {
+    // Note: checksumProfile is the checksum for encrypting with DES,
+    // not the required checksum.
+    if (checksumProfile.checksumBytes % 4 != 0)
         throw "Checksum not an integer number of words";
-    var checksumWords = checksum.checksumBytes / 4;
+    var checksumWords = checksumProfile.checksumBytes / 4;
 
     var profile = {};
     profile.stringToKey = krb._des_string_to_key;
@@ -287,7 +289,6 @@ krb._makeDesEncryptionProfile = function (checksum) {
         return key;
     };
     // profile.initialCipherState varies.
-    profile.checksum = checksum;
     profile.decrypt = function (key, state, data) {
         key = CryptoJS.enc.Latin1.parse(key);
         state = CryptoJS.enc.Latin1.parse(state);
@@ -319,7 +320,7 @@ krb._makeDesEncryptionProfile = function (checksum) {
         for (var i = 0; i < checksumWords; i++) {
             checksumData.words[2 + i] = 0;
         }
-        if (!this.checksum.verifyMic(
+        if (!checksumProfile.verifyMic(
             key, CryptoJS.enc.Latin1.stringify(checksumData),
             CryptoJS.enc.Latin1.stringify(checksum)))
             throw "Checksum mismatch!";
@@ -364,7 +365,7 @@ krb._makeDesEncryptionProfile = function (checksum) {
         // lot. Perhaps we should just standardize on the latter, much
         // of a pain as it is to use sometimes.
         var cksum = CryptoJS.enc.Latin1.parse(
-            this.checksum.getMic(
+            checksumProfile.getMic(
                 key, CryptoJS.enc.Latin1.stringify(plaintext)));
         for (var i = 0; i < checksumWords; i++) {
             plaintext.words[2 + i] = cksum.words[i];
@@ -386,12 +387,62 @@ krb._makeDesEncryptionProfile = function (checksum) {
     return profile;
 };
 
+// 6.2.4.  RSA MD5 Cryptographic Checksum Using DES
+krb.RsaMd5DesChecksum = {
+    sumtype: krb.sumtype.rsa_md5_des,
+    checksumBytes: 24,
+    getMic: function (key, msg) {
+        // XOR key with 0xf0f0f0f0f0f0f0f0
+        key = CryptoJS.enc.Latin1.parse(key);
+        for (var i = 0; i < key.words.length; i++) {
+            key.words[i] = key.words[i] ^ 0xf0f0f0f0;
+        }
+        // 8 octet confounder
+        var conf = CryptoJS.lib.WordArray.create(sjcl.random.randomWords(2));
+
+        // rsa-md5(conf | msg)
+        var hashInput = conf.clone();
+        hashInput.concat(CryptoJS.enc.Latin1.parse(msg));
+        var hash = CryptoJS.MD5(hashInput);
+
+        // And encrypt conf|hash with DES, IV of zero.
+        conf.concat(hash);
+        var iv = CryptoJS.lib.WordArray.create([0, 0]);
+
+        return CryptoJS.enc.Latin1.stringify(
+            CryptoJS.DES.encrypt(
+                conf, key, { iv: iv, padding: CryptoJS.pad.NoPadding }
+            ).ciphertext);
+    },
+    verifyMic: function (key, msg, token) {
+        // XOR key with 0xf0f0f0f0f0f0f0f0
+        key = CryptoJS.enc.Latin1.parse(key);
+        token = CryptoJS.enc.Latin1.parse(token);
+        for (var i = 0; i < key.words.length; i++) {
+            key.words[i] = key.words[i] ^ 0xf0f0f0f0;
+        }
+
+        // Decrypt.
+        var iv = CryptoJS.lib.WordArray.create([0, 0]);
+        var decrypted = CryptoJS.DES.decrypt(
+            CryptoJS.lib.CipherParams.create({ ciphertext: token }),
+            key, { iv: iv, padding: CryptoJS.pad.NoPadding });
+
+        // Check the checksum.
+        var hashIn = CryptoJS.lib.WordArray.create(decrypted.words.slice(0, 2));
+        hashIn.concat(CryptoJS.enc.Latin1.parse(msg));
+        var hash = CryptoJS.lib.WordArray.create(decrypted.slice(2));
+        return hash.toString() == CryptoJS.MD5(hashIn).toString();
+    }
+};
+
 // 6.2.3.  DES with CRC
 krb.DesCbcCrcProfile = krb._makeDesEncryptionProfile(krb.Crc32Checksum);
 krb.DesCbcCrcProfile.enctype = krb.enctype.des_cbc_crc;
 krb.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
     return key;
 };
+krb.DesCbcCrcProfile.checksum = krb.RsaMd5DesChecksum;
 
 // The supported encryption types.
 krb.encProfiles = { };
@@ -399,3 +450,4 @@ krb.encProfiles[krb.DesCbcCrcProfile.enctype] = krb.DesCbcCrcProfile;
 
 krb.checksumProfiles = { };
 krb.checksumProfiles[krb.Crc32Checksum.sumtype] = krb.Crc32Checksum;
+krb.checksumProfiles[krb.RsaMd5DesChecksum.sumtype] = krb.RsaMd5DesChecksum;

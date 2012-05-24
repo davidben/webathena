@@ -336,6 +336,7 @@ krb.Authenticator = new asn1.SEQUENCE(
 // 7.5.1.  Key Usage Numbers
 // TODO: Transcribe the rest of these...
 krb.KU_AS_REQ_ENC_PART = 3;
+krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM = 6;
 krb.KU_TGS_REQ_PA_TGS_REQ = 7;
 
 
