@@ -12,6 +12,7 @@
         <script src="js/jquery.min.js"></script>
         <script src="js/sjcl.js"></script>
         <script>
+            sjcl.random.startCollectors();
             window.getRandomBytes = function(nBytes) {
                 return sjcl.random.randomWords(Math.ceil(nBytes / 4));
             };
