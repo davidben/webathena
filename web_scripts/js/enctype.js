@@ -41,32 +41,6 @@
 //  };
 //
 
-// 5.4.  Checksum Profiles Based on Simplified Profile
-krb.checksumFromSimplifiedProfile = function (simplifiedProfile) {
-};
-
-// 5.3.  Cryptosystem Profile Based on Simplified Profile
-krb.cryptosystemFromSimplifiedProfile = function (simplifiedProfile) {
-    var encryptionProfile = {
-        keyGenerationSeedLength: simplifiedProfile.keyGenerationSeedLength,
-        checksumMechanism: checksumFromSimplifiedProfile(simplifiedProfile),
-        initialCipherState: /* all bits zero */ undefined,
-        encrypt: function (specificKey, state, string) {
-        },
-        decrypt: function (specificKey, state, string) {
-        },
-        defaultStringToKeyParameters:
-            simplifiedProfile.defaultStringToKeyParameters,
-        pseudoRandom: function (protocolKey, string) {
-        },
-        stringToKey: simplifiedProfile.stringToKey,
-        randomToKey: simplifiedProfile.randomToKey,
-        deriveKey: function (protocolKey, number) {
-        }
-    };
-    return encryptionProfile;
-};
-
 // 6.1.3.  CRC-32 Checksum
 krb.Crc32Checksum = {
     checksumBytes: 4,
