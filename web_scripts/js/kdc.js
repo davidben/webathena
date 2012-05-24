@@ -48,10 +48,8 @@ KDC.asReq = function(username, success, error) {
 
     // FIXME: This is obnoxious. Also constants.
     asReq.reqBody = {};
-    asReq.reqBody.kdcOptions = [];
-    for(var i = 0; i < 32; i++)
-        asReq.reqBody.kdcOptions.push(0);
-    // TODO: Pick a reasonable set of keys. These are just taken from
+    asReq.reqBody.kdcOptions = krb.KerberosFlags.makeZeroFlags(32);
+    // TODO: Pick a reasonable set of flags. These are just taken from
     // a wireshark trace.
     asReq.reqBody.kdcOptions[krb.KDCOptions.forwardable] = 1;
     asReq.reqBody.kdcOptions[krb.KDCOptions.proxiable] = 1;

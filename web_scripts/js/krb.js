@@ -109,6 +109,14 @@ krb.KerberosFlags = asn1.BIT_STRING.constrained(function (bs) {
     if (bs.length < 32)
         throw "Invalid KerberosFlags";
 });
+krb.KerberosFlags.makeZeroFlags = function (num) {
+    num = num || 32;
+    var words = [];
+    for (var i = 0; i < num; i++) {
+        words.push(0);
+    }
+    return words;
+};
 
 // 5.3.  Tickets
 krb.Ticket = new asn1.SEQUENCE(
