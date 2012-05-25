@@ -338,7 +338,8 @@ krb.Authenticator = new asn1.SEQUENCE(
 krb.KU_AS_REQ_ENC_PART = 3;
 krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM = 6;
 krb.KU_TGS_REQ_PA_TGS_REQ = 7;
-
+krb.KU_TGS_REQ_ENC_PART = 8;
+krb.KU_TGS_REQ_ENC_PART_SUBKEY = 9;
 
 // 7.5.2.  PreAuthentication Data Types
 krb.PA_TGS_REQ                = 1;

@@ -209,10 +209,15 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
     // If the reply message type is KRB_AS_REP, then the
     // client verifies that the cname and crealm fields in the
     // cleartext portion of the reply match what it requested.
-    if(kdcRep.crealm != kdcReq.reqBody.realm)
-        throw 'crealm does not match';
-    if(!krb.principalNamesEqual(kdcReq.reqBody.principalName, kdcRep.cname))
-        throw 'cname does not match';
+    if (kdcReq.reqBody.principalName) {
+        // If we didn't send principalName (because it was a TGS_REQ)
+        // do we still check stuff?
+        if(kdcRep.crealm != kdcReq.reqBody.realm)
+            throw 'crealm does not match';
+        if(!krb.principalNamesEqual(kdcReq.reqBody.principalName,
+                                    kdcRep.cname))
+            throw 'cname does not match';
+    }
 
     // If any padata fields are present, they may be used to
     // derive the proper secret key to decrypt the message.
@@ -228,8 +233,6 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
     // ...and verifies that the nonce in the encrypted part
     // matches the nonce it supplied in its request (to detect
     // replays).
-    console.log('kdcReq', kdcReq);
-    console.log('encRepPart', encRepPart);
     if (kdcReq.reqBody.nonce != encRepPart.nonce)
         throw 'nonce does not match';
 
@@ -343,8 +346,26 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
     tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                        padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
-    KDC.kdcProxyRequest(krb.TGS_REQ.encodeDER(tgsReq),
-                        'TGS_REQ', krb.TGS_REP_OR_ERROR,
-                        function (tgsRep) { console.log(tgsRep); },
-                        error);
+    var self = this;
+    KDC.kdcProxyRequest(
+        krb.TGS_REQ.encodeDER(tgsReq),
+        'TGS_REQ', krb.TGS_REP_OR_ERROR,
+        function (tgsRep) {
+            // When the KRB_TGS_REP is received by the client, it is
+            // processed in the same manner as the KRB_AS_REP
+            // processing described above.  The primary difference is
+            // that the ciphertext part of the response must be
+            // decrypted using the sub-session key from the
+            // Authenticator, if it was specified in the request, or
+            // the session key from the TGT, rather than the client's
+            // secret key.
+            try {
+                // If we use a subkey, the usage might change I think.
+                return success(KDC.sessionFromKDCRep(
+                    self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep));
+            } catch (e) {
+                return error(e);
+            }
+        },
+        error);
 };
