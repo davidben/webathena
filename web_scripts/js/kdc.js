@@ -175,31 +175,6 @@ KDC.asReq = function(username, success, error) {
 
 KDC.getTGTSession = function (username, password, success, error) {
     KDC.asReq(username, function (asReq, asRep) {
-        // TODO: Rearrange this code to interpret this error and stuff. We
-        // may get a request for pre-authentication, in which case we
-        // retry with pre-auth after prompting for the password. (We
-        // already have the password, but I believe in theory this could
-        // be written so that we prompt on demand.)
-        if(asRep.msgType == krb.KRB_MT_ERROR)
-            return error((asRep.eText || 'unknown').replace(/\0/g, '')
-                         + ' (' + asRep.errorCode + ')');
-
-        // 3.1.5.  Receipt of KRB_AS_REP Message
-
-        // If the reply message type is KRB_AS_REP, then the
-        // client verifies that the cname and crealm fields in the
-        // cleartext portion of the reply match what it requested.
-        if(asRep.crealm != asReq.reqBody.realm)
-            return error('crealm does not match');
-        if(!krb.principalNamesEqual(asReq.reqBody.principalName, asRep.cname))
-            return error('cname does not match');
-
-        // If any padata fields are present, they may be used to
-        // derive the proper secret key to decrypt the message.
-        if (asRep.padata) {
-            // TODO: Do something about this one.
-        }
-
         // The default salt string, if none is provided via
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with
@@ -207,43 +182,70 @@ KDC.getTGTSession = function (username, password, success, error) {
         var salt = asReq.reqBody.realm + username;
         var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt);
 
-        // The client decrypts the encrypted part of the response
-        // using its secret key...
+        // The key usage value for encrypting this field is 3 in
+        // an AS-REP message, using the client's long-term key or
+        // another key selected via pre-authentication mechanisms.
         try {
-            // The key usage value for encrypting this field is 3 in
-            // an AS-REP message, using the client's long-term key or
-            // another key selected via pre-authentication mechanisms.
-
-            // Allow an EncTGSRepPart because the MIT KDC is screwy.
-            var encRepPart = key.decryptAs(krb.EncASorTGSRepPart,
-                                           krb.KU_AS_REQ_ENC_PART,
-                                           asRep.encPart)[1];
-        } catch(e) {
+            return success(KDC.sessionFromKDCRep(
+                key, krb.KU_AS_REQ_ENC_PART, asReq, asRep));
+        } catch (e) {
             return error(e);
         }
-
-        // ...and verifies that the nonce in the encrypted part
-        // matches the nonce it supplied in its request (to detect
-        // replays).
-        console.log('asReq', asReq);
-        console.log('encRepPart', encRepPart);
-        if (asReq.reqBody.nonce != encRepPart.nonce)
-            return error('nonce does not match');
-
-        // It also verifies that the sname and srealm in the
-        // response match those in the request (or are otherwise
-        // expected values), and that the host address field is
-        // also correct.
-        if (!krb.principalNamesEqual(asReq.reqBody.sname, encRepPart.sname))
-            return error('sname does not match');
-
-        // It then stores the ticket, session key, start and
-        // expiration times, and other information for later use.
-        success(new KDC.Session(asRep, encRepPart));
-
-        // TODO: Do we want to do anything with last-req and
-        // authtime?
     }, error);
+};
+
+KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
+    // TODO: Rearrange this code to interpret this error and stuff. We
+    // may get a request for pre-authentication, in which case we
+    // retry with pre-auth after prompting for the password. (We
+    // already have the password, but I believe in theory this could
+    // be written so that we prompt on demand.)
+    if(kdcRep.msgType == krb.KRB_MT_ERROR)
+        throw ((kdcRep.eText || 'unknown').replace(/\0/g, '')
+               + ' (' + kdcRep.errorCode + ')');
+
+    // 3.1.5.  Receipt of KRB_AS_REP Message
+
+    // If the reply message type is KRB_AS_REP, then the
+    // client verifies that the cname and crealm fields in the
+    // cleartext portion of the reply match what it requested.
+    if(kdcRep.crealm != kdcReq.reqBody.realm)
+        throw 'crealm does not match';
+    if(!krb.principalNamesEqual(kdcReq.reqBody.principalName, kdcRep.cname))
+        throw 'cname does not match';
+
+    // If any padata fields are present, they may be used to
+    // derive the proper secret key to decrypt the message.
+    if (kdcRep.padata) {
+        // TODO: Do something about this one.
+    }
+
+    // The client decrypts the encrypted part of the response
+    // using its secret key...
+    var encRepPart = key.decryptAs(krb.EncASorTGSRepPart,
+                                   keyUsage, kdcRep.encPart)[1];
+
+    // ...and verifies that the nonce in the encrypted part
+    // matches the nonce it supplied in its request (to detect
+    // replays).
+    console.log('kdcReq', kdcReq);
+    console.log('encRepPart', encRepPart);
+    if (kdcReq.reqBody.nonce != encRepPart.nonce)
+        throw 'nonce does not match';
+
+    // It also verifies that the sname and srealm in the
+    // response match those in the request (or are otherwise
+    // expected values), and that the host address field is
+    // also correct.
+    if (!krb.principalNamesEqual(kdcReq.reqBody.sname, encRepPart.sname))
+        throw 'sname does not match';
+
+    // It then stores the ticket, session key, start and
+    // expiration times, and other information for later use.
+    return new KDC.Session(kdcRep, encRepPart);
+
+    // TODO: Do we want to do anything with last-req and
+    // authtime?
 };
 
 KDC.Session = function (asRep, encRepPart) {
