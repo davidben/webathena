@@ -40,6 +40,63 @@ var KDC = {};
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
 
+KDC.Key = function (keytype, keyvalue) {
+    this.keytype = keytype;
+    this.keyvalue = keyvalue;
+};
+KDC.Key.prototype.getEncProfile = function () {
+    var encProfile = krb.encProfiles[this.keytype];
+    if (encProfile === undefined)
+        throw "Unsupported enctype " + this.keytype;
+    return encProfile;
+};
+KDC.Key.prototype.decrypt = function (usage, data) {
+    if (data.etype != this.keytype)
+        throw "Key types do not match";
+    var encProfile = this.getEncProfile();
+    var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
+    return encProfile.decrypt(
+        derivedKey,
+        encProfile.initialCipherState(derivedKey, false),
+        data.cipher)[1];
+};
+KDC.Key.prototype.decryptAs = function (asn1Type, usage, data) {
+    // Some ciphers add padding, so we can't abort if there is data
+    // left over.
+    return asn1Type.decodeDERPrefix(this.decrypt(usage, data))[0];
+};
+KDC.Key.prototype.encrypt = function (usage, data) {
+    var encProfile = this.getEncProfile();
+    var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
+    return {
+        etype: this.keytype,
+        // kvno??
+        cipher: encProfile.encrypt(
+            derivedKey,
+            encProfile.initialCipherState(derivedKey, true),
+            data)[1]
+    };
+};
+KDC.Key.prototype.checksum = function (usage, data) {
+    var encProfile = this.getEncProfile();
+    var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
+    return {
+        cksumtype: encProfile.checksum.sumtype,
+        checksum: encProfile.checksum.getMic(derivedKey, data)
+    };
+};
+
+KDC.Key.fromASN1 = function (key) {
+    return new KDC.Key(key.keytype, key.keyvalue);
+};
+KDC.Key.fromPassword = function (keytype, password, salt, params) {
+    var encProfile = krb.encProfiles[keytype];
+    if (encProfile === undefined)
+        throw "Unsupported enctype " + keytype;
+    return new KDC.Key(keytype,
+                       encProfile.stringToKey(password, salt, params));
+};
+
 KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
     $.ajax(KDC.urlBase + target, {
         data: Crypto.toBase64(data),
@@ -148,31 +205,22 @@ KDC.getTGTSession = function (username, password, success, error) {
         // principal's realm and name components, in order, with
         // no separators.
         var salt = asReq.reqBody.realm + username;
-        var encProfile = krb.encProfiles[asRep.encPart.etype];
-        if (encProfile === undefined)
-            return error('Unsupported enctype ' + asRep.encPart.etype);
-
-        var key = encProfile.stringToKey(password, salt);
-        // The key usage value for encrypting this field is 3 in
-        // an AS-REP message, using the client's long-term key or
-        // another key selected via pre-authentication mechanisms.
-        var derivedKey = encProfile.deriveKey(key, krb.KU_AS_REQ_ENC_PART);
+        var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt);
 
         // The client decrypts the encrypted part of the response
         // using its secret key...
         try {
-            var t = encProfile.decrypt(
-                derivedKey,
-                encProfile.initialCipherState(derivedKey, false),
-                asRep.encPart.cipher);
+            // The key usage value for encrypting this field is 3 in
+            // an AS-REP message, using the client's long-term key or
+            // another key selected via pre-authentication mechanisms.
+
+            // Allow an EncTGSRepPart because the MIT KDC is screwy.
+            var encRepPart = key.decryptAs(krb.EncASorTGSRepPart,
+                                           krb.KU_AS_REQ_ENC_PART,
+                                           asRep.encPart)[1];
         } catch(e) {
             return error(e);
         }
-
-        // Some ciphers add padding, so we can't abort if there is
-        // data left over. Also allow an EncTGSRepPart because the
-        // MIT KDC is screwy.
-        var encRepPart = krb.EncASorTGSRepPart.decodeDERPrefix(t[1])[0][1];
 
         // ...and verifies that the nonce in the encrypted part
         // matches the nonce it supplied in its request (to detect
@@ -204,7 +252,7 @@ KDC.Session = function (asRep, encRepPart) {
     this.cname = asRep.cname;
     this.ticket = asRep.ticket;
 
-    this.key = encRepPart.key;
+    this.key = KDC.Key.fromASN1(encRepPart.key);
     this.flags = encRepPart.flags;
     this.starttime = encRepPart.starttime;
     this.endtime = encRepPart.endtime;
@@ -236,20 +284,8 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
     if (seqNumber !== undefined) auth.seqNumber = seqNumber;
 
     // Encode the authenticator.
-    // FIXME: This is kinda tedious.
-    var encProfile = krb.encProfiles[this.key.keytype];
-    if (encProfile === undefined)
-        throw "Unknown enctype " + this.key.keytype;
-    var derivedKey = encProfile.deriveKey(this.key.keyvalue, keyUsage);
-    apReq.authenticator = {
-        etype: encProfile.enctype,
-        // kvno??
-        cipher: encProfile.encrypt(
-            derivedKey,
-            encProfile.initialCipherState(derivedKey, true),
-            krb.Authenticator.encodeDER(auth))[1]
-    };
-
+    apReq.authenticator = this.key.encrypt(keyUsage,
+                                           krb.Authenticator.encodeDER(auth));
     return apReq;
 };
 
@@ -291,16 +327,9 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
     // Checksum the reqBody. Note: if our DER encoder isn't completely
     // correct, the proxy will re-encode it and possibly mess up the
     // checksum. This is probably a little poor.
-    var encProfile = krb.encProfiles[this.key.keytype];
-    if (encProfile === undefined)
-        throw "Unknown enctype " + this.key.keytype;
-    var derivedKey = encProfile.deriveKey(this.key.keyvalue,
-                                          krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM);
-    var checksum = {
-        cksumtype: encProfile.checksum.sumtype,
-        checksum: encProfile.checksum.getMic(
-            derivedKey, krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody))
-    };
+    var checksum = this.key.checksum(
+        krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM,
+        krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody));
 
     // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
     // padata of PA-TGS-REQ.
