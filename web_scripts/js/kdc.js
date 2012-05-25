@@ -100,10 +100,10 @@ KDC.Key.fromPassword = function (keytype, password, salt, params) {
 KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
     $.ajax(KDC.urlBase + target, {
         data: Crypto.toBase64(data),
-        error: function(xhr, status, error) {
+        error: function(xhr, status, err) {
             var msg = status || 'unknown error';
-            if(error)
-                msg += ': ' + error;
+            if(err)
+                msg += ': ' + err;
             error(msg);
         },
         success: function(data, status, xhr) {
