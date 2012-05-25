@@ -85,10 +85,10 @@ KDC.asReq = function(username, success, error) {
     
     $.ajax(KDC.urlBase + 'AS_REQ', {
         data: Crypto.toBase64(krb.AS_REQ.encodeDER(asReq)),
-        error: function(xhr, status, error) {
+        error: function(xhr, status, err) {
             var msg = status || 'unknown error';
-            if(error)
-                msg += ': ' + error;
+            if(err)
+                msg += ': ' + err;
             error(msg);
         },
         success: function(data, status, xhr) {
