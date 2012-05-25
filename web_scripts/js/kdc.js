@@ -186,7 +186,14 @@ KDC.asReq = function(username, success, error) {
 
 KDC.getTGTSession = function (username, password, success, error) {
     KDC.asReq(username, function (asReq, asRep) {
-        // FIXME check for errors and stuff
+        // TODO: Rearrange this code to interpret this error and
+        // stuff. We may get a request for pre-authentication, in
+        // which case we retry with pre-auth after prompting for the
+        // password. (We already have the password, but I believe in
+        // theory this could be written so that we prompt on demand.)
+        if(asRep.msgType == krb.KRB_MT_ERROR)
+            error(new Err(Err.Context.KDC, asRep.errorCode, asRep.eText));
+
         
         // The default salt string, if none is provided via
         // pre-authentication data, is the concatenation of the
@@ -208,14 +215,6 @@ KDC.getTGTSession = function (username, password, success, error) {
 };
 
 KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
-    // TODO: Rearrange this code to interpret this error and stuff. We
-    // may get a request for pre-authentication, in which case we
-    // retry with pre-auth after prompting for the password. (We
-    // already have the password, but I believe in theory this could
-    // be written so that we prompt on demand.)
-    if(kdcRep.msgType == krb.KRB_MT_ERROR)
-        throw new Err(Err.Context.KDC, kdcRep.errorCode, kdcRep.eText);
-
     // 3.1.5.  Receipt of KRB_AS_REP Message
 
     // If the reply message type is KRB_AS_REP, then the
@@ -363,6 +362,15 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
         krb.TGS_REQ.encodeDER(tgsReq),
         'TGS_REQ', krb.TGS_REP_OR_ERROR,
         function (tgsRep) {
+            // TODO: Rearrange this code to interpret this error and
+            // stuff. We may get a request for pre-authentication, in
+            // which case we retry with pre-auth after prompting for
+            // the password. (We already have the password, but I
+            // believe in theory this could be written so that we
+            // prompt on demand.)
+            if(tgsRep.msgType == krb.KRB_MT_ERROR)
+                error(new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText));
+
             // When the KRB_TGS_REP is received by the client, it is
             // processed in the same manner as the KRB_AS_REP
             // processing described above.  The primary difference is
