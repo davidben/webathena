@@ -8,6 +8,20 @@ $.ajaxSetup({
     type: 'POST',
 });
 
+var Err = function(ctx, code, msg) {
+    this.ctx = ctx;
+    this.code = code;
+    this.msg = msg;
+};
+
+Err.Context = {};
+Err.Context.RND = 0x01;
+Err.Context.KEY = 0x02;
+Err.Context.NET = 0x03;
+Err.Context.KDC = 0x04;
+Err.Context.ENC = 0x05;
+Err.Context.UNK = 0x0f;
+
 var Crypto = {};
 
 Crypto.toBase64 = function(str) {
@@ -29,7 +43,7 @@ Crypto.randomNonce = function() {
         if (e instanceof sjcl.exception.notReady) {
             // TODO: We should retry a little later. We can also
             // adjust the paranoia argument.
-            throw 'not enough randomness';
+            throw new Err(Err.Context.RND, null, 'not enough randomness');
         }
         throw e;
     }
@@ -47,12 +61,12 @@ KDC.Key = function (keytype, keyvalue) {
 KDC.Key.prototype.getEncProfile = function () {
     var encProfile = krb.encProfiles[this.keytype];
     if (encProfile === undefined)
-        throw "Unsupported enctype " + this.keytype;
+        throw new Err(Err.Context.KEY, 0x00, 'Unsupported enctype ' + this.keytype);
     return encProfile;
 };
 KDC.Key.prototype.decrypt = function (usage, data) {
     if (data.etype != this.keytype)
-        throw "Key types do not match";
+        throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
     var encProfile = this.getEncProfile();
     var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
     return encProfile.decrypt(
@@ -92,7 +106,7 @@ KDC.Key.fromASN1 = function (key) {
 KDC.Key.fromPassword = function (keytype, password, salt, params) {
     var encProfile = krb.encProfiles[keytype];
     if (encProfile === undefined)
-        throw "Unsupported enctype " + keytype;
+        throw new Err(Err.Context.KEY, 0x02, 'Unsupported enctype ' + keytype);
     return new KDC.Key(keytype,
                        encProfile.stringToKey(password, salt, params));
 };
@@ -101,18 +115,15 @@ KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
     $.ajax(KDC.urlBase + target, {
         data: Crypto.toBase64(data),
         error: function(xhr, status, err) {
-            var msg = status || 'unknown error';
-            if(err)
-                msg += ': ' + err;
-            error(msg);
+            error(new Err(Err.Context.NET, status, err));
         },
         success: function(data, status, xhr) {
             switch(data.status) {
             case 'ERROR':
-                error(data.msg);
+                error(new Err(Err.Context.NET, 'proxy', data.msg));
                 break;
             case 'TIMEOUT':
-                error('KDC connection timed out');
+                error(new Err(Err.Context.NET, 'timeout', 'KDC connection timed out'));
                 break;
             case 'OK':
                 var der = Crypto.fromBase64(data.reply);
@@ -175,6 +186,8 @@ KDC.asReq = function(username, success, error) {
 
 KDC.getTGTSession = function (username, password, success, error) {
     KDC.asReq(username, function (asReq, asRep) {
+        // FIXME check for errors and stuff
+        
         // The default salt string, if none is provided via
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with
@@ -201,8 +214,7 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
     // already have the password, but I believe in theory this could
     // be written so that we prompt on demand.)
     if(kdcRep.msgType == krb.KRB_MT_ERROR)
-        throw ((kdcRep.eText || 'unknown').replace(/\0/g, '')
-               + ' (' + kdcRep.errorCode + ')');
+        throw new Err(Err.Context.KDC, kdcRep.errorCode, kdcRep.eText);
 
     // 3.1.5.  Receipt of KRB_AS_REP Message
 
@@ -213,10 +225,10 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
         // If we didn't send principalName (because it was a TGS_REQ)
         // do we still check stuff?
         if(kdcRep.crealm != kdcReq.reqBody.realm)
-            throw 'crealm does not match';
+            throw new Err(Err.Context.KEY, 0x10, 'crealm does not match');
         if(!krb.principalNamesEqual(kdcReq.reqBody.principalName,
                                     kdcRep.cname))
-            throw 'cname does not match';
+            throw new Err(Err.Context.KEY, 0x11, 'cname does not match');
     }
 
     // If any padata fields are present, they may be used to
@@ -234,14 +246,14 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
     // matches the nonce it supplied in its request (to detect
     // replays).
     if (kdcReq.reqBody.nonce != encRepPart.nonce)
-        throw 'nonce does not match';
+        throw new Err(Err.Context.KEY, 0x12, 'nonce does not match');
 
     // It also verifies that the sname and srealm in the
     // response match those in the request (or are otherwise
     // expected values), and that the host address field is
     // also correct.
     if (!krb.principalNamesEqual(kdcReq.reqBody.sname, encRepPart.sname))
-        throw 'sname does not match';
+        throw new Err(Err.Context.KEY, 0x13, 'sname does not match');
 
     // It then stores the ticket, session key, start and
     // expiration times, and other information for later use.

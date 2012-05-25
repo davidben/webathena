@@ -266,13 +266,13 @@ krb._des_string_to_key = function (password, salt, params) {
     } else if (params.length == 1) {
         type = params.charCodeAt(0);
     } else {
-        throw "Invalid params";
+        throw new Err(Err.Context.ENC, 0, 'Invalid params');
     }
 
     if (type == 0) {
         return krb._mit_des_string_to_key(password, salt);
     } else {
-        throw "Invalid params";
+        throw new Err(Err.Context.ENC, 1, 'Invalid params');
     }
 };
 
@@ -280,7 +280,7 @@ krb._makeDesEncryptionProfile = function (checksumProfile) {
     // Note: checksumProfile is the checksum for encrypting with DES,
     // not the required checksum.
     if (checksumProfile.checksumBytes % 4 != 0)
-        throw "Checksum not an integer number of words";
+        throw new Err(Err.Context.ENC, 2, 'Checksum not an integer number of words');
     var checksumWords = checksumProfile.checksumBytes / 4;
 
     var profile = {};
@@ -302,7 +302,7 @@ krb._makeDesEncryptionProfile = function (checksumProfile) {
         var decrypted = CryptoJS.DES.decrypt(
             cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
         if (decrypted.sigBytes < 12)
-            throw "Bad format";
+            throw new Err(Err.Context.ENC, 3, 'Bad format');
 
         // First 2 words (8 bytes) are the confounder.
 
@@ -323,7 +323,7 @@ krb._makeDesEncryptionProfile = function (checksumProfile) {
         if (!checksumProfile.verifyMic(
             key, CryptoJS.enc.Latin1.stringify(checksumData),
             CryptoJS.enc.Latin1.stringify(checksum)))
-            throw "Checksum mismatch!";
+            throw new Err(Err.Context.ENC, 4, 'Checksum mismatch!');
 
         // New cipher state is the last block of the ciphertext.
         state = CryptoJS.lib.WordArray.create(

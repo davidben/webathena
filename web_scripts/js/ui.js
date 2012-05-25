@@ -67,16 +67,18 @@ $(function() {
             $('#submit').attr('disabled', null).text(text);
         };
         var onError = function(error) {
-            error = String(error);
-            switch(error) {
-                case 'Checksum mismatch!':
-                    error = 'Incorrect password!';
-                    break;
-                case 'Client not found in Kerberos database (6)':
-                    error = 'Username does not exist!';
-                    break;
+            var string;
+            if(error instanceof Err) {
+                if(error.ctx == Err.Context.ENC && error.code == 4)
+                    string = 'Incorrect password!';
+                else if(error.ctx = Err.Context.KDC && error.code == 6)
+                    string = 'Username does not exist!';
+                else
+                    string = error.msg + ' (' + error.code + ')';
+            } else {
+                string = String(error);
             }
-            $('#alert #content').html('<b>Error logging in:</b><br>' + error);
+            $('#alert #content').html('<b>Error logging in:</b><br>' + string);
             $('#alert').slideDown(100);
             resetForm();
         };
