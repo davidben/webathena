@@ -24,3 +24,5 @@
     test server. I guess test_server.py could have a very basic
     .htaccess parser? Also the test server likely wants HSTS turned
     off.
+
+- Figure out cross-realm stuff. Just ignoring it for now.
