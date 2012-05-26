@@ -353,10 +353,6 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
 
         // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
         // padata of PA-TGS-REQ.
-
-        // FIXME: Do we need a subkey and stuff? We can't forward the TGT
-        // session key to the random server. I'm still unclear on whether
-        // we have to do anything interesting to achieve that.
         var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
         tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                            padataValue: krb.AP_REQ.encodeDER(apReq) }];
