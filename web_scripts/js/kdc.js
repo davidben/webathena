@@ -173,16 +173,7 @@ KDC.asReq = function(username, success, error) {
     asReq.reqBody.sname.nameType = krb.KRB_NT_SRV_INST;
     asReq.reqBody.sname.nameString = [ 'krbtgt', KDC.realm ];
 
-    var now = new Date();
-    now.setUTCMilliseconds(0);
-    var later = new Date(Date.UTC(now.getUTCFullYear(),
-                                  now.getUTCMonth(),
-                                  now.getUTCDate() + 1,
-                                  now.getUTCHours(),
-                                  now.getUTCMinutes(),
-                                  now.getUTCSeconds()));
-    asReq.reqBody.from = now;
-    asReq.reqBody.till = later;
+    asReq.reqBody.till = new Date(0);
     asReq.reqBody.nonce = Crypto.randomNonce();
     asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
 
@@ -331,17 +322,9 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
         tgsReq.reqBody.sname = service[0];
         tgsReq.reqBody.realm = service[1];
 
-        // TODO: Don't hardcode this either?
-        var now = new Date();
-        now.setUTCMilliseconds(0);
-        var later = new Date(Date.UTC(now.getUTCFullYear(),
-                                      now.getUTCMonth(),
-                                      now.getUTCDate() + 1,
-                                      now.getUTCHours(),
-                                      now.getUTCMinutes(),
-                                      now.getUTCSeconds()));
-        tgsReq.reqBody.from = now;
-        tgsReq.reqBody.till = later;
+        // TODO: Do we want to request the maximum end time? Seems a
+        // reasonable default I guess.
+        tgsReq.reqBody.till = new Date(0);
         tgsReq.reqBody.nonce = Crypto.randomNonce();
         tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc];
 
