@@ -105,7 +105,7 @@ KDC.Key.prototype.checksum = function (usage, data) {
     };
 };
 
-KDC.Key.fromASN1 = function (key) {
+KDC.Key.fromDict = function (key) {
     return new KDC.Key(key.keytype, key.keyvalue);
 };
 KDC.Key.fromPassword = function (keytype, password, salt, params) {
@@ -271,7 +271,7 @@ KDC.Session = function (asRep, encRepPart) {
     this.cname = asRep.cname;
     this.ticket = asRep.ticket;
 
-    this.key = KDC.Key.fromASN1(encRepPart.key);
+    this.key = KDC.Key.fromDict(encRepPart.key);
     this.flags = encRepPart.flags;
     this.starttime = encRepPart.starttime;
     this.endtime = encRepPart.endtime;
@@ -279,6 +279,10 @@ KDC.Session = function (asRep, encRepPart) {
     this.srealm = encRepPart.srealm;
     this.sname = encRepPart.sname;
     this.caddr = encRepPart.caddr;
+};
+
+KDC.Session.fromDict = function (dict) {
+    return new KDC.Session(dict, dict);
 };
 
 KDC.Session.prototype.makeAPReq = function (keyUsage,
@@ -375,4 +379,8 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
             },
             error);
     });
+};
+
+KDC.Session.isExpired = function () {
+    return this.endtime <= new Date();
 };
