@@ -4,8 +4,6 @@
 
 - Hook up service tickets to UI
 
-- Store TGT session persistently
-
 - OAuth-like thing to pass between origins
 
 - Demo of zwrite.js or similar
