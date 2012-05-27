@@ -332,12 +332,24 @@ krb.Authenticator = new asn1.SEQUENCE(
 // TODO: 5.8.1.  KRB_CRED Definition
 
 // 7.5.1.  Key Usage Numbers
-// TODO: Transcribe the rest of these...
+krb.KU_AS_REQ_PA_ENC_TIMESTAMP = 1;
+krb.KU_KDC_REP_TICKET = 2;
 krb.KU_AS_REQ_ENC_PART = 3;
+krb.KU_TGS_REQ_BODY_AUTH_DATA = 4;
+krb.KU_TGS_REQ_BODY_AUTH_DATA_SUBKEY = 5;
 krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM = 6;
 krb.KU_TGS_REQ_PA_TGS_REQ = 7;
 krb.KU_TGS_REQ_ENC_PART = 8;
 krb.KU_TGS_REQ_ENC_PART_SUBKEY = 9;
+krb.KU_AP_REQ_AUTHENTICATOR_CKSUM = 10;
+krb.KU_AP_REQ_AUTHENTICATOR = 11;
+krb.KU_AP_REP_ENC_PART = 12;
+krb.KU_KRB_PRIV_ENC_PART = 13;
+krb.KU_KRB_CRED_ENC_PART = 14;
+krb.KU_KRB_SAFE_CKSUM = 15;
+krb.KU_AD_KDC_ISSUED_CKSUM = 19;
+krb.KU_GENERIC_ENC = 1024;
+krb.KU_GENERIC_CKSUM = 1025;
 
 // 7.5.2.  PreAuthentication Data Types
 krb.PA_TGS_REQ                = 1;
