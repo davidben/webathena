@@ -381,6 +381,6 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
     });
 };
 
-KDC.Session.isExpired = function () {
+KDC.Session.prototype.isExpired = function () {
     return this.endtime <= new Date();
 };
