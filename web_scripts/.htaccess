@@ -12,3 +12,17 @@ Header add Strict-Transport-Security "max-age=7884000"
 # for now because of jQuery.
 Header add X-Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://themes.googleusercontent.com"
 Header add X-WebKit-CSP              "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://themes.googleusercontent.com"
+
+# XSS filters can sometimes be abused to selectively disable script
+# tags. With inline script disabled, it's probably fine, but it's
+# configure them to hard-fail anyway.
+Header add X-XSS-Protection "1; mode=block"
+
+# Disallow iframes to do a bit against click-jacking. We'll unset this
+# header on the one page this is actually relevant for.
+Header add X-Frame-Options "deny"
+
+# Disable content sniffing, per Tangled Web. Though it's not a huge
+# deal as our JSON base64-encodes everything. It's unlikely to be
+# interpreted as attacker-controlled HTML.
+Header add X-Content-Options "nosniff"

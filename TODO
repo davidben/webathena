@@ -10,12 +10,4 @@
 
 - Demo of zwrite.js or similar
 
-- Various X-Secure-Me-Harder headers
-
-  - X-Frame-Options on the relevant pages
-
-  - X-XSS-Protection - need to set hard fail
-
-  - X-Content-Type-Options - disable content sniffing; may as well
-
 - Figure out cross-realm stuff. Just ignoring it for now.
