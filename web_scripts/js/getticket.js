@@ -6,9 +6,10 @@ window.addEventListener("message", function (e) {
     // TODO: Open a popup and stuff to login.
     // TODO: Probably want error codes too in this API.
     if (!localStorage.getItem('tgtSession')) {
+        console.log('Not logged in');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
-            message: 'Not logged in'
+            message: 'Not allowed'
         }), e.origin);
         return;
     }
@@ -20,9 +21,10 @@ window.addEventListener("message", function (e) {
     // TODO: Open a popup and stuff. I guess this error might actually
     // appear if the popup has a cancel button or something.
     if (tgtSession.isExpired()) {
+        console.log('Ticket expired');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
-            message: 'Ticket expired'
+            message: 'Not allowed'
         }), e.origin);
         return;
     }
@@ -38,6 +40,7 @@ window.addEventListener("message", function (e) {
         || !krb.principalNamesEqual(
             principal,
             { nameString: ['zephyr', 'zephyr'] })) {
+        console.log('Not allowed');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
             message: 'Not allowed'
@@ -56,12 +59,13 @@ window.addEventListener("message", function (e) {
             }), e.origin);
         },
         function (error) {
+            console.log(error);
             // Should we send the error back? Probably want to figure
             // that out when we sort out error handling in our own
             // origin.
             e.source.postMessage(JSON.stringify({
                 status: 'ERROR',
-                message: 'Something bad happened'
+                message: 'Not allowed'
             }), e.origin);
         });
 });
