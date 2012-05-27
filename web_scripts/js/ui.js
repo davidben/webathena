@@ -78,7 +78,8 @@ $(function() {
             } else {
                 string = String(error);
             }
-            $('#alert #content').html('<b>Error logging in:</b><br>' + string);
+            $('#alert #content').html('<b>Error logging in:</b><br>').append(
+                document.createTextNode(string));
             $('#alert').slideDown(100);
             resetForm();
         };
