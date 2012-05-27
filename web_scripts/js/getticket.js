@@ -52,6 +52,10 @@ window.addEventListener("message", function (e) {
     tgtSession.getServiceSession(
         [principal, request.realm],
         function (session) {
+            // TODO: Do we want to store this in the ccache too, so a
+            // service which doesn't cache its own tickets needn't get
+            // new ones all the time? Also, the ccache needs some
+            // fancy abstraction or something.
             e.source.postMessage(JSON.stringify({
                 status: 'OK',
                 session: session,
