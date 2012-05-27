@@ -202,8 +202,10 @@ KDC.getTGTSession = function (username, password, success, error) {
             // the password. (We already have the password, but I
             // believe in theory this could be written so that we
             // prompt on demand.)
-            if(asRep.msgType == krb.KRB_MT_ERROR)
+            if(asRep.msgType == krb.KRB_MT_ERROR) {
                 error(new Err(Err.Context.KDC, asRep.errorCode, asRep.eText));
+                return;
+            }
 
             // The default salt string, if none is provided via
             // pre-authentication data, is the concatenation of the
@@ -368,8 +370,10 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
                 // the password. (We already have the password, but I
                 // believe in theory this could be written so that we
                 // prompt on demand.)
-                if(tgsRep.msgType == krb.KRB_MT_ERROR)
+                if(tgsRep.msgType == krb.KRB_MT_ERROR) {
                     error(new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText));
+                    return;
+                }
 
                 // When the KRB_TGS_REP is received by the client, it is
                 // processed in the same manner as the KRB_AS_REP
