@@ -30,6 +30,7 @@ $(function() {
         return false;
     });
     $('#logout button').click(function() {
+        localStorage.removeItem('tgtSession');
         window.location.reload(); // XXX
     });
     
@@ -86,6 +87,8 @@ $(function() {
         
         KDC.getTGTSession(username, password, function(tgtSession) {
             console.log(tgtSession);
+            // Save in local storage.
+            localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
 
             resetForm();
             $('#login').fadeOut();
