@@ -313,6 +313,7 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
 };
 
 KDC.Session.prototype.getServiceSession = function (service, success, error) {
+    var self = this;
     Crypto.retryForEntropy(function () {
         var tgsReq = { };
         tgsReq.pvno = krb.pvno;
@@ -335,17 +336,16 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
         // Checksum the reqBody. Note: if our DER encoder isn't completely
         // correct, the proxy will re-encode it and possibly mess up the
         // checksum. This is probably a little poor.
-        var checksum = this.key.checksum(
+        var checksum = self.key.checksum(
             krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM,
             krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody));
 
         // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
         // padata of PA-TGS-REQ.
-        var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
+        var apReq = self.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
         tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                            padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
-        var self = this;
         KDC.kdcProxyRequest(
             krb.TGS_REQ.encodeDER(tgsReq),
             'TGS_REQ', krb.TGS_REP_OR_ERROR,

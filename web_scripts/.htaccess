@@ -26,3 +26,7 @@ Header add X-Frame-Options "deny"
 # deal as our JSON base64-encodes everything. It's unlikely to be
 # interpreted as attacker-controlled HTML.
 Header add X-Content-Options "nosniff"
+
+<Files getticket.html>
+    Header unset X-Frame-Options
+</Files>
