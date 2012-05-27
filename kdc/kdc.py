@@ -150,7 +150,15 @@ class WebKDC(object):
                 'status': 'OK',
                 'reply': base64.b64encode(krb_rep)
                 }
-        return Response(json.dumps(data), mimetype='application/json')
+        # Per Tangled Web, add a defensive Content-Disposition to
+        # prevent an extremely confused browser from interpreting this
+        # as HTML. Though even navigating to this would be pretty
+        # difficult as we require a random header be sent.
+        return Response(
+            json.dumps(data),
+            mimetype='application/json',
+            headers=[('Content-Disposition',
+                      'attachment; filename="json_response.txt"')])
 
     def send_krb_request(self, krb_req):
         """
