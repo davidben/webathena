@@ -14,15 +14,8 @@
 
   - X-Frame-Options on the relevant pages
 
-  - X-Content-Security / X-WebKit-CSP
-
   - X-XSS-Protection - need to set hard fail
 
   - X-Content-Type-Options - disable content sniffing; may as well
-
-  - Would be good to avoid specifying this twice for Apache and the
-    test server. I guess test_server.py could have a very basic
-    .htaccess parser? Also the test server likely wants HSTS turned
-    off.
 
 - Figure out cross-realm stuff. Just ignoring it for now.
