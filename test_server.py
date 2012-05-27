@@ -8,6 +8,7 @@
 
 # Add our code to path.
 import os.path
+import re
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), 'kdc'))
 
@@ -15,6 +16,27 @@ from werkzeug.exceptions import NotFound
 from werkzeug.wsgi import SharedDataMiddleware, DispatcherMiddleware
 
 import kdc
+
+HEADER_RE = re.compile(r'Header +add +([^ ]+) "([^"]+)"')
+
+def parse_htaccess():
+    """
+    Parse some subset of .htaccess so we can serve the same headers.
+    """
+    headers = {}
+    htaccess = os.path.join(os.path.dirname(__file__), 'web_scripts/.htaccess')
+    with open(htaccess) as f:
+        for line in f:
+            line = line.strip()
+            # TODO: Support Header set, etc. Also we'll need <Files>
+            # and stuff later. We also don't handle escaping, but
+            # whatever.
+            m = HEADER_RE.match(line)
+            if m:
+                header = m.group(1)
+                value = m.group(2)
+                headers[header] = value
+    return headers
 
 def create_app():
     """
@@ -32,7 +54,22 @@ def create_app():
 
     return DispatcherMiddleware(static_app, { '/kdc': kdc_app, })
 
+def apply_htaccess(app):
+    htaccess_headers = parse_htaccess()
+    del htaccess_headers['Strict-Transport-Security']
+
+    def wrapped(environ, start_response):
+        def wrapped_start_response(status, headers):
+            headers = [(h, v) for (h, v) in headers
+                       if h not in htaccess_headers]
+            for key, value in htaccess_headers.items():
+                headers.append((key, value))
+            start_response(status, headers)
+        return app(environ, wrapped_start_response)
+    return wrapped
+
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
     app = create_app()
+    app = apply_htaccess(app)
     run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
