@@ -97,4 +97,14 @@ $(function() {
         }, onError);
         return false;
     });
+
+    // Check if we're already logged in.
+    if (localStorage.getItem('tgtSession')) {
+        var tgtSession = KDC.Session.fromDict(
+            JSON.parse(localStorage.getItem('tgtSession')));
+        // TODO: check tgtSession.isExpired
+        $('#login').hide();
+        $('#authed').show();
+        $('#principal').text(tgtSession.cname.nameString + '@' + tgtSession.crealm);
+    }
 });
