@@ -1,13 +1,5 @@
 "use strict";
 
-$.ajaxSetup({
-    cache: false,
-    contentType: 'text/plain',
-    dataType: 'json',
-    headers: { 'X-WebKDC-Request' : 'OK' },
-    type: 'POST',
-});
-
 var Err = function(ctx, code, msg) {
     this.ctx = ctx;
     this.code = code;
@@ -125,18 +117,22 @@ KDC.Key.fromPassword = function (keytype, password, salt, params) {
 };
 
 KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
-    $.ajax(KDC.urlBase + target, {
-        data: Crypto.toBase64(data),
-        error: function(xhr, status, err) {
-            error(new Err(Err.Context.NET, status, err));
-        },
-        success: function(data, status, xhr) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', KDC.urlBase + target);
+    xhr.setRequestHeader('X-WebKDC-Request', 'OK');
+    xhr.setRequestHeader('Content-Type', 'text/plain');
+    xhr.onreadystatechange = function (e) {
+        if (this.readyState != 4)
+            return;
+        if (this.status == 200) {
+            var data = JSON.parse(this.responseText);
             switch(data.status) {
             case 'ERROR':
                 error(new Err(Err.Context.NET, 'proxy', data.msg));
                 break;
             case 'TIMEOUT':
-                error(new Err(Err.Context.NET, 'timeout', 'KDC connection timed out'));
+                error(new Err(Err.Context.NET, 'timeout',
+                              'KDC connection timed out'));
                 break;
             case 'OK':
                 var der = Crypto.fromBase64(data.reply);
@@ -144,8 +140,11 @@ KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
                 success(reply);
                 break;
             }
-        },
-    });
+        } else {
+            error(new Err(Err.Context.NET, 'error', xhr.status));
+        }
+    };
+    xhr.send(Crypto.toBase64(data));
 };
 
 KDC.asReq = function(username, success, error) {
