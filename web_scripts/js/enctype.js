@@ -79,6 +79,20 @@ krb.sumtype.sha1_2                        = 14;
 krb.sumtype.hmac_sha1_96_aes128           = 15;
 krb.sumtype.hmac_sha1_96_aes256           = 16;
 
+// 6.1.1.  The RSA MD5 Checksum
+krb.RsaMd5Checksum = {
+    sumtype: krb.sumtype.rsa_md5,
+    checksumBytes: 16,
+    getMic: function (key, msg) {
+        msg = CryptoJS.enc.Latin1.parse(msg);
+        var hash = CryptoJS.MD5(msg);
+        return CryptoJS.enc.Latin1.stringify(hash);
+    },
+    verifyMic: function (key, msg, token) {
+        return token == this.getMic(key, msg);
+    }
+};
+
 // 6.1.3.  CRC-32 Checksum
 krb.Crc32Checksum = {
     sumtype: krb.sumtype.CRC32,
@@ -436,6 +450,14 @@ krb.RsaMd5DesChecksum = {
     }
 };
 
+// 6.2.1.  DES with MD5
+krb.DesCbcMd5Profile = krb._makeDesEncryptionProfile(krb.RsaMd5Checksum);
+krb.DesCbcMd5Profile.enctype = krb.enctype.des_cbc_md5;
+krb.DesCbcMd5Profile.initialCipherState = function (key, isEncrypt) {
+    return "\0\0\0\0\0\0\0\0";
+};
+krb.DesCbcMd5Profile.checksum = krb.RsaMd5DesChecksum;
+
 // 6.2.3.  DES with CRC
 krb.DesCbcCrcProfile = krb._makeDesEncryptionProfile(krb.Crc32Checksum);
 krb.DesCbcCrcProfile.enctype = krb.enctype.des_cbc_crc;
@@ -446,8 +468,10 @@ krb.DesCbcCrcProfile.checksum = krb.RsaMd5DesChecksum;
 
 // The supported encryption types.
 krb.encProfiles = { };
+krb.encProfiles[krb.DesCbcMd5Profile.enctype] = krb.DesCbcMd5Profile;
 krb.encProfiles[krb.DesCbcCrcProfile.enctype] = krb.DesCbcCrcProfile;
 
 krb.checksumProfiles = { };
+krb.checksumProfiles[krb.RsaMd5Checksum.sumtype] = krb.RsaMd5Checksum;
 krb.checksumProfiles[krb.Crc32Checksum.sumtype] = krb.Crc32Checksum;
 krb.checksumProfiles[krb.RsaMd5DesChecksum.sumtype] = krb.RsaMd5DesChecksum;

@@ -175,7 +175,8 @@ KDC.asReq = function(username, success, error) {
 
     asReq.reqBody.till = new Date(0);
     asReq.reqBody.nonce = Crypto.randomNonce();
-    asReq.reqBody.etype = [krb.enctype.des_cbc_crc];
+    asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
+                           krb.enctype.des_cbc_md5];
 
     KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
                         'AS_REQ', krb.AS_REP_OR_ERROR,
@@ -331,7 +332,8 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
         // reasonable default I guess.
         tgsReq.reqBody.till = new Date(0);
         tgsReq.reqBody.nonce = Crypto.randomNonce();
-        tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc];
+        tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc,
+                                krb.enctype.des_cbc_md5];
 
         // Checksum the reqBody. Note: if our DER encoder isn't completely
         // correct, the proxy will re-encode it and possibly mess up the
