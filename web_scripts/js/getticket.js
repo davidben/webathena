@@ -2,13 +2,26 @@
 
 window.addEventListener("message", function (e) {
     var request = JSON.parse(e.data);
+    console.log("Request", request);
+    if (request.method == "get_ticket") {
+        getTicket(e, request);
+    } else {
+        e.source.postMessage(JSON.stringify({
+            status: 'ERROR',
+            code: 'BAD_METHOD',
+            message: 'Unknown method: ' + request.method
+        }), e.origin);
+    }
+});
 
+function getTicket(e, request) {
     // TODO: Open a popup and stuff to login.
     // TODO: Probably want error codes too in this API.
     if (!localStorage.getItem('tgtSession')) {
         console.log('Not logged in');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
+            code: 'NOT_ALLOWED',
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -24,6 +37,7 @@ window.addEventListener("message", function (e) {
         console.log('Ticket expired');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
+            code: 'NOT_ALLOWED',
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -35,7 +49,7 @@ window.addEventListener("message", function (e) {
     };
     // HACK: Prompt user for permission and stuff instead of just
     // hardcoding these.
-    if (e.origin != 'https://davidben.scripts.mit.edu'
+    if (e.origin != 'https://davidben.scripts.mit.edu:444'
         || request.realm != 'ATHENA.MIT.EDU'
         || !krb.principalNamesEqual(
             principal,
@@ -43,6 +57,7 @@ window.addEventListener("message", function (e) {
         console.log('Not allowed');
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
+            code: 'NOT_ALLOWED',
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -69,7 +84,8 @@ window.addEventListener("message", function (e) {
             // origin.
             e.source.postMessage(JSON.stringify({
                 status: 'ERROR',
+                code: 'NOT_ALLOWED',
                 message: 'Not allowed'
             }), e.origin);
         });
-});
+}
