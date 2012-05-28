@@ -9,6 +9,7 @@ window.addEventListener("message", function (e) {
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
             code: 'BAD_METHOD',
+            nonce: request.nonce,
             message: 'Unknown method: ' + request.method
         }), e.origin);
     }
@@ -22,6 +23,7 @@ function getTicket(e, request) {
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
             code: 'NOT_ALLOWED',
+            nonce: request.nonce,
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -38,6 +40,7 @@ function getTicket(e, request) {
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
             code: 'NOT_ALLOWED',
+            nonce: request.nonce,
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -58,6 +61,7 @@ function getTicket(e, request) {
         e.source.postMessage(JSON.stringify({
             status: 'ERROR',
             code: 'NOT_ALLOWED',
+            nonce: request.nonce,
             message: 'Not allowed'
         }), e.origin);
         return;
@@ -85,6 +89,7 @@ function getTicket(e, request) {
             e.source.postMessage(JSON.stringify({
                 status: 'ERROR',
                 code: 'NOT_ALLOWED',
+                nonce: request.nonce,
                 message: 'Not allowed'
             }), e.origin);
         });
