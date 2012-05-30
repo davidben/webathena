@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>zwrite.js proof of concept</title>
+
+<script src="sjcl.js"></script>
+<script src="initrandom.js"></script>
+<script src="crypto-js/rollups/tripledes.js"></script>
+<script src="crypto-js/rollups/md5.js"></script>
+<script src="crypto-js/components/pad-nopadding-min.js"></script>
+<script src="crc32.js"></script>
+<script src="asn1.js"></script>
+<script src="krb.js"></script>
+<script src="enctype.js"></script>
+<script src="kdc.js"></script>
+
+<h1>zwrite.js proof of concept</h1>
+
+<form id="z-form">
+  Class: <input id="z-class" autofocus><br>
+  Instance: <input id="z-inst"><br>
+  Recipient: <input id="z-recip"><br>
+  <textarea id="z-message" rows=10 cols=80></textarea><br>
+  <input type="submit" value="Send">
+</form>
+
+<p>
+zwrite.js obtains a ticket for <code>zephyr/zephyr@ATHENA.MIT.EDU</code>
+through <a href="https://webathena.scripts.mit.edu">Webathena</a>. It then
+assembles the notice itself (after querying the server to find out its IP) and
+forwards to <code>zhm.cgi</code> which just forwards it along to its local zhm.
+The page is protected by certificates for now to prevent potential abuse of the
+zhm proxy; it's possible that a real web-based zephyr client will want more
+sanity checking on the proxy. Perhaps independent authentication (through
+something less evil than SSL client auth) and stuff. I dunno.
+</p>
+
+<p>
+Note: you have to be already "logged in" to Webathena for this to work. We
+haven't written any UI for forwarding tickets between origins yet.
+</p>
+<script>
+
+    // A lot of this is lifted basically straight from pykrb5's zwrite.py.
+    function prepend_zero(str, len) {
+	while (str.length < len) {
+	    str = "0" + str;
+	}
+	return str;
+    }
+
+    function z_make_ascii_16(value) {
+	return "0x" + prepend_zero(value.toString(16).toUpperCase(), 4);
+    }
+
+    function z_make_ascii_32(value) {
+	return "0x" + prepend_zero(value.toString(16).toUpperCase(), 8);
+    }
+
+    function z_make_zcode(value) {
+	return "Z" + value.replace(/\u00ff/g, "\u00ff\u00f1").replace(/\u0000/g, "\u00ff\u00f0");
+    }
+
+    document.getElementById("z-form").addEventListener("submit", function (e) {
+	e.preventDefault();
+	var class_ = document.getElementById("z-class").value;
+	var inst = document.getElementById("z-inst").value;
+	var recip = document.getElementById("z-recip").value;
+	var message = document.getElementById("z-message").value;
+
+	if (!recip && !class_) {
+	    // Don't make it so easy to accidently send to message,personal,*
+	    alert("Please specify a class or recipient");
+	    return;
+	}
+
+	class_ = class_ || "message";
+	inst = inst || "personal";
+	if (recip.indexOf("@") < 0)
+	    recip = recip + "@ATHENA.MIT.EDU";
+
+	getTicket(function (session) {
+	    getIp(function (ip) {
+	        console.log("session", session);
+	        console.log("ip", ip);
+
+		var apReq = krb.AP_REQ.encodeDER(session.makeAPReq(krb.KU_AP_REQ_AUTHENTICATOR));
+		// FIXME: This NEEDS to be part of the KDC.Session API
+		// FIXME: Mumble escaping mumble.
+		var sender = session.cname.nameString.join("/") + "@" + session.crealm;
+
+
+		// Get a UID. We need the server's IP address. (Ugh
+		// load-balancing ugh.)
+		// FIXME: We don't get microseconds. Maybe include a bit of
+		// Math.random for a bit more uniqueness. Especially since
+		// everyone'll have the same IP.
+		var now = Date.now();
+		var uid = ip + " " +
+		          z_make_ascii_32(Math.floor(now / 1000)) + " " + 
+		          z_make_ascii_32((now % 1000) * 1000);
+
+		var before_checksum = [
+		    "ZEPH0.2",
+		    null,
+		    z_make_ascii_32(0), // kind, UNSAFE (no acks)
+		    uid,
+		    z_make_ascii_16(0), // port
+		    z_make_ascii_32(1), // authstatus
+		    z_make_ascii_32(apReq.length), // authlen
+		    z_make_zcode(apReq), // authenticator
+		    class_,
+		    inst,
+		    "", // opcode
+		    sender,
+		    recip,
+		    "" // default_format
+		    ];
+		var after_checksum = [
+		    "", // multipart
+		    uid // multiuid
+		    ];
+		var body = [
+		    "Sent from zwrite.js", // sig
+		    message
+		    ];
+
+		var header_count = before_checksum.length + 1 + after_checksum.length;
+		before_checksum[1] = z_make_ascii_32(header_count);
+
+		var checksum_data = before_checksum.concat(after_checksum).concat(body).join("\0");
+		var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
+
+		var notice = before_checksum.concat([checksum]).concat(after_checksum).concat(body).join("\0");
+		console.log("notice", JSON.stringify(notice));
+		console.log(before_checksum.concat([checksum]).concat(after_checksum).concat(body))
+
+		sendZnotice(notice, function (result) { console.log(result); });
+	    });
+	    }, function (error) {
+	        console.log("error", error);
+	    });
+    });
+
+    // This is pretty annoying if we want more than one query... I think we want
+    // to use the libraries Mozilla wrote for BrowserID.
+    var session;
+    var nextRequestId = 0;
+    var cbs = { };
+
+    window.addEventListener("message", function (e) {
+	if (e.origin != 'https://webathena.scripts.mit.edu')
+            return;
+	var response = JSON.parse(e.data);
+	console.log(response);
+
+	var cb = cbs[response.nonce];
+	delete cbs[response.nonce];
+	cb(response);
+    });
+
+    function getTicket(success, error) {
+	if (session && !session.isExpired()) {
+	    window.setTimeout(function () { success(session); });
+	    return;
+	}
+
+	var reqId = String(nextRequestId++);
+	reqId += "|" + Math.random();
+	cbs[reqId] = function (response) {
+	    if (response.status != 'OK') {
+		error(response);
+		return;
+	    }
+	    session = KDC.Session.fromDict(response.session);
+	    success(session);
+	    frame.parentNode.removeChild(frame);
+	};
+
+	var frame = document.createElement("iframe");
+	frame.style.display = "none";
+	frame.src = "https://webathena.scripts.mit.edu/getticket.html";
+	frame.onload = function (e) {
+	    frame.contentWindow.postMessage(JSON.stringify({
+		method: 'get_ticket',
+		realm: 'ATHENA.MIT.EDU',
+		principal: ['zephyr', 'zephyr'],
+		nonce: reqId,
+	    }), "https://webathena.scripts.mit.edu");
+	};
+	document.body.appendChild(frame);
+    }
+
+    function getIp(success) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', 'ip.cgi');
+	xhr.onreadystatechange = function (e) {
+	    if (this.readyState != 4)
+	    return;
+	    if (this.status == 200) {
+		var data = JSON.parse(this.responseText);
+		success(data.ip);
+	    } else {
+		console.log("XHR failed");
+	    }
+	};
+	xhr.send();
+    }
+
+    function sendZnotice(notice, cb) {
+	var b64 = Crypto.toBase64(notice);
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', 'zhm.cgi');
+	xhr.setRequestHeader('Content-Type', 'text/plain')
+	xhr.setRequestHeader('X-Zwrite-Js', 'OK')
+	xhr.onreadystatechange = function (e) {
+	    if (this.readyState != 4)
+	    return;
+	    if (this.status == 200) {
+		try {
+		    var data = JSON.parse(this.responseText);
+		    cb(data);
+		} catch (e) {
+		    console.log(this.responseText);
+		}
+	    } else {
+		console.log("XHR failed");
+	    }
+	};
+	xhr.send(b64);
+    }
+</script>
