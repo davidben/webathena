@@ -39,6 +39,8 @@ Note: you have to be already "logged in" to Webathena for this to work. We
 haven't written any UI for forwarding tickets between origins yet.
 </p>
 <script>
+    var Z_MAXPKTLEN = 1024;
+    var Z_FRAGFUDGE = 13;
 
     // A lot of this is lifted basically straight from pykrb5's zwrite.py.
     function prepend_zero(str, len) {
@@ -58,6 +60,18 @@ haven't written any UI for forwarding tickets between origins yet.
 
     function z_make_zcode(value) {
 	return "Z" + value.replace(/\u00ff/g, "\u00ff\u00f1").replace(/\u0000/g, "\u00ff\u00f0");
+    }
+
+    function makeUid(ip) {
+	// Get a UID. We need the server's IP address. (Ugh
+	// load-balancing ugh.)
+	// We don't get microseconds, so include a bit of
+	// Math.random for a bit more uniqueness. Especially since
+	// everyone'll have the same IP. Hopefully ordering isn't important?
+	var now = Date.now();
+	return (ip + " " +
+	    z_make_ascii_32(Math.floor(now / 1000)) + " " + 
+	    z_make_ascii_32(Math.floor((Math.random() + now % 1000) * 1000)));
     }
 
     document.getElementById("z-form").addEventListener("submit", function (e) {
@@ -88,16 +102,7 @@ haven't written any UI for forwarding tickets between origins yet.
 		// FIXME: Mumble escaping mumble.
 		var sender = session.cname.nameString.join("/") + "@" + session.crealm;
 
-
-		// Get a UID. We need the server's IP address. (Ugh
-		// load-balancing ugh.)
-		// FIXME: We don't get microseconds. Maybe include a bit of
-		// Math.random for a bit more uniqueness. Especially since
-		// everyone'll have the same IP.
-		var now = Date.now();
-		var uid = ip + " " +
-		          z_make_ascii_32(Math.floor(now / 1000)) + " " + 
-		          z_make_ascii_32((now % 1000) * 1000);
+		var uid = makeUid(ip);
 
 		var before_checksum = [
 		    "ZEPH0.2",
@@ -127,14 +132,36 @@ haven't written any UI for forwarding tickets between origins yet.
 		var header_count = before_checksum.length + 1 + after_checksum.length;
 		before_checksum[1] = z_make_ascii_32(header_count);
 
-		var checksum_data = before_checksum.concat(after_checksum).concat(body).join("\0");
-		var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
+		// Compute the header length.
+		var headerLength = before_checksum.concat(after_checksum).join("\0").length;
+		// Checksum length could up to double if we're unlucky. Also \0 and Z
+		headerLength += 1 + 1 + 2 * session.key.getEncProfile().checksum.checksumBytes;
+		// How much body can we fit in one fragment?
+		var fragSize = Z_MAXPKTLEN - headerLength - Z_FRAGFUDGE;
+		var bodyText = body.join("\0");
+		console.log("fragSize", fragSize);
+		console.log("bodyText.length", bodyText.length);
 
-		var notice = before_checksum.concat([checksum]).concat(after_checksum).concat(body).join("\0");
-		console.log("notice", JSON.stringify(notice));
-		console.log(before_checksum.concat([checksum]).concat(after_checksum).concat(body))
+		for (var offset = 0; offset < bodyText.length; ) {
+		    var multipart = String(offset) + "/" + String(bodyText.length);
+		    console.log("multipart", multipart);
+		    after_checksum[0] = multipart;
+		    if (offset != 0)
+			before_checksum[3] = makeUid(ip);
 
-		sendZnotice(notice, function (result) { console.log(result); });
+		    var bodyPart = bodyText.substr(offset, fragSize);
+		    console.log("bodyPart", bodyPart);
+
+		    var checksum_data = before_checksum.concat(after_checksum).concat([bodyPart]).join("\0");
+		    var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
+
+		    var notice = before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]).join("\0");
+		    console.log("notice", JSON.stringify(notice));
+		    console.log(before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]))
+
+		    sendZnotice(notice, function (result) { console.log(result); });
+		    offset += bodyPart.length;
+		}
 	    });
 	    }, function (error) {
 	        console.log("error", error);
