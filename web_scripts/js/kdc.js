@@ -165,7 +165,8 @@ KDC.asReq = function(username, success, error) {
 
     asReq.reqBody.principalName = {};
     asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
-    asReq.reqBody.principalName.nameString = [ username ];
+    // FIXME: proper parsing of principals.
+    asReq.reqBody.principalName.nameString = username.split('/');
 
     asReq.reqBody.realm = KDC.realm;
 

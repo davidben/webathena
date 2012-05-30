@@ -93,7 +93,8 @@ $(function() {
             resetForm();
             $('#login').fadeOut();
             $('#authed').fadeIn();
-            $('#principal').text(tgtSession.cname.nameString + '@' + tgtSession.crealm);
+            // FIXME: Property stringifying of principals
+            $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
         }, onError);
         return false;
     });
@@ -105,6 +106,7 @@ $(function() {
         // TODO: check tgtSession.isExpired
         $('#login').hide();
         $('#authed').show();
-        $('#principal').text(tgtSession.cname.nameString + '@' + tgtSession.crealm);
+        // FIXME: Property stringifying of principals
+        $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
     }
 });
