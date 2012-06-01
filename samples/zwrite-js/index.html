@@ -15,9 +15,13 @@
 
 <h1>zwrite.js proof of concept</h1>
 
+<p>(Sorry, this apparently only works in WebKit right now. The <a href="http://crypto.stanford.edu/sjcl/">SJCL</a> stuff
+to get around lack of <code><a href="https://developer.mozilla.org/en/DOM/window.crypto.getRandomValues">window.crypto.getRandomValues</a></code>
+doesn't work in invisible iframes. For now try it in Chrome or something.)</p>
+
 <form id="z-form">
-  Class: <input id="z-class" autofocus><br>
-  Instance: <input id="z-inst"><br>
+  Class: <input id="z-class" autofocus placeholder="message"><br>
+  Instance: <input id="z-inst" placeholder="personal"><br>
   Recipient: <input id="z-recip"><br>
   <textarea id="z-message" rows=10 cols=80></textarea><br>
   <input type="submit" value="Send">
@@ -60,6 +64,11 @@ haven't written any UI for forwarding tickets between origins yet.
 
     function z_make_zcode(value) {
 	return "Z" + value.replace(/\u00ff/g, "\u00ff\u00f1").replace(/\u0000/g, "\u00ff\u00f0");
+    }
+
+    function toUtf8(str) {
+	// Seriously?
+	return unescape(encodeURIComponent(str));
     }
 
     function makeUid(ip) {
@@ -113,8 +122,8 @@ haven't written any UI for forwarding tickets between origins yet.
 		    z_make_ascii_32(1), // authstatus
 		    z_make_ascii_32(apReq.length), // authlen
 		    z_make_zcode(apReq), // authenticator
-		    class_,
-		    inst,
+		    toUtf8(class_),
+		    toUtf8(inst),
 		    "", // opcode
 		    sender,
 		    recip,
@@ -126,7 +135,7 @@ haven't written any UI for forwarding tickets between origins yet.
 		    ];
 		var body = [
 		    "Sent from zwrite.js", // sig
-		    message
+		    toUtf8(message)
 		    ];
 
 		var header_count = before_checksum.length + 1 + after_checksum.length;
