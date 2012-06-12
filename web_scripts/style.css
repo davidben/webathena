@@ -112,7 +112,7 @@ table.body {
     padding-right: 0.3em;
 }
 
-#alert #content {
+#alert-content {
     text-align: left;
     max-width: 300px;
 }
