@@ -343,7 +343,7 @@ asn1.INTEGER.encodeDERValue = function (object) {
 };
 
 asn1.INTEGER.decodeDERValue = function (data) {
-    var ret = data.charCodeAt(i);
+    var ret = data.charCodeAt(0);
     if (ret > 127)
         ret = ret - 256;
     for (var i = 1; i < data.length; i++) {
