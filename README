@@ -4,9 +4,9 @@ Project Webathena
 Webathena is an experiment to bring Project Athena and particularly
 Kerberos to the web. It is a JavaScript Kerberos client, paired with a
 simple server-side KDC proxy which wraps the Kerberos protocol in
-HTTP. The tickets are stored locally in HTML localStorage. We define a
-cross-origin protocol using postMessage to forward service tickets to
-web applications needing access to the user's credentials.
+HTTP. The tickets are stored locally in HTML localStorage. It provides
+a cross-origin protocol using postMessage to forward service tickets
+to web applications needing access to the user's credentials.
 
 Webathena is written by David Benjamin and Alan Huang of the MIT
 Student Information Processing Board.
