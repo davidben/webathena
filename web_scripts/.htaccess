@@ -29,6 +29,6 @@ Header add X-Frame-Options "deny"
 # interpreted as attacker-controlled HTML.
 Header add X-Content-Options "nosniff"
 
-<Files getticket.html>
+<Files relay.html>
     Header unset X-Frame-Options
 </Files>
