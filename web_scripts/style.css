@@ -173,8 +173,11 @@ button {
 }
 
 #authed #principal {
+    padding-bottom: 1em;
+}
+
+#authed .principal {
     text-transform: none;
     font-family: 'PT Mono', monospace;
     font-size: 18pt;
-    padding-bottom: 1em;
 }

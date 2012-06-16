@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Webathena</title>
+        <title>Webathena Login</title>
         <link rel="SHORTCUT ICON" href="favicon.ico">
         <link rel="icon" type="image/vnd.microsoft.icon" href="favicon.ico">
         <link href="https://fonts.googleapis.com/css?family=Overlock" rel="stylesheet" type="text/css">
@@ -21,6 +21,9 @@
         <script src="js/enctype.js"></script>
         <script src="js/kdc.js"></script>
         <script src="js/ui.js"></script>
+
+        <script src="js/winchan.js"></script>
+        <script src="js/request_ticket.js"></script>
     </head>
     <body>
         <div id="whatis">
@@ -101,14 +104,31 @@
         </form>
         <table id="authed" class="body">
             <tr>
-                <td>You are logged in as</td>
+                <td colspan=2>You are logged in as</td>
             </tr>
             <tr>
-                <td id="principal" class="principal"></td>
+                <td id="principal" class="principal" colspan=2></td>
             </tr>
             <tr>
-                <td id="logout">
-                    <button>Log out</button>
+                <td id="foreign-origin" class="principal" colspan=2>https://example.com</td>
+            </tr>
+            <tr>
+                <td colspan=2>requests to access</td>
+            </tr>
+            <tr>
+                <td id="service-principal" class="principal" colspan=2>example/service@ATHENA.MIT.EDU</td>
+            </tr>
+            <tr>
+                <td colspan=2>on your behalf. This will allow the website to
+                    use the service with your credentials. Blah blah some sort
+                    of appropriate text here. Also this UI is too wide.</td>
+            </tr>
+            <tr>
+                <td>
+                    <button id="request-ticket-allow">Allow</button>
+                </td>
+                <td>
+                    <button id="request-ticket-deny">Deny</button>
                 </td>
             </tr>
         </table>
