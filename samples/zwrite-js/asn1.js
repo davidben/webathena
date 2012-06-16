@@ -9,62 +9,6 @@
 /** @namespace Functionality related to ASN.1 */
 var asn1 = { };
 
-/**
- * Creates a substring object, so we can do the Java thing with cheap
- * substrings.
- *
- * @param {String|asn1.SubString} str The string to substring
- * @param {Number} start The character index to start taking characters
- *     from.
- * @param {Number} length The number of characters to take.
- * @class 
- */
-asn1.SubString = function (str, start, length) {
-    if (start === undefined) start = 0;
-    if (length === undefined) length = str.length;
-
-    start = Math.min(start, str.length);
-    length = Math.min(length, str.length - start);
-
-    if (str instanceof asn1.SubString) {
-        start += str.start;
-        str = str.str;
-    }
-    this.str = str;
-    this.start = start;
-    this.length = length;
-};
-
-/**
- * Returns a character code from the substring. Returns NaN if out of
- * bounds.
- *
- * @param {Number} i The character to return
- * @return {Number} a character code.
- */
-asn1.SubString.prototype.charCodeAt = function (i) {
-    if (i < 0 || i >= this.length)
-        return NaN;  // Apparently this is what String does.
-    return this.str.charCodeAt(i + this.start);
-};
-
-/**
- * Returns a substring.
- *
- * @param {Number} start The character index to start taking characters
- *     from.
- * @param {Number} length The number of characters to take.
- * @return {asn1.SubString} a substring.
- */
-asn1.SubString.prototype.substr = function (start, length) {
-    return new asn1.SubString(this, start, length);
-};
-
-asn1.SubString.prototype.toString = function () {
-    return this.str.substr(this.start, this.length);
-};
-
-
 /** @const */ asn1.TAG_UNIVERSAL   = 0x0 << 6;
 /** @const */ asn1.TAG_APPLICATION = 0x1 << 6;
 /** @const */ asn1.TAG_CONTEXT     = 0x2 << 6;
@@ -130,10 +74,9 @@ asn1.encodeLengthDER = function (length) {
 /**
  * Decodes an ASN.1 TLV tuple.
  *
- * @param {String|asn1.SubString} data The data to decode.
+ * @param {String} data The data to decode.
  * @return {Array} A tuple [tag, value, rest] containing the tag as a
- *    Number, the value as an asn1.SubString, and the unread data as
- *    an asn1.SubString.
+ *    Number, the value as a String, and the unread data as a String.
  */
 asn1.decodeTagLengthValueDER = function (data) {
     var off = 0;
@@ -207,7 +150,7 @@ asn1.Type.prototype.encodeDER = function (object) {
  * Decodes DER-encoded data according to this type. Throws an
  * exception if the entire data isn't read.
  *
- * @param {String|asn1.SubString} data The data to decode.
+ * @param {String} data The data to decode.
  * @return {Object} The decoded object.
  */
 asn1.Type.prototype.decodeDER = function (data) {
@@ -221,7 +164,7 @@ asn1.Type.prototype.decodeDER = function (data) {
 /**
  * Decodes DER-encoded data according to this type.
  *
- * @param {String|asn1.SubString} data The data to decode.
+ * @param {String} data The data to decode.
  * @return {Array} A tuple of the decoded object and the unread data.
  */
 asn1.Type.prototype.decodeDERPrefix = function (data) {
@@ -343,7 +286,7 @@ asn1.INTEGER.encodeDERValue = function (object) {
 };
 
 asn1.INTEGER.decodeDERValue = function (data) {
-    var ret = data.charCodeAt(i);
+    var ret = data.charCodeAt(0);
     if (ret > 127)
         ret = ret - 256;
     for (var i = 1; i < data.length; i++) {

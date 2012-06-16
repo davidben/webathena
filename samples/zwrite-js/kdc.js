@@ -165,7 +165,8 @@ KDC.asReq = function(username, success, error) {
 
     asReq.reqBody.principalName = {};
     asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
-    asReq.reqBody.principalName.nameString = [ username ];
+    // FIXME: proper parsing of principals.
+    asReq.reqBody.principalName.nameString = username.split('/');
 
     asReq.reqBody.realm = KDC.realm;
 
@@ -267,6 +268,13 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
 };
 
 KDC.Session = function (asRep, encRepPart) {
+    // Make sure this thing is trivial JSON-able.
+    function dateToInt(d) {
+        if (d instanceof Date)
+            return d.getTime();
+        return d;
+    }
+
     // Just store everything. Whatever.
     this.crealm = asRep.crealm;
     this.cname = asRep.cname;
@@ -274,9 +282,9 @@ KDC.Session = function (asRep, encRepPart) {
 
     this.key = KDC.Key.fromDict(encRepPart.key);
     this.flags = encRepPart.flags;
-    this.starttime = encRepPart.starttime;
-    this.endtime = encRepPart.endtime;
-    this.renewTill = encRepPart.renewTill;
+    this.starttime = dateToInt(encRepPart.starttime);
+    this.endtime = dateToInt(encRepPart.endtime);
+    this.renewTill = dateToInt(encRepPart.renewTill);
     this.srealm = encRepPart.srealm;
     this.sname = encRepPart.sname;
     this.caddr = encRepPart.caddr;
@@ -384,5 +392,5 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
 };
 
 KDC.Session.prototype.isExpired = function () {
-    return this.endtime <= new Date();
+    return new Date(this.endtime) <= new Date();
 };
