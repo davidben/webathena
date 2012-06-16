@@ -12,6 +12,7 @@
 <script src="krb.js"></script>
 <script src="enctype.js"></script>
 <script src="kdc.js"></script>
+<script src="winchan.js"></script>
 
 <h1>zwrite.js proof of concept</h1>
 
@@ -177,53 +178,32 @@ haven't written any UI for forwarding tickets between origins yet.
 	    });
     });
 
-    // This is pretty annoying if we want more than one query... I think we want
-    // to use the libraries Mozilla wrote for BrowserID.
     var session;
-    var nextRequestId = 0;
-    var cbs = { };
-
-    window.addEventListener("message", function (e) {
-	if (e.origin != 'https://webathena.scripts.mit.edu')
-            return;
-	var response = JSON.parse(e.data);
-	console.log(response);
-
-	var cb = cbs[response.nonce];
-	delete cbs[response.nonce];
-	cb(response);
-    });
-
     function getTicket(success, error) {
-	if (session && !session.isExpired()) {
+	if (session) {
 	    window.setTimeout(function () { success(session); });
 	    return;
 	}
-
-	var reqId = String(nextRequestId++);
-	reqId += "|" + Math.random();
-	cbs[reqId] = function (response) {
-	    if (response.status != 'OK') {
-		error(response);
-		return;
-	    }
-	    session = KDC.Session.fromDict(response.session);
-	    success(session);
-	    frame.parentNode.removeChild(frame);
-	};
-
-	var frame = document.createElement("iframe");
-	frame.style.display = "none";
-	frame.src = "https://webathena.scripts.mit.edu/getticket.html";
-	frame.onload = function (e) {
-	    frame.contentWindow.postMessage(JSON.stringify({
-		method: 'get_ticket',
+	WinChan.open({
+	    url: "https://webathena.scripts.mit.edu/request_ticket_v1.html",
+	    relay_url: "https://webathena.scripts.mit.edu/relay.html",
+	    params: {
 		realm: 'ATHENA.MIT.EDU',
 		principal: ['zephyr', 'zephyr'],
-		nonce: reqId,
-	    }), "https://webathena.scripts.mit.edu");
-	};
-	document.body.appendChild(frame);
+	    }
+	    }, function (err, r) {
+	    console.log("got reply", err, r);
+	    if (err) {
+		error(err);
+		return;
+	    }
+	    if (r.status !== "OK") {
+		error(r);
+		return;
+	    }
+	    session = KDC.Session.fromDict(r.session);
+	    success(session);
+	});
     }
 
     function getIp(success) {
