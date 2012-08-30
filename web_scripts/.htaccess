@@ -5,7 +5,7 @@ RewriteRule ^kdc/(.*)$ kdc.fcgi/$1 [QSA,L]
 # Redirect to HTTPS...
 RewriteCond %{HTTPS} off
 RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
-# ...and set HTST for 3 months
+# ...and set HSTS for 3 months
 Header add Strict-Transport-Security "max-age=7884000"
 
 # Enable a CSP policy. Safari's X-WebKit-CSP is broken, so only enable it in
