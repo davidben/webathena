@@ -41,14 +41,14 @@ Crypto.retryForEntropy = function (action) {
             // Retry when we have more entropy.
 
             // TODO: Notify the UI in case we want to retry later.
-            console.log("Not enough entropy!");
+            log("Not enough entropy!");
             var retry = function () {
                 sjcl.random.removeEventListener("seeded", retry);
                 Crypto.retryForEntropy(action);
             };
             sjcl.random.addEventListener("seeded", retry);
         } else {
-            console.log("Uncatchable exception", e);
+            log("Uncatchable exception", e);
             throw e;
         }
     }

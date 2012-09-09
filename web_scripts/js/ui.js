@@ -86,7 +86,7 @@ $(function() {
         };
         
         KDC.getTGTSession(username, password, function(tgtSession) {
-            console.log(tgtSession);
+            log(tgtSession);
             // Save in local storage.
             localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
 

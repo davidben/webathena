@@ -51,7 +51,7 @@ WinChan.onOpen(function (origin, args, cb) {
             // listener would only be hooked up when we've got a valid
             // tgtSession.
             if (!localStorage.getItem("tgtSession")) {
-                console.log('No ticket');
+                log('No ticket');
                 deny();
                 return;
             }
@@ -63,7 +63,7 @@ WinChan.onOpen(function (origin, args, cb) {
             if (tgtSession.isExpired()) {
                 // I guess this is actually possible if the ticket
                 // expires while this user is deliberating.
-                console.log('Ticket expired');
+                log('Ticket expired');
                 deny();
                 return;
             }
@@ -88,7 +88,7 @@ WinChan.onOpen(function (origin, args, cb) {
                     });
                 },
                 function (error) {
-                    console.log(error);
+                    log(error);
                     deny();
                 });
         });
