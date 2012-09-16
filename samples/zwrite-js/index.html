@@ -30,7 +30,7 @@ doesn't work in invisible iframes. For now try it in Chrome or something.)</p>
 
 <p>
 zwrite.js obtains a ticket for <code>zephyr/zephyr@ATHENA.MIT.EDU</code>
-through <a href="https://webathena.scripts.mit.edu">Webathena</a>. It then
+through <a href="https://webathena.mit.edu">Webathena</a>. It then
 assembles the notice itself (after querying the server to find out its IP) and
 forwards to <code>zhm.cgi</code> which just forwards it along to its local zhm.
 The page is protected by certificates for now to prevent potential abuse of the
@@ -185,8 +185,8 @@ haven't written any UI for forwarding tickets between origins yet.
 	    return;
 	}
 	WinChan.open({
-	    url: "https://webathena.scripts.mit.edu/request_ticket_v1.html",
-	    relay_url: "https://webathena.scripts.mit.edu/relay.html",
+	    url: "https://webathena.mit.edu/request_ticket_v1.html",
+	    relay_url: "https://webathena.mit.edu/relay.html",
 	    params: {
 		realm: 'ATHENA.MIT.EDU',
 		principal: ['zephyr', 'zephyr'],
