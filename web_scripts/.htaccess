@@ -8,11 +8,11 @@ RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
 # ...and set HSTS for 3 months
 Header add Strict-Transport-Security "max-age=7884000"
 
-# Enable a CSP policy. Safari's X-WebKit-CSP is broken, so only enable it in
-# Chrome.
-BrowserMatch Chrome/ is_chrome
+# Safari 5 has a broken CSP implementation. Blacklist WebKit versions before
+# Safari 6.
+BrowserMatch "AppleWebKit/53[0-5]\." broken_safari
 Header add X-Content-Security-Policy "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://themes.googleusercontent.com; object-src 'none'"
-Header add X-WebKit-CSP              "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://themes.googleusercontent.com; object-src 'none'" env=is_chrome
+Header add X-WebKit-CSP              "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://themes.googleusercontent.com; object-src 'none'" env=!broken_safari
 
 # XSS filters can sometimes be abused to selectively disable script
 # tags. With inline script disabled, it's probably fine, but it's
