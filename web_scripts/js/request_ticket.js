@@ -74,8 +74,7 @@ WinChan.onOpen(function (origin, args, cb) {
             };
 
             // User gave us permission and we have a legit TGT. Let's go!
-            tgtSession.getServiceSession(
-                [principal, args.realm],
+            tgtSession.getServiceSession([principal, args.realm]).then(
                 function (session) {
                     // TODO: Do we want to store this in the ccache
                     // too, so a service which doesn't cache its own
@@ -90,7 +89,7 @@ WinChan.onOpen(function (origin, args, cb) {
                 function (error) {
                     log(error);
                     deny();
-                });
+                }).end();
         });
 
     document.getElementById("request-ticket-deny").addEventListener("click", deny);

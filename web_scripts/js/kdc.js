@@ -32,10 +32,11 @@ Crypto.randomNonce = function() {
 };
 
 Crypto.retryForEntropy = function (action) {
+    var deferred = Q.defer();
     // We can maybe be more awesome and note that SJCL never needs to
     // re-seed its PRNG once its been seeded initially.
     try {
-        action();
+        deferred.resolve(action());
     } catch (e) {
         if (e instanceof sjcl.exception.notReady) {
             // Retry when we have more entropy.
@@ -48,10 +49,10 @@ Crypto.retryForEntropy = function (action) {
             };
             sjcl.random.addEventListener("seeded", retry);
         } else {
-            log("Uncatchable exception", e);
-            throw e;
+            deferred.reject(e);
         }
     }
+    return deferred.promise;
 };
 
 var KDC = {};
@@ -116,7 +117,8 @@ KDC.Key.fromPassword = function (keytype, password, salt, params) {
                        encProfile.stringToKey(password, salt, params));
 };
 
-KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
+KDC.kdcProxyRequest = function (data, target, outputType) {
+    var deferred = Q.defer();
     var xhr = new XMLHttpRequest();
     xhr.open('POST', KDC.urlBase + target);
     xhr.setRequestHeader('X-WebKDC-Request', 'OK');
@@ -128,94 +130,92 @@ KDC.kdcProxyRequest = function (data, target, outputType, success, error) {
             var data = JSON.parse(this.responseText);
             switch(data.status) {
             case 'ERROR':
-                error(new Err(Err.Context.NET, 'proxy', data.msg));
+                deferred.reject(new Err(Err.Context.NET, 'proxy', data.msg));
                 break;
             case 'TIMEOUT':
-                error(new Err(Err.Context.NET, 'timeout',
-                              'KDC connection timed out'));
+                deferred.reject(new Err(Err.Context.NET, 'timeout',
+                                        'KDC connection timed out'));
                 break;
             case 'OK':
                 var der = Crypto.fromBase64(data.reply);
                 var reply = outputType.decodeDER(der)[1];
-                success(reply);
+                deferred.resolve(reply);
                 break;
             }
         } else {
-            error(new Err(Err.Context.NET, 'error', xhr.status));
+            deferred.reject(new Err(Err.Context.NET, 'error', xhr.status));
         }
     };
     xhr.send(Crypto.toBase64(data));
+    return deferred.promise;
 };
 
-KDC.asReq = function(username, success, error) {
-    var asReq = {};
-    asReq.pvno = krb.pvno;
-    asReq.msgType = krb.KRB_MT_AS_REQ;
-    // TODO: Implement pre-authentication and everything.
-    // asReq.padata = []; // Omit if empty.
+KDC.asReq = function(username) {
+    return Crypto.retryForEntropy(function () {
+        var asReq = {};
+        asReq.pvno = krb.pvno;
+        asReq.msgType = krb.KRB_MT_AS_REQ;
+        // TODO: Implement pre-authentication and everything.
+        // asReq.padata = []; // Omit if empty.
 
-    // FIXME: This is obnoxious. Also constants.
-    asReq.reqBody = {};
-    // TODO: Pick a reasonable set of flags. These are just taken from
-    // a wireshark trace.
-    asReq.reqBody.kdcOptions = krb.KDCOptions.make(
-        krb.KDCOptions.forwardable,
-        krb.KDCOptions.proxiable,
-        krb.KDCOptions.renewable_ok);
+        // FIXME: This is obnoxious. Also constants.
+        asReq.reqBody = {};
+        // TODO: Pick a reasonable set of flags. These are just taken from
+        // a wireshark trace.
+        asReq.reqBody.kdcOptions = krb.KDCOptions.make(
+            krb.KDCOptions.forwardable,
+            krb.KDCOptions.proxiable,
+            krb.KDCOptions.renewable_ok);
 
-    asReq.reqBody.principalName = {};
-    asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
-    // FIXME: proper parsing of principals.
-    asReq.reqBody.principalName.nameString = username.split('/');
+        asReq.reqBody.principalName = {};
+        asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
+        // FIXME: proper parsing of principals.
+        asReq.reqBody.principalName.nameString = username.split('/');
 
-    asReq.reqBody.realm = KDC.realm;
+        asReq.reqBody.realm = KDC.realm;
 
-    asReq.reqBody.sname = {};
-    asReq.reqBody.sname.nameType = krb.KRB_NT_SRV_INST;
-    asReq.reqBody.sname.nameString = [ 'krbtgt', KDC.realm ];
+        asReq.reqBody.sname = {};
+        asReq.reqBody.sname.nameType = krb.KRB_NT_SRV_INST;
+        asReq.reqBody.sname.nameString = [ 'krbtgt', KDC.realm ];
 
-    asReq.reqBody.till = new Date(0);
-    asReq.reqBody.nonce = Crypto.randomNonce();
-    asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
-                           krb.enctype.des_cbc_md5];
+        asReq.reqBody.till = new Date(0);
+        asReq.reqBody.nonce = Crypto.randomNonce();
+        asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
+                               krb.enctype.des_cbc_md5];
 
-    KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
-                        'AS_REQ', krb.AS_REP_OR_ERROR,
-                        function (asRep) { success(asReq, asRep); },
-                        error);
+        return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
+                                   'AS_REQ', krb.AS_REP_OR_ERROR)
+            .then(function (asRep) {
+                return { asReq: asReq, asRep: asRep };
+            });
+    });
 };
 
-KDC.getTGTSession = function (username, password, success, error) {
-    Crypto.retryForEntropy(function () {
-        KDC.asReq(username, function (asReq, asRep) {
-            // TODO: Rearrange this code to interpret this error and
-            // stuff. We may get a request for pre-authentication, in
-            // which case we retry with pre-auth after prompting for
-            // the password. (We already have the password, but I
-            // believe in theory this could be written so that we
-            // prompt on demand.)
-            if(asRep.msgType == krb.KRB_MT_ERROR) {
-                error(new Err(Err.Context.KDC, asRep.errorCode, asRep.eText));
-                return;
-            }
+KDC.getTGTSession = function (username, password) {
+    return KDC.asReq(username).then(function (ret) {
+        var asReq = ret.asReq, asRep = ret.asRep;
 
-            // The default salt string, if none is provided via
-            // pre-authentication data, is the concatenation of the
-            // principal's realm and name components, in order, with
-            // no separators.
-            var salt = asReq.reqBody.realm + username;
-            var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt);
+        // TODO: Rearrange this code to interpret this error and
+        // stuff. We may get a request for pre-authentication, in
+        // which case we retry with pre-auth after prompting for
+        // the password. (We already have the password, but I
+        // believe in theory this could be written so that we
+        // prompt on demand.)
+        if (asRep.msgType == krb.KRB_MT_ERROR)
+            throw new Err(Err.Context.KDC, asRep.errorCode, asRep.eText);
 
-            // The key usage value for encrypting this field is 3 in
-            // an AS-REP message, using the client's long-term key or
-            // another key selected via pre-authentication mechanisms.
-            try {
-                return success(KDC.sessionFromKDCRep(
-                    key, krb.KU_AS_REQ_ENC_PART, asReq, asRep));
-            } catch (e) {
-                return error(e);
-            }
-        }, error);
+        // The default salt string, if none is provided via
+        // pre-authentication data, is the concatenation of the
+        // principal's realm and name components, in order, with
+        // no separators.
+        var salt = asReq.reqBody.realm + username;
+        var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt);
+
+        // The key usage value for encrypting this field is 3 in
+        // an AS-REP message, using the client's long-term key or
+        // another key selected via pre-authentication mechanisms.
+        return KDC.sessionFromKDCRep(key, krb.KU_AS_REQ_ENC_PART,
+                                     asReq, asRep);
     });
 };
 
@@ -321,9 +321,9 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
     return apReq;
 };
 
-KDC.Session.prototype.getServiceSession = function (service, success, error) {
+KDC.Session.prototype.getServiceSession = function (service) {
     var self = this;
-    Crypto.retryForEntropy(function () {
+    return Crypto.retryForEntropy(function () {
         var tgsReq = { };
         tgsReq.pvno = krb.pvno;
         tgsReq.msgType = krb.KRB_MT_TGS_REQ;
@@ -356,38 +356,30 @@ KDC.Session.prototype.getServiceSession = function (service, success, error) {
         tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                            padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
-        KDC.kdcProxyRequest(
-            krb.TGS_REQ.encodeDER(tgsReq),
-            'TGS_REQ', krb.TGS_REP_OR_ERROR,
-            function (tgsRep) {
-                // TODO: Rearrange this code to interpret this error and
-                // stuff. We may get a request for pre-authentication, in
-                // which case we retry with pre-auth after prompting for
-                // the password. (We already have the password, but I
-                // believe in theory this could be written so that we
-                // prompt on demand.)
-                if(tgsRep.msgType == krb.KRB_MT_ERROR) {
-                    error(new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText));
-                    return;
-                }
+        return KDC.kdcProxyRequest(krb.TGS_REQ.encodeDER(tgsReq),
+                                   'TGS_REQ', krb.TGS_REP_OR_ERROR);
+    }).then(function (tgsRep) {
+        // TODO: Rearrange this code to interpret this error and
+        // stuff. We may get a request for pre-authentication, in
+        // which case we retry with pre-auth after prompting for
+        // the password. (We already have the password, but I
+        // believe in theory this could be written so that we
+        // prompt on demand.)
+        if(tgsRep.msgType == krb.KRB_MT_ERROR)
+            throw new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText);
 
-                // When the KRB_TGS_REP is received by the client, it is
-                // processed in the same manner as the KRB_AS_REP
-                // processing described above.  The primary difference is
-                // that the ciphertext part of the response must be
-                // decrypted using the sub-session key from the
-                // Authenticator, if it was specified in the request, or
-                // the session key from the TGT, rather than the client's
-                // secret key.
-                try {
-                    // If we use a subkey, the usage might change I think.
-                    return success(KDC.sessionFromKDCRep(
-                        self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep));
-                } catch (e) {
-                    return error(e);
-                }
-            },
-            error);
+        // When the KRB_TGS_REP is received by the client, it is
+        // processed in the same manner as the KRB_AS_REP
+        // processing described above.  The primary difference is
+        // that the ciphertext part of the response must be
+        // decrypted using the sub-session key from the
+        // Authenticator, if it was specified in the request, or
+        // the session key from the TGT, rather than the client's
+        // secret key.
+        //
+        // If we use a subkey, the usage might change I think.
+        return KDC.sessionFromKDCRep(
+            self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
     });
 };
 

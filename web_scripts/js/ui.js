@@ -67,7 +67,17 @@ $(function() {
             clearInterval(interval);
             $('#submit').attr('disabled', null).text(text);
         };
-        var onError = function(error) {
+        KDC.getTGTSession(username, password).then(function(tgtSession) {
+            log(tgtSession);
+            // Save in local storage.
+            localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
+
+            resetForm();
+            $('#login').fadeOut();
+            $('#authed').fadeIn();
+            // FIXME: Property stringifying of principals
+            $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
+        }, function(error) {
             var string;
             if(error instanceof Err) {
                 if(error.ctx == Err.Context.ENC && error.code == 4)
@@ -83,19 +93,7 @@ $(function() {
             $('#alert-text').text(string);
             $('#alert').slideDown(100);
             resetForm();
-        };
-        
-        KDC.getTGTSession(username, password, function(tgtSession) {
-            log(tgtSession);
-            // Save in local storage.
-            localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
-
-            resetForm();
-            $('#login').fadeOut();
-            $('#authed').fadeIn();
-            // FIXME: Property stringifying of principals
-            $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
-        }, onError);
+        }).end();
         return false;
     });
 
