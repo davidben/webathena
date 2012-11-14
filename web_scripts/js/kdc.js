@@ -283,8 +283,25 @@ KDC.getTGTSession = function (username, password) {
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with
         // no separators.
+        //
+        // If any padata fields are present, they may be used to
+        // derive the proper secret key to decrypt the message.
         var salt = asReq.reqBody.realm + username;
-        var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt);
+        var s2kparams = undefined;
+        if (asRep.padata) {
+            // Is this right?
+            var etypeInfos = KDC.extractPreAuthHint(asRep.padata);
+            if (etypeInfos.length != 1)
+                throw "Bad pre-auth hint";
+            if ("etype" in etypeInfos[0] &&
+                etypeInfos[0].etype != asRep.encPart.etype)
+                throw "Bad pre-auth hint";
+            if ("salt" in etypeInfos[0])
+                salt = etypeInfos[0].salt;
+            s2kparams = etypeInfos[0].s2kparams;
+        }
+        var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt,
+                                       s2kparams);
 
         // The key usage value for encrypting this field is 3 in
         // an AS-REP message, using the client's long-term key or
@@ -308,12 +325,6 @@ KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
         if(!krb.principalNamesEqual(kdcReq.reqBody.principalName,
                                     kdcRep.cname))
             throw new Err(Err.Context.KEY, 0x11, 'cname does not match');
-    }
-
-    // If any padata fields are present, they may be used to
-    // derive the proper secret key to decrypt the message.
-    if (kdcRep.padata) {
-        // TODO: Do something about this one.
     }
 
     // The client decrypts the encrypted part of the response
