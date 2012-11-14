@@ -272,6 +272,8 @@ asn1.INTEGER = new asn1.Type(
 asn1.INTEGER.encodeDERValue = function (object) {
     var ret = [];
     var sign = 0;
+    if (typeof object != "number")
+        throw "Not a number";
     // Encode in two's-complement, base 256, most sigificant bit
     // first, with the minimum number of bytes needed.
     while ((object >= 0 && (sign != 1 || object > 0)) ||
@@ -361,7 +363,9 @@ asn1.OCTET_STRING = new asn1.Type(
     asn1.tag(0x04, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
 
 asn1.OCTET_STRING.encodeDERValue = function (object) {
-    return String(object);
+    if (typeof object != "string")
+        throw "Not a string";
+    return object;
 };
 
 asn1.OCTET_STRING.decodeDERValue = function (data) {
@@ -394,7 +398,9 @@ asn1.GeneralString.encodeDERValue = function (object) {
     // TODO: Is this correct? Do we need to check anything? Not that
     // it matters a whole lot since KerberosString is limited to
     // IA5String's characters for compatibility.
-    return String(object);
+    if (typeof object != "string")
+        throw "Not a string";
+    return object;
 };
 
 asn1.GeneralString.decodeDERValue = function (data) {
