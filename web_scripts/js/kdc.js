@@ -188,11 +188,9 @@ KDC.asReq = function(username, padata) {
         asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
                                krb.enctype.des_cbc_md5];
 
-        return KDC.kdcProxyRequest(
-            krb.AS_REQ.encodeDER(asReq),
-            'AS_REQ', krb.AS_REP_OR_ERROR).then(function (asRep) {
-                return { asReq: asReq, asRep: asRep };
-            });
+        return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
+                                   'AS_REQ', krb.AS_REP_OR_ERROR)
+            .then(function (asRep) { return { asReq: asReq, asRep: asRep }; });
     });
 };
 
@@ -247,9 +245,8 @@ KDC.getTGTSession = function (username, password) {
                     var salt = asReq.reqBody.realm + username;
                     if ("salt" in etypeInfo)
                         salt = etypeInfo.salt;
-                    var key = KDC.Key.fromPassword(
-                        etypeInfo.etype, password, salt,
-                        etypeInfo.s2kparams);
+                    var key = KDC.Key.fromPassword(etypeInfo.etype, password,
+                                                   salt, etypeInfo.s2kparams);
 
                     // Encrypt a timestamp.
                     return Crypto.retryForEntropy(function () {
