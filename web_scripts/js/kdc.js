@@ -97,6 +97,9 @@ KDC.Key.prototype.encrypt = function (usage, data) {
             data)[1]
     };
 };
+KDC.Key.prototype.encryptAs = function (asn1Type, usage, obj) {
+    return this.encrypt(usage, asn1Type.encodeDER(obj));
+}
 KDC.Key.prototype.checksum = function (usage, data) {
     var encProfile = this.getEncProfile();
     var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
@@ -150,13 +153,15 @@ KDC.kdcProxyRequest = function (data, target, outputType) {
     return deferred.promise;
 };
 
-KDC.asReq = function(username) {
+KDC.asReq = function(username, padata) {
     return Crypto.retryForEntropy(function () {
         var asReq = {};
         asReq.pvno = krb.pvno;
         asReq.msgType = krb.KRB_MT_AS_REQ;
-        // TODO: Implement pre-authentication and everything.
-        // asReq.padata = []; // Omit if empty.
+        // TODO: padata will likely want to be a more interesting
+        // callback for ones which depend on, say, the reqBody.
+        if (padata !== undefined)
+            asReq.padata = padata;
 
         // FIXME: This is obnoxious. Also constants.
         asReq.reqBody = {};
@@ -183,24 +188,94 @@ KDC.asReq = function(username) {
         asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
                                krb.enctype.des_cbc_md5];
 
-        return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
-                                   'AS_REQ', krb.AS_REP_OR_ERROR)
-            .then(function (asRep) {
+        return KDC.kdcProxyRequest(
+            krb.AS_REQ.encodeDER(asReq),
+            'AS_REQ', krb.AS_REP_OR_ERROR).then(function (asRep) {
                 return { asReq: asReq, asRep: asRep };
             });
     });
 };
 
+KDC.extractPreAuthHint = function (methodData) {
+    // The preferred ordering of the "hint" pre-authentication data
+    // that affect client key selection is: ETYPE-INFO2, followed by
+    // ETYPE-INFO, followed by PW-SALT.  As noted in Section 3.1.3, a
+    // KDC MUST NOT send ETYPE-INFO or PW-SALT when the client's
+    // AS-REQ includes at least one "newer" etype.
+    for (var i = 0; i < methodData.length; i++) {
+        if (methodData[i].padataType == krb.PA_ETYPE_INFO2)
+            return krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
+    }
+    for (var i = 0; i < methodData.length; i++) {
+        if (methodData[i].padataType == krb.PA_ETYPE_INFO)
+            return krb.ETYPE_INFO.decodeDER(methodData[i].padataValue);
+    }
+    for (var i = 0; i < methodData.length; i++) {
+        if (methodData[i].padataType == krb.PA_PW_SALT)
+            return [ { salt: methodData[i].padataValue } ];
+    }
+    return [];
+}
+
 KDC.getTGTSession = function (username, password) {
     return KDC.asReq(username).then(function (ret) {
         var asReq = ret.asReq, asRep = ret.asRep;
+        // Handle pre-authentication.
+        if (asRep.msgType == krb.KRB_MT_ERROR &&
+            asRep.errorCode == krb.KDC_ERR_PREAUTH_REQUIRED) {
+            // Got a pre-auth request. Retry with pre-auth. Pick the
+            // first PA-DATA we can handle.
+            // TODO: Implement other types of PA-DATA.
+            // TODO: Implement RFC 6113.
+            var methodData = krb.METHOD_DATA.decodeDER(asRep.eData);
+            for (var i = 0; i < methodData.length; i++) {
+                if (methodData[i].padataType == krb.PA_ENC_TIMESTAMP) {
+                    var etypeInfos = KDC.extractPreAuthHint(methodData);
+                    var etypeInfo = null;
+                    // Find an enctype we support.
+                    for (var j = 0; j < etypeInfos.length; j++) {
+                        if (etypeInfos[j].etype in krb.encProfiles) {
+                            etypeInfo = etypeInfos[j];
+                            break;
+                        }
+                    }
+                    if (etypeInfo === null)
+                        throw new Err(Err.Context.KEY, 0x03,
+                                      'No supported enctypes');
 
-        // TODO: Rearrange this code to interpret this error and
-        // stuff. We may get a request for pre-authentication, in
-        // which case we retry with pre-auth after prompting for
-        // the password. (We already have the password, but I
-        // believe in theory this could be written so that we
-        // prompt on demand.)
+                    // Derive a key.
+                    var salt = asReq.reqBody.realm + username;
+                    if ("salt" in etypeInfo)
+                        salt = etypeInfo.salt;
+                    var key = KDC.Key.fromPassword(
+                        etypeInfo.etype, password, salt,
+                        etypeInfo.s2kparams);
+
+                    // Encrypt a timestamp.
+                    return Crypto.retryForEntropy(function () {
+                        var ts = { };
+                        ts.patimestamp = new Date();
+                        ts.pausec = ts.patimestamp.getUTCMilliseconds() * 1000;
+                        ts.patimestamp.setUTCMilliseconds(0);
+                        var encTs = key.encryptAs(
+                            krb.ENC_TS_ENC, krb.KU_AS_REQ_PA_ENC_TIMESTAMP, ts);
+                        return {
+                            padataType: krb.PA_ENC_TIMESTAMP,
+                            padataValue: krb.ENC_TIMESTAMP.encodeDER(encTs)
+                        };
+                    }).then(function (padata) {
+                        // Make a new AS-REQ with our PA-DATA and process that.
+                        return KDC.asReq(username, [padata]);
+                    });
+                }
+            }
+        }
+        // Not a request for pre-auth. Process whatever we got.
+        return ret;
+    }).then(function (ret) {
+        var asReq = ret.asReq, asRep = ret.asRep;
+
+        // Handle errors.
         if (asRep.msgType == krb.KRB_MT_ERROR)
             throw new Err(Err.Context.KDC, asRep.errorCode, asRep.eText);
 
@@ -316,8 +391,7 @@ KDC.Session.prototype.makeAPReq = function (keyUsage,
     if (seqNumber !== undefined) auth.seqNumber = seqNumber;
 
     // Encode the authenticator.
-    apReq.authenticator = this.key.encrypt(keyUsage,
-                                           krb.Authenticator.encodeDER(auth));
+    apReq.authenticator = this.key.encryptAs(krb.Authenticator, keyUsage, auth);
     return apReq;
 };
 
