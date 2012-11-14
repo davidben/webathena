@@ -442,29 +442,24 @@ KDC.Session.prototype.getServiceSession = function (service) {
                            padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
         return KDC.kdcProxyRequest(krb.TGS_REQ.encodeDER(tgsReq),
-                                   'TGS_REQ', krb.TGS_REP_OR_ERROR);
-    }).then(function (tgsRep) {
-        // TODO: Rearrange this code to interpret this error and
-        // stuff. We may get a request for pre-authentication, in
-        // which case we retry with pre-auth after prompting for
-        // the password. (We already have the password, but I
-        // believe in theory this could be written so that we
-        // prompt on demand.)
-        if(tgsRep.msgType == krb.KRB_MT_ERROR)
-            throw new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText);
+                                   'TGS_REQ', krb.TGS_REP_OR_ERROR)
+            .then(function (tgsRep) {
+                if(tgsRep.msgType == krb.KRB_MT_ERROR)
+                    throw new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText);
 
-        // When the KRB_TGS_REP is received by the client, it is
-        // processed in the same manner as the KRB_AS_REP
-        // processing described above.  The primary difference is
-        // that the ciphertext part of the response must be
-        // decrypted using the sub-session key from the
-        // Authenticator, if it was specified in the request, or
-        // the session key from the TGT, rather than the client's
-        // secret key.
-        //
-        // If we use a subkey, the usage might change I think.
-        return KDC.sessionFromKDCRep(
-            self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
+                // When the KRB_TGS_REP is received by the client, it
+                // is processed in the same manner as the KRB_AS_REP
+                // processing described above.  The primary difference
+                // is that the ciphertext part of the response must be
+                // decrypted using the sub-session key from the
+                // Authenticator, if it was specified in the request,
+                // or the session key from the TGT, rather than the
+                // client's secret key.
+                //
+                // If we use a subkey, the usage might change I think.
+                return KDC.sessionFromKDCRep(
+                    self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
+            });
     });
 };
 
