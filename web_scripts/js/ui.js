@@ -85,7 +85,8 @@ $(function() {
             if(error instanceof Err) {
                 if(error.ctx == Err.Context.ENC && error.code == 4)
                     string = 'Incorrect password!';
-                else if(error.ctx = Err.Context.KDC && error.code == 6)
+                else if(error.ctx = Err.Context.KDC &&
+                        error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
                     string = 'Username does not exist!';
                 else
                     string = error.msg + ' (' + error.code + ')';
