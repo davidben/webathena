@@ -39,10 +39,14 @@ WinChan.onOpen(function (origin, args, cb) {
         return;
     }
 
-    // FIXME: PROPERLY STRINGIFY THIS THING!
+    var principal = new KDC.Principal({
+        nameType: krb.KRB_NT_UNKNOWN,
+        nameString: args.principal
+    }, args.realm);
+
     document.getElementById("foreign-origin").textContent = origin;
     document.getElementById("service-principal").textContent =
-        args.principal.join("/") + "@" + args.realm;
+        principal.toString();
     
     document.getElementById("request-ticket-allow").addEventListener(
         "click", function (e) {
@@ -68,13 +72,8 @@ WinChan.onOpen(function (origin, args, cb) {
                 return;
             }
 
-            var principal = {
-                nameType: krb.KRB_NT_UNKNOWN,
-                nameString: args.principal
-            };
-
             // User gave us permission and we have a legit TGT. Let's go!
-            tgtSession.getServiceSession([principal, args.realm]).then(
+            tgtSession.getServiceSession(principal).then(
                 function (session) {
                     // TODO: Do we want to store this in the ccache
                     // too, so a service which doesn't cache its own

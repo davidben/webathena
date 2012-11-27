@@ -67,7 +67,10 @@ $(function() {
             clearInterval(interval);
             $('#submit').attr('disabled', null).text(text);
         };
-        KDC.getTGTSession(username, password).then(function(tgtSession) {
+        Q.fcall(function() {
+            var principal = KDC.Principal.fromString(username);
+            return KDC.getTGTSession(principal, password);
+        }).then(function(tgtSession) {
             log(tgtSession);
             // Save in local storage.
             localStorage.setItem('tgtSession', JSON.stringify(tgtSession));

@@ -60,6 +60,79 @@ var KDC = {};
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
 
+KDC.Principal = function(principalName, realm) {
+    this.principalName = principalName;
+    this.realm = realm;
+};
+// FIXME: mumble mumble module pattern private functions mumble
+function krbEscape(str) {
+    // From src/lib/krb5/krb/unparse.c. Escape \0, \n, \t, \b, \\, \/,
+    // and \@.  Other characters as-is.
+    return str.replace("\\", "\\\\")
+        .replace("\0", "\\0")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+        .replace("\b", "\\b")
+        .replace("/", "\\/")
+        .replace("@", "\\@");
+};
+KDC.Principal.prototype.nameToString = function() {
+    var escaped = [];
+    for (var i = 0; i < this.principalName.nameString.length; i++) {
+        escaped.push(krbEscape(this.principalName.nameString[i]));
+    }
+    return escaped.join("/");
+};
+KDC.Principal.prototype.toString = function() {
+    return this.nameToString() + "@" + krbEscape(this.realm);
+};
+KDC.Principal.prototype.toStringShort = function() {
+    if (this.realm == KDC.realm)
+        return this.nameToString();
+    return this.toString();
+}
+KDC.Principal.fromString = function(str) {
+    var components = [];
+    var component = "";
+    var seenAt = false;
+    for (var i = 0; i < str.length; i++) {
+        if (str[i] == "\\") {
+            i++;
+            if (i >= str.length)
+                throw "Malformed principal";
+            switch (str[i]) {
+            case "n": component += "\n";
+            case "t": component += "\t";
+            case "b": component += "\b";
+            case "0": component += "\0";
+            default: component += str[i];
+            }
+        } else if (str[i] == "/") {
+            if (seenAt)
+                throw "Malformed principal";
+            components.push(component);
+            component = "";
+        } else if (str[i] == "@") {
+            if (seenAt)
+                throw "Malformed principal";
+            components.push(component);
+            component = "";
+            seenAt = true;
+        } else {
+            component += str[i];
+        }
+    }
+    if (!seenAt) {
+        components.push(component);
+        // If no realm, use the default.
+        component = KDC.realm;
+    }
+    return new KDC.Principal({
+        nameType: krb.KRB_NT_PRINCIPAL,
+        nameString: components
+    }, component);
+}
+
 KDC.Key = function (keytype, keyvalue) {
     this.keytype = keytype;
     this.keyvalue = keyvalue;
@@ -153,7 +226,7 @@ KDC.kdcProxyRequest = function (data, target, outputType) {
     return deferred.promise;
 };
 
-KDC.asReq = function(username, padata) {
+KDC.asReq = function(principal, padata) {
     return Crypto.retryForEntropy(function () {
         var asReq = {};
         asReq.pvno = krb.pvno;
@@ -172,10 +245,9 @@ KDC.asReq = function(username, padata) {
             krb.KDCOptions.proxiable,
             krb.KDCOptions.renewable_ok);
 
-        asReq.reqBody.principalName = {};
-        asReq.reqBody.principalName.nameType = krb.KRB_NT_PRINCIPAL;
-        // FIXME: proper parsing of principals.
-        asReq.reqBody.principalName.nameString = username.split('/');
+        if (principal.realm != KDC.realm)
+            throw "Cross-realm not supported!";
+        asReq.reqBody.principalName = principal.principalName;
 
         asReq.reqBody.realm = KDC.realm;
 
@@ -215,8 +287,8 @@ KDC.extractPreAuthHint = function (methodData) {
     return [];
 }
 
-KDC.getTGTSession = function (username, password) {
-    return KDC.asReq(username).then(function (ret) {
+KDC.getTGTSession = function (principal, password) {
+    return KDC.asReq(principal).then(function (ret) {
         var asReq = ret.asReq, asRep = ret.asRep;
         // Handle pre-authentication.
         if (asRep.msgType == krb.KRB_MT_ERROR &&
@@ -242,7 +314,8 @@ KDC.getTGTSession = function (username, password) {
                                       'No supported enctypes');
 
                     // Derive a key.
-                    var salt = asReq.reqBody.realm + username;
+                    var salt = principal.realm +
+                        principal.principalName.nameString.join("");
                     if ("salt" in etypeInfo)
                         salt = etypeInfo.salt;
                     var key = KDC.Key.fromPassword(etypeInfo.etype, password,
@@ -262,7 +335,7 @@ KDC.getTGTSession = function (username, password) {
                         };
                     }).then(function (padata) {
                         // Make a new AS-REQ with our PA-DATA and process that.
-                        return KDC.asReq(username, [padata]);
+                        return KDC.asReq(principal, [padata]);
                     });
                 }
             }
@@ -283,7 +356,8 @@ KDC.getTGTSession = function (username, password) {
         //
         // If any padata fields are present, they may be used to
         // derive the proper secret key to decrypt the message.
-        var salt = asReq.reqBody.realm + username;
+        var salt = principal.realm +
+            principal.principalName.nameString.join("");
         var s2kparams = undefined;
         if (asRep.padata) {
             // Is this right?
@@ -413,10 +487,8 @@ KDC.Session.prototype.getServiceSession = function (service) {
         tgsReq.reqBody = { };
         // TODO: What flags?
         tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
-        // For now just pass service in a pair of [PrincipalName,
-        // Realm]. We need to be able to parse these things though.
-        tgsReq.reqBody.sname = service[0];
-        tgsReq.reqBody.realm = service[1];
+        tgsReq.reqBody.sname = service.principalName;
+        tgsReq.reqBody.realm = service.realm;
 
         // TODO: Do we want to request the maximum end time? Seems a
         // reasonable default I guess.
