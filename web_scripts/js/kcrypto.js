@@ -121,7 +121,7 @@ var kcrypto = (function() {
     };
 
     // 6.2.  DES-Based Encryption and Checksum Types
-    kcrypto._7bitReverseTable = [
+    var sevenBitReverseTable = [
         0, 64, 32, 96, 16, 80, 48, 112, 8, 72, 40, 104, 24, 88, 56, 120, 4, 68,
         36, 100, 20, 84, 52, 116, 12, 76, 44, 108, 28, 92, 60, 124, 2, 66, 34,
         98, 18, 82, 50, 114, 10, 74, 42, 106, 26, 90, 58, 122, 6, 70, 38, 102,
@@ -132,7 +132,7 @@ var kcrypto = (function() {
         15, 79, 47, 111, 31, 95, 63, 127
     ];
 
-    kcrypto._desParityBitTable = [
+    var desParityBitTable = [
         1, 2, 4, 7, 8, 11, 13, 14, 16, 19,
         21, 22, 25, 26, 28, 31, 32, 35, 37, 38,
         41, 42, 44, 47, 49, 50, 52, 55, 56, 59,
@@ -148,7 +148,7 @@ var kcrypto = (function() {
         241, 242, 244, 247, 248, 251, 253, 254,
     ];
 
-    kcrypto._desWeakKeys = {
+    var desWeakKeys = {
         "0101010101010101": 1,
         "fefefefefefefefe": 1,
         "e0e0e0e0f1f1f1f1": 1,
@@ -167,7 +167,7 @@ var kcrypto = (function() {
         "fee0fee0fef1fef1": 1
     };
 
-    kcrypto._mit_des_string_to_key = function (password, salt) {
+    function mit_des_string_to_key(password, salt) {
         function removeMSBits(block) {
             // Clears the MSB of each octet. Now we have a 8 octets, but
             // the MSB of each is uninteresting.
@@ -181,10 +181,10 @@ var kcrypto = (function() {
             for (var i = 0; i < block.words.length; i++) {
                 var word = block.words[i];
                 // Just reverse bytes by lookup table.
-                word = ((kcrypto._7bitReverseTable[word & 0xff] << 24) |
-                        (kcrypto._7bitReverseTable[(word >>> 8) & 0xff] << 16) |
-                        (kcrypto._7bitReverseTable[(word >>> 16) & 0xff] << 8) |
-                        (kcrypto._7bitReverseTable[(word >>> 24) & 0xff]));
+                word = ((sevenBitReverseTable[word & 0xff] << 24) |
+                        (sevenBitReverseTable[(word >>> 8) & 0xff] << 16) |
+                        (sevenBitReverseTable[(word >>> 16) & 0xff] << 8) |
+                        (sevenBitReverseTable[(word >>> 24) & 0xff]));
                 block.words[i] = word;
             }
         }
@@ -192,11 +192,10 @@ var kcrypto = (function() {
         function add_parity_bits(block) {
             for (var i = 0; i < block.words.length; i++) {
                 var word = block.words[i];
-                word =
-                    ((kcrypto._desParityBitTable[word & 0xff]) |
-                     (kcrypto._desParityBitTable[(word >>> 8) & 0xff] << 8) |
-                     (kcrypto._desParityBitTable[(word >>> 16) & 0xff] << 16) |
-                     (kcrypto._desParityBitTable[(word >>> 24) & 0xff] << 24));
+                word = ((desParityBitTable[word & 0xff]) |
+                        (desParityBitTable[(word >>> 8) & 0xff] << 8) |
+                        (desParityBitTable[(word >>> 16) & 0xff] << 16) |
+                        (desParityBitTable[(word >>> 24) & 0xff] << 24));
                 block.words[i] = word;
             }
         }
@@ -211,7 +210,7 @@ var kcrypto = (function() {
 
         function key_correction(block) {
             var hex = CryptoJS.enc.Hex.stringify(block);
-            if (hex in kcrypto._desWeakKeys) {
+            if (hex in desWeakKeys) {
                 block.words[1] = block.words[1] ^ 0xf0;
             }
         }
@@ -275,7 +274,7 @@ var kcrypto = (function() {
         return CryptoJS.enc.Latin1.stringify(key);
     };
 
-    kcrypto._des_string_to_key = function (password, salt, params) {
+    function des_string_to_key(password, salt, params) {
         if (params === undefined) params = "";
 
         var type;
@@ -288,13 +287,13 @@ var kcrypto = (function() {
         }
 
         if (type == 0) {
-            return kcrypto._mit_des_string_to_key(password, salt);
+            return mit_des_string_to_key(password, salt);
         } else {
             throw new Err(Err.Context.ENC, 1, 'Invalid params');
         }
     };
 
-    kcrypto._makeDesEncryptionProfile = function (checksumProfile) {
+    function makeDesEncryptionProfile(checksumProfile) {
         // Note: checksumProfile is the checksum for encrypting with DES,
         // not the required checksum.
         if (checksumProfile.checksumBytes % 4 != 0)
@@ -303,7 +302,7 @@ var kcrypto = (function() {
         var checksumWords = checksumProfile.checksumBytes / 4;
 
         var profile = {};
-        profile.stringToKey = kcrypto._des_string_to_key;
+        profile.stringToKey = des_string_to_key;
         profile.deriveKey = function (key, usage) {
             return key;
         };
@@ -456,8 +455,7 @@ var kcrypto = (function() {
     };
 
     // 6.2.1.  DES with MD5
-    kcrypto.DesCbcMd5Profile =
-        kcrypto._makeDesEncryptionProfile(kcrypto.RsaMd5Checksum);
+    kcrypto.DesCbcMd5Profile = makeDesEncryptionProfile(kcrypto.RsaMd5Checksum);
     kcrypto.DesCbcMd5Profile.enctype = kcrypto.enctype.des_cbc_md5;
     kcrypto.DesCbcMd5Profile.initialCipherState = function (key, isEncrypt) {
         return "\0\0\0\0\0\0\0\0";
@@ -465,8 +463,7 @@ var kcrypto = (function() {
     kcrypto.DesCbcMd5Profile.checksum = kcrypto.RsaMd5DesChecksum;
 
     // 6.2.3.  DES with CRC
-    kcrypto.DesCbcCrcProfile =
-        kcrypto._makeDesEncryptionProfile(kcrypto.Crc32Checksum);
+    kcrypto.DesCbcCrcProfile = makeDesEncryptionProfile(kcrypto.Crc32Checksum);
     kcrypto.DesCbcCrcProfile.enctype = kcrypto.enctype.des_cbc_crc;
     kcrypto.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
         return key;
