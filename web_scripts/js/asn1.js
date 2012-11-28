@@ -17,6 +17,13 @@ var asn1 = { };
 /** @const */ asn1.TAG_PRIMITIVE   = 0x0 << 5;
 /** @const */ asn1.TAG_CONSTRUCTED = 0x1 << 5;
 
+asn1.Error = function(message) {
+    this.message = message;
+};
+asn1.Error.prototype.toString = function() {
+    return "ASN.1 error: " + this.message;
+};
+
 /**
  * Returns an ASN.1 tag.
  *
@@ -34,7 +41,7 @@ asn1.tag = function (number, pc, cls) {
         cls = asn1.TAG_CONTEXT;
     // We'll implement this if we ever have to deal with it.
     if (number >= 31)
-        throw "High-tag-number form not implemented!";
+        throw new asn1.Error("High-tag-number form not implemented!");
     return (cls | pc | number);
 };
 
@@ -87,7 +94,7 @@ asn1.decodeTagLengthValueDER = function (data) {
     var tagPc = tagOctet & (0x1 << 5);
     var tagCls = tagOctet & (0x3 << 6);
     if (tagNumber == 0x1f)
-        throw "High-tag-number form not implemented!";
+        throw new asn1.Error("High-tag-number form not implemented!");
     var tag = asn1.tag(tagNumber, tagPc, tagCls);
     off++;
 
@@ -100,7 +107,7 @@ asn1.decodeTagLengthValueDER = function (data) {
         length = lengthOctet;
     } else if (lengthOctet == 0x80) {
         // You're not supposed to use this in DER anyway.
-        throw "Indefinite-length method unsupported!";
+        throw new asn1.Error("Indefinite-length method unsupported!");
     } else {
         // Long form. Mask off top bit to charCodeAt number of octets in
         // length expressed in base 256, big-endian.
@@ -113,7 +120,7 @@ asn1.decodeTagLengthValueDER = function (data) {
 
     // And return everything.
     if (off + length > data.length)
-        throw "Length too large!";
+        throw new asn1.Error("Length too large!");
     return [tag, data.substr(off, length), data.substr(off + length)];
 }
 
@@ -157,7 +164,7 @@ asn1.Type.prototype.decodeDER = function (data) {
     var objRest = this.decodeDERPrefix(data);
     var obj = objRest[0], rest = objRest[1];
     if (rest.length != 0)
-        throw "Excess data!";
+        throw new asn1.Error("Excess data!");
     return obj;
 };
 
@@ -171,7 +178,7 @@ asn1.Type.prototype.decodeDERPrefix = function (data) {
     var tvr = asn1.decodeTagLengthValueDER(data);
     var tag = tvr[0], value = tvr[1], rest = tvr[2];
     if (tag != this.tag)
-        throw "Tag mismatch!";
+        throw new asn1.Error("Tag mismatch!");
     return [this.decodeDERValue(value), rest];
 };
 
@@ -273,7 +280,7 @@ asn1.INTEGER.encodeDERValue = function (object) {
     var ret = [];
     var sign = 0;
     if (typeof object != "number")
-        throw "Not a number";
+        throw new TypeError("Not a number");
     // Encode in two's-complement, base 256, most sigificant bit
     // first, with the minimum number of bytes needed.
     while ((object >= 0 && (sign != 1 || object > 0)) ||
@@ -306,14 +313,14 @@ asn1.INTEGER.valueConstrained = function () {
 
     return this.constrained(function (v) {
         if (allowed.indexOf(v) == -1)
-            throw "Invalid value: " + v;
+            throw new RangeError("Invalid value: " + v);
     });
 }
 
 asn1.INTEGER.rangeConstrained = function (lo, hi) {
     return this.constrained(function (v) {
         if (v < lo || v > hi)
-            throw "Invalid value: " + v;
+            throw new RangeError("Invalid value: " + v);
     });
 }
 
@@ -364,7 +371,7 @@ asn1.OCTET_STRING = new asn1.Type(
 
 asn1.OCTET_STRING.encodeDERValue = function (object) {
     if (typeof object != "string")
-        throw "Not a string";
+        throw new TypeError("Not a string");
     return object;
 };
 
@@ -379,13 +386,13 @@ asn1.NULL = new asn1.Type(
 
 asn1.NULL.encodeDERValue = function (object) {
     if (object !== null)
-        throw "Bad value";
+        throw new TypeError("Bad value");
     return "";
 };
 
 asn1.NULL.decodeDERValue = function (data) {
     if (data.length > 0)
-        throw "Bad encoding";
+        throw new asn1.Error("Bad encoding");
     return null;
 };
 
@@ -399,7 +406,7 @@ asn1.GeneralString.encodeDERValue = function (object) {
     // it matters a whole lot since KerberosString is limited to
     // IA5String's characters for compatibility.
     if (typeof object != "string")
-        throw "Not a string";
+        throw new TypeError("Not a string");
     return object;
 };
 
@@ -442,7 +449,7 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
     var re = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\.(\d{1,3}))?Z$/;
     var match = String(data).match(re);
     if (!match)
-        throw "Bad date format";
+        throw new Error("Bad date format");
     var date = new Date(Date.UTC(Number(match[1]),
                                  Number(match[2]) - 1,
                                  Number(match[3]),
@@ -524,7 +531,7 @@ asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
         if (id in object) {
             out.push(this.componentSpec[i].type.encodeDER(object[id]));
         } else if (!this.componentSpec[i].optional) {
-            throw "Field " + id + " missing!";
+            throw new TypeError("Field " + id + " missing!");
         }
     }
     return out.join("");
@@ -543,12 +550,12 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
                this.componentSpec[nextSpec].type.tag != tag) {
             // Skip this one, if we can.
             if (!this.componentSpec[nextSpec].optional)
-                throw ("Missing required field " +
-                       this.componentSpec[nextSpec].id);
+                throw new asn1.Error("Missing required field " +
+                                     this.componentSpec[nextSpec].id);
             nextSpec++;
         }
         if (nextSpec >= this.componentSpec.length)
-            throw "Unexpected tag " + tag;
+            throw new asn1.Error("Unexpected tag " + tag);
 
         // Tag matches. Go use this one.
         ret[this.componentSpec[nextSpec].id] =
@@ -560,7 +567,8 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
     // Make sure we didn't miss any non-optional fields.
     while (nextSpec < this.componentSpec.length) {
         if (!this.componentSpec[nextSpec].optional)
-            throw "Missing required field " + this.componentSpec[nextSpec].id;
+            throw new asn1.Error("Missing required field " +
+                                 this.componentSpec[nextSpec].id);
         nextSpec++;
     }
 
@@ -587,7 +595,7 @@ asn1.CHOICE.prototype = new asn1.Type();
 asn1.CHOICE.prototype.encodeDER = function (object) {
     var type = object[0], realObj = object[1];
     if (this.choices.indexOf(type) == -1)
-	throw "Invalid type";
+	throw new TypeError("Invalid type");
     return type.encodeDER(realObj);
 };
 
@@ -603,5 +611,5 @@ asn1.CHOICE.prototype.decodeDERPrefix = function (data) {
 		     this.choices[i].decodeDERValue(value)], rest];
 	}
     }
-    throw "Unexpected tag " + tag;
+    throw new asn1.Error("Unexpected tag " + tag);
 };
