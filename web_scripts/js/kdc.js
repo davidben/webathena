@@ -138,7 +138,7 @@ KDC.Key = function (keytype, keyvalue) {
     this.keyvalue = keyvalue;
 };
 KDC.Key.prototype.getEncProfile = function () {
-    var encProfile = krb.encProfiles[this.keytype];
+    var encProfile = kcrypto.encProfiles[this.keytype];
     if (encProfile === undefined)
         throw new Err(Err.Context.KEY, 0x00, 'Unsupported enctype ' + this.keytype);
     return encProfile;
@@ -186,7 +186,7 @@ KDC.Key.fromDict = function (key) {
     return new KDC.Key(key.keytype, key.keyvalue);
 };
 KDC.Key.fromPassword = function (keytype, password, salt, params) {
-    var encProfile = krb.encProfiles[keytype];
+    var encProfile = kcrypto.encProfiles[keytype];
     if (encProfile === undefined)
         throw new Err(Err.Context.KEY, 0x02, 'Unsupported enctype ' + keytype);
     return new KDC.Key(keytype,
@@ -257,8 +257,8 @@ KDC.asReq = function(principal, padata) {
 
         asReq.reqBody.till = new Date(0);
         asReq.reqBody.nonce = Crypto.randomNonce();
-        asReq.reqBody.etype = [krb.enctype.des_cbc_crc,
-                               krb.enctype.des_cbc_md5];
+        asReq.reqBody.etype = [kcrypto.enctype.des_cbc_crc,
+                               kcrypto.enctype.des_cbc_md5];
 
         return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
                                    'AS_REQ', krb.AS_REP_OR_ERROR)
@@ -304,7 +304,7 @@ KDC.getTGTSession = function (principal, password) {
                     var etypeInfo = null;
                     // Find an enctype we support.
                     for (var j = 0; j < etypeInfos.length; j++) {
-                        if (etypeInfos[j].etype in krb.encProfiles) {
+                        if (etypeInfos[j].etype in kcrypto.encProfiles) {
                             etypeInfo = etypeInfos[j];
                             break;
                         }
@@ -494,8 +494,8 @@ KDC.Session.prototype.getServiceSession = function (service) {
         // reasonable default I guess.
         tgsReq.reqBody.till = new Date(0);
         tgsReq.reqBody.nonce = Crypto.randomNonce();
-        tgsReq.reqBody.etype = [krb.enctype.des_cbc_crc,
-                                krb.enctype.des_cbc_md5];
+        tgsReq.reqBody.etype = [kcrypto.enctype.des_cbc_crc,
+                                kcrypto.enctype.des_cbc_md5];
 
         // Checksum the reqBody. Note: if our DER encoder isn't completely
         // correct, the proxy will re-encode it and possibly mess up the
