@@ -3,6 +3,13 @@ var kcrypto = (function() {
 
     var kcrypto = { };
 
+    kcrypto.DecryptionError = function(message) {
+        this.message = message;
+    };
+    kcrypto.DecryptionError.prototype.toString = function() {
+        return "DecryptionError: " + this.message;
+    };
+
     // 3.  Encryption Algorithm Profile
     //
     // An encryption profile includes the following methods:
@@ -283,13 +290,13 @@ var kcrypto = (function() {
         } else if (params.length == 1) {
             type = params.charCodeAt(0);
         } else {
-            throw new Err(Err.Context.ENC, 0, 'Invalid params');
+            throw 'Invalid params';
         }
 
         if (type == 0) {
             return mit_des_string_to_key(password, salt);
         } else {
-            throw new Err(Err.Context.ENC, 1, 'Invalid params');
+            throw 'Invalid type';
         }
     };
 
@@ -297,8 +304,7 @@ var kcrypto = (function() {
         // Note: checksumProfile is the checksum for encrypting with DES,
         // not the required checksum.
         if (checksumProfile.checksumBytes % 4 != 0)
-            throw new Err(Err.Context.ENC, 2,
-                          'Checksum not an integer number of words');
+            throw 'Checksum not an integer number of words';
         var checksumWords = checksumProfile.checksumBytes / 4;
 
         var profile = {};
@@ -320,7 +326,7 @@ var kcrypto = (function() {
             var decrypted = CryptoJS.DES.decrypt(
                 cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
             if (decrypted.sigBytes < 12)
-                throw new Err(Err.Context.ENC, 3, 'Bad format');
+                throw new kcrypto.DecryptionError('Bad format');
 
             // First 2 words (8 bytes) are the confounder.
 
@@ -341,7 +347,7 @@ var kcrypto = (function() {
             if (!checksumProfile.verifyMic(
                 key, CryptoJS.enc.Latin1.stringify(checksumData),
                 CryptoJS.enc.Latin1.stringify(checksum)))
-                throw new Err(Err.Context.ENC, 4, 'Checksum mismatch!');
+                throw new kcrypto.DecryptionError('Checksum mismatch!');
 
             // New cipher state is the last block of the ciphertext.
             state = CryptoJS.lib.WordArray.create(

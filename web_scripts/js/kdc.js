@@ -10,7 +10,6 @@ Err.Context = {};
 Err.Context.KEY = 0x02;
 Err.Context.NET = 0x03;
 Err.Context.KDC = 0x04;
-Err.Context.ENC = 0x05;
 Err.Context.UNK = 0x0f;
 
 var Crypto = {};

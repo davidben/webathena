@@ -82,11 +82,11 @@ $(function() {
             $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
         }, function(error) {
             var string;
-            if(error instanceof Err) {
-                if(error.ctx == Err.Context.ENC && error.code == 4)
-                    string = 'Incorrect password!';
-                else if(error.ctx = Err.Context.KDC &&
-                        error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+            if (error instanceof kcrypto.DecryptionError) {
+                string = 'Incorrect password!';
+            } else if(error instanceof Err) {
+                if(error.ctx = Err.Context.KDC &&
+                   error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
                     string = 'Username does not exist!';
                 else
                     string = error.msg + ' (' + error.code + ')';
