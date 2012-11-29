@@ -84,12 +84,14 @@ $(function() {
             var string;
             if (error instanceof kcrypto.DecryptionError) {
                 string = 'Incorrect password!';
-            } else if(error instanceof Err) {
-                if(error.ctx = Err.Context.KDC &&
-                   error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
-                    string = 'Username does not exist!';
+            } else if (error instanceof KDC.Error) {
+                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+                    string = 'User does not exist!';
+                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
+                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
+                    string = 'Incorrect password!';
                 else
-                    string = error.msg + ' (' + error.code + ')';
+                    string = error.message;
             } else {
                 string = String(error);
             }

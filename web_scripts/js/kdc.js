@@ -9,7 +9,6 @@ var Err = function(ctx, code, msg) {
 Err.Context = {};
 Err.Context.KEY = 0x02;
 Err.Context.NET = 0x03;
-Err.Context.KDC = 0x04;
 Err.Context.UNK = 0x0f;
 
 var Crypto = {};
@@ -58,6 +57,14 @@ var KDC = {};
 
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
+
+KDC.Error = function(code, message) {
+    this.code = code;
+    this.message = message;
+};
+KDC.Error.prototype.toString = function() {
+    return "KDC Error " + this.code + ": " + this.message;
+};
 
 KDC.Principal = function(principalName, realm) {
     this.principalName = principalName;
@@ -346,7 +353,7 @@ KDC.getTGTSession = function (principal, password) {
 
         // Handle errors.
         if (asRep.msgType == krb.KRB_MT_ERROR)
-            throw new Err(Err.Context.KDC, asRep.errorCode, asRep.eText);
+            throw new KDC.Error(asRep.errorCode, asRep.eText);
 
         // The default salt string, if none is provided via
         // pre-authentication data, is the concatenation of the
@@ -513,7 +520,7 @@ KDC.Session.prototype.getServiceSession = function (service) {
                                    'TGS_REQ', krb.TGS_REP_OR_ERROR)
             .then(function (tgsRep) {
                 if(tgsRep.msgType == krb.KRB_MT_ERROR)
-                    throw new Err(Err.Context.KDC, tgsRep.errorCode, tgsRep.eText);
+                    throw new KDC.Error(tgsRep.errorCode, tgsRep.eText);
 
                 // When the KRB_TGS_REP is received by the client, it
                 // is processed in the same manner as the KRB_AS_REP
