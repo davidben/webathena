@@ -222,9 +222,7 @@ asn1.Type.prototype.constrained = function (checkValue) {
  * @return {asn1.Type} A subtype of this type.
  */
 asn1.Type.prototype.subtype = function () {
-    function TempCtor() { }
-    TempCtor.prototype = this;
-    return new TempCtor();
+    return Object.create(this);
 };
 
 
