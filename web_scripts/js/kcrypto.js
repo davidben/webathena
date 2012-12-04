@@ -9,6 +9,12 @@ var kcrypto = (function() {
     kcrypto.DecryptionError.prototype.toString = function() {
         return "DecryptionError: " + this.message;
     };
+    kcrypto.InvalidParameters = function(message) {
+        this.message = message;
+    };
+    kcrypto.InvalidParameters.prototype.toString = function() {
+        return "InvalidParameters: " + this.message;
+    };
 
     // 3.  Encryption Algorithm Profile
     //
@@ -290,13 +296,13 @@ var kcrypto = (function() {
         } else if (params.length == 1) {
             type = params.charCodeAt(0);
         } else {
-            throw 'Invalid params';
+            throw new kcrypto.InvalidParameters("Bad string-to-key parameter");
         }
 
         if (type == 0) {
             return mit_des_string_to_key(password, salt);
         } else {
-            throw 'Invalid type';
+            throw new kcrypto.InvalidParameters("Bad DES string-to-key type");
         }
     };
 
