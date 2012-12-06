@@ -45,17 +45,20 @@ var kcrypto = (function() {
     //
     //  var simplifiedProfile = {
     //    stringToKey: function (pass, salt, opaque) -> protocolKey,
-    //    defaultStringToKeyParameters: <octet string>,
+    //    defaultStringToKeyParam: <octet string>,
     //    keyGenerationSeedLength: <Number K>,
-    //    randomToKey: function (bitstring[K) -> protocolKey,
-    //    unkeyedHash: function (?) -> ?,
+    //    randomToKey: function (bitstring[K] -> protocolKey,
+    //    unkeyedHash: instance of sjcl.hash.something for now
     //    hmacOutputSize: <Number h>,
     //    messageBlockSize: <Number m>,
-    //    encrypt: function (?) -> ?,
-    //    decrypt: function (?) -> ?,
+    //    encrypt: function (key, state, string) -> [state, string],
+    //    decrypt: function (key, state, string) -> [state, string],
     //    cipherBlockSize: <Number c>
     //  };
     //
+    // Each function is also passed the resulting profile as the last
+    // argument since AES refers to things computed by the full
+    // profile in terms of the simple profile. It's annoying.
 
     // 8.  Assigned Numbers
     kcrypto.enctype = {};
@@ -94,6 +97,331 @@ var kcrypto = (function() {
     kcrypto.sumtype.sha1_2                        = 14;
     kcrypto.sumtype.hmac_sha1_96_aes128           = 15;
     kcrypto.sumtype.hmac_sha1_96_aes256           = 16;
+
+    // Why is this so hard??
+    function sjclZeroArray(n) {
+        var ret = [];
+        while (n >= 32) {
+            ret.push(0);
+            n -= 32;
+        }
+        if (n > 0)
+            ret.push(sjcl.bitArray.partial(n, 0));
+        return ret;
+    }
+
+    // CBC-CTS encryption mode for SJCL. Adapted from sjcl.mode.cbc.
+    function pad128(l) {
+        l[l.length - 1] >>>= 0;
+        while (l.length < 4)
+            l.push(0);
+    }
+    function xor4(x,y) {
+        return [x[0]^y[0],x[1]^y[1],x[2]^y[2],x[3]^y[3]];
+    }
+    var cbcCtsMode = {
+        encrypt: function(prp, plaintext, iv, adata) {
+            if (adata && adata.length) {
+                throw new sjcl.exception.invalid("cbc can't authenticate data");
+            }
+            if (sjcl.bitArray.bitLength(iv) !== 128) {
+                throw new sjcl.exception.invalid("cbc iv must be 128 bits");
+            }
+            var i,
+            w = sjcl.bitArray,
+            bl = w.bitLength(plaintext),
+            output = [];
+
+            /* CTS can't handle short plaintexts. Caller checks for this. */
+            if (bl <= 128) {
+                throw new sjcl.exception.invalid(
+                    "plaintext must be more than 128 bits");
+            }
+
+            /* Encrypt all but the last two blocks as in CBC. */
+            for (i=0; i+8 < plaintext.length; i+=4) {
+                iv = prp.encrypt(xor4(iv, plaintext.slice(i,i+4)));
+                output.splice(i,0,iv[0],iv[1],iv[2],iv[3]);
+            }
+            /* Encrypt the second-to-last block. */
+            iv = prp.encrypt(xor4(iv, plaintext.slice(i,i+4)));
+            /* Pad the last block with zeros. */
+            var last = plaintext.slice(i+4, i+8);
+            var lastLen = w.bitLength(last);
+            pad128(last);
+            /* Second-to-last cipher block is E(iv|last) */
+            var lastc = prp.encrypt(xor4(iv, last));
+            output.push(lastc[0], lastc[1], lastc[2], lastc[3]);
+            /* Last cipher-block is iv truncated. */
+            var ivTrunc = w.clamp(iv, lastLen);
+            for (i = 0; i < ivTrunc.length; i++)
+                output.push(ivTrunc[i]);
+            return output;
+        },
+        decrypt: function(prp, ciphertext, iv, adata) {
+            if (adata && adata.length) {
+                throw new sjcl.exception.invalid("cbc can't authenticate data");
+            }
+            if (sjcl.bitArray.bitLength(iv) !== 128) {
+                throw new sjcl.exception.invalid("cbc iv must be 128 bits");
+            }
+            var cl = sjcl.bitArray.bitLength(ciphertext);
+            if (cl <= 128) {
+                throw new sjcl.exception.corrupt(
+                    "cbc-cts ciphertext must be at least two blocks");
+            }
+            var i,
+            w = sjcl.bitArray,
+            bi, bo,
+            output = [];
+
+            /* Decrypt all but the last two blocks. */
+            for (i=0; i+8 < ciphertext.length; i+=4) {
+                bi = ciphertext.slice(i,i+4);
+                bo = xor4(iv,prp.decrypt(bi));
+                output.splice(i,0,bo[0],bo[1],bo[2],bo[3]);
+                iv = bi;
+            }
+            /* Decrypt the second to last block with IV 0. */
+            var d = prp.decrypt(ciphertext.slice(i,i+4));
+            /* Pad the last ciphertext block with zeros. */
+            var c = ciphertext.slice(i+4, i+8);
+            var cLength = w.bitLength(c);
+            pad128(c);
+            /* C xor D is Pn* | {Cn's truncated bits} */
+            var x = xor4(c, d);
+            var pn = w.clamp(x, cLength);
+            /* Recover the original Cn. */
+            var pnPad = pn.slice(0);
+            pad128(pnPad);
+            var cn = xor4(c, xor4(pnPad, x));
+            /* Decrypt with iv to get Pn-1 */
+            var pn1 = xor4(iv, prp.decrypt(cn));
+
+            /* Assemble the output. */
+            output.push(pn1[0], pn1[1], pn1[2], pn1[3]);
+            for (i = 0; i < pn.length; i++)
+                output.push(pn[i]);
+            return output;
+        }
+    };
+
+    function gcd(a, b) {
+        var tmp;
+        if (b < a) {
+            tmp = a;
+            a = b;
+            b = tmp;
+        }
+        while (a != 0) {
+            tmp = b % a;
+            b = a;
+            a = tmp;
+        }
+        return b;
+    }
+    // both parameters are always well-known constants, so n-fold
+    // needn't be constant-time or anything. Really we could just
+    // precompute all the n-folds we need.
+    function onesComplementAdd(a, b) {
+        if (sjcl.bitArray.bitLength(a) != sjcl.bitArray.bitLength(b))
+            throw "Lengths must match";
+        if (a.length == 0)
+            return [];
+
+        var lastPartial = sjcl.bitArray.getPartial(a[a.length - 1]);
+        var word = 0;
+        var ret = a.slice(0);
+        word += (ret[ret.length - 1] >>> 0) + (b[ret.length - 1] >>> 0);
+        ret[ret.length - 1] = sjcl.bitArray.partial(lastPartial, word >>> 0, 1);
+        word = (word > 0x100000000) ? 1 : 0;
+        for (var i = ret.length - 2; i >= 0; i--) {
+            word += (ret[i] >>> 0) + (b[i] >>> 0);
+            ret[i] = word >>> 0;
+            word = (word >= 0x100000000) ? 1 : 0;
+        }
+        // Carry.
+        if (word > 0) {
+            word = (1 << (32 - lastPartial)) + (ret[ret.length - 1] >>> 0);
+            ret[ret.length - 1] =
+                sjcl.bitArray.partial(lastPartial, word >>> 0, 1);
+            if (word >= 0x100000000) {
+                for (var i = ret.length - 2; i >= 0; i--) {
+                    word = 1 + (ret[i] >>> 0);
+                    ret[i] = word >>> 0;
+                    if (word < 0x100000000)
+                        break;
+                }
+            }
+        }
+        return ret;
+    }
+    function nFold(n, input) {
+        var inBits = sjcl.codec.byteString.toBits(input);
+        var inLength = sjcl.bitArray.bitLength(inBits);
+        var numCopies = n / gcd(n, inLength);
+        var shift = 13 % inLength;
+
+        var ret = sjclZeroArray(n);
+        var chunk = []; var chunkLength = 0;
+        var lastCopy = inBits;
+        for (var i = 0; i < numCopies; i++) {
+            // Append the chunk.
+            chunk = sjcl.bitArray.concat(chunk, lastCopy);
+            chunkLength += inLength;
+            // Rotate the next one by 13 bits.
+            lastCopy = sjcl.bitArray.concat(
+                sjcl.bitArray.bitSlice(lastCopy, inLength - shift),
+                sjcl.bitArray.bitSlice(lastCopy, 0, inLength - shift));
+            // If we have a completed chunk, add and remove it.
+            while (chunkLength >= n) {
+                ret = onesComplementAdd(
+                    ret, sjcl.bitArray.bitSlice(chunk, 0, n));
+                chunk = sjcl.bitArray.bitSlice(chunk, n);
+                chunkLength -= n;
+            }
+        }
+        if (sjcl.bitArray.bitLength(chunk) != 0)
+            throw "Bits left over!";
+        return sjcl.codec.byteString.fromBits(ret);
+    }
+
+    // 5.3.  Cryptosystem Profile Based on Simple Profile
+    function profilesFromSimpleProfile(simpleProfile) {
+        if (simpleProfile.keyGenerationSeedLength % 8 != 0)
+            throw "Bad simple profile";
+
+        function truncatedHmac(hmac, msg) {
+            // FIXME: Round-tripping between String and sjcl.bitArray
+            // is a pain.
+            var h1 = hmac.encrypt(sjcl.codec.byteString.toBits(msg));
+            h1 = sjcl.bitArray.bitSlice(
+                h1, 0, 8 * simpleProfile.hmacOutputSize);
+            return sjcl.codec.byteString.fromBits(h1);
+        }
+
+        var enc = { };
+        enc.enctype = simpleProfile.enctype;
+        var initialCipherState = ""
+        for (var i = 0; i < simpleProfile.cipherBlockSize; i++) {
+            initialCipherState += "\0";
+        }
+        enc.initialCipherState = function() {
+            return initialCipherState;
+        };
+        enc.randomToKey = function(random) {
+            return simpleProfile.randomToKey(random);
+        };
+        enc.stringToKey = function(pass, salt, param) {
+            return simpleProfile.stringToKey(pass, salt, param, this);
+        };
+        enc.encrypt = function(derivedKey, iv, plaintext) {
+            // conf = Random string of length c
+            var conf = sjcl.bitArray.clamp(
+                sjcl.random.randomWords(
+                    Math.ceil(simpleProfile.cipherBlockSize / 4)),
+                simpleProfile.cipherBlockSize * 8);
+            // pad = Shortest string to bring confounder and plaintext
+            // to a length that's a multiple of m.
+            var padLength = (simpleProfile.cipherBlockSize + plaintext.length) %
+                simpleProfile.messageBlockSize;
+            padLength = simpleProfile.messageBlockSize - padLength;
+            if (padLength == simpleProfile.messageBlockSize)
+                padLength = 0;
+            var pad = sjclZeroArray(padLength * 8);
+            // (C1, newIV) = E(Ke, conf | plaintext | pad, oldstate.ivec)
+            var data = sjcl.codec.byteString.fromBits(conf) +
+                plaintext + sjcl.codec.byteString.fromBits(pad);
+            var t = simpleProfile.encrypt(derivedKey.E, iv, data, this);
+            var newIV = t[0], c1 = t[1];
+            // H1 = HMAC(Ki, conf | plaintext | pad)
+            var h1 = truncatedHmac(derivedKey.I, data);
+            // ciphertext =  C1 | H1[1..h]
+            // newstate.ivec = newIV
+            return [newIV, c1 + h1];
+        };
+        enc.decrypt = function(derivedKey, iv, ciphertext) {
+            // (C1,H1) = ciphertext
+            var c1 = ciphertext.substr(
+                0, ciphertext.length - simpleProfile.hmacOutputSize);
+            var h1 = ciphertext.substr(
+                ciphertext.length - simpleProfile.hmacOutputSize);
+            // (P1, newIV) = D(Ke, C1, oldstate.ivec)
+            var t = simpleProfile.decrypt(derivedKey.E, iv, c1, this);
+            var newIV = t[0], p1 = t[1];
+            // if (H1 != HMAC(Ki, P1)[1..h]) report error
+            if (h1 != truncatedHmac(derivedKey.I, p1))
+                throw new kcrypto.DecryptionError('Checksum mismatch!');
+            // Strip off confounder.
+            p1 = p1.substr(simpleProfile.cipherBlockSize);
+            return [newIV, p1];
+        };
+        enc.DK = function(key, constant) {
+            // If the Constant is smaller than the cipher block size
+            // of E, then it must be expanded with n-fold() so it can
+            // be encrypted.
+            // FIXME: smaller? What about equal?
+            if (constant.length < simpleProfile.cipherBlockSize) {
+                constant = nFold(simpleProfile.cipherBlockSize * 8, constant);
+            }
+            var DR = "";
+            var truncateLength = simpleProfile.keyGenerationSeedLength / 8;
+            var state = constant;
+            // If the output of E is shorter than k bits, it is fed
+            // back into the encryption as many times as necessary.
+            while (DR.length < truncateLength) {
+                state = simpleProfile.encrypt(
+                    key, initialCipherState, state)[1];
+                DR += state;
+            }
+            DR = DR.substr(0, truncateLength);
+            return this.randomToKey(DR);
+        };
+        enc.deriveKey = function(key, usage) {
+            // The "well-known constant" used for the DK function is
+            // the key usage number, expressed as four octets in
+            // big-endian order, followed by one octet indicated
+            // below.
+            var usageBytes = String.fromCharCode(
+                usage >>> 24,
+                (usage >>> 16) & 0xff,
+                (usage >>> 8) & 0xff,
+                usage & 0xff);
+            // Kc = DK(base-key, usage | 0x99);
+            var Kc = this.DK(key, usageBytes + '\x99');
+            // Ke = DK(base-key, usage | 0xAA);
+            var Ke = this.DK(key, usageBytes + '\xAA');
+            // Ki = DK(base-key, usage | 0x55);
+            var Ki = this.DK(key, usageBytes + '\x55');
+            return {
+                C: new sjcl.misc.hmac(
+                    sjcl.codec.byteString.toBits(Kc),
+                    simpleProfile.unkeyedHash),
+                // FIXME: Cache the profile-specific key object
+                // here. AES does a fair amount of precomputation. Not
+                // quite as easy as putting it in randomToKey as
+                // that's called to make an HMAC key too.
+                E: Ke,
+                I: new sjcl.misc.hmac(
+                    sjcl.codec.byteString.toBits(Ki),
+                    simpleProfile.unkeyedHash)
+            };
+        };
+
+        var checksum = { };
+        checksum.sumtype = simpleProfile.sumtype;
+        checksum.checksumBytes = simpleProfile.hmacOutputSize;
+        checksum.getMic = function(key, msg) {
+            return truncatedHmac(key.C, msg);
+        };
+        checksum.verifyMic = function(key, msg, token) {
+            return token == this.getMic(key, msg);
+        };
+
+        enc.checksum = checksum;
+
+        return [enc, checksum];
+    }
 
     // 6.1.1.  The RSA MD5 Checksum
     kcrypto.RsaMd5Checksum = {
@@ -482,20 +810,141 @@ var kcrypto = (function() {
     };
     kcrypto.DesCbcCrcProfile.checksum = kcrypto.RsaMd5DesChecksum;
 
+    // RFC 3962  Advanced Encryption Standard (AES) Encryption for Kerberos 5
+    function aesStringToKey(pass, salt, param, profile) {
+        if (param == undefined) param = "\x00\x00\x10\x00";
+        if (param.length != 4)
+            throw new kcrypto.InvalidParameters("Bad string-to-key parameter");
+        // Parameter is iteration count.
+        var iterCount = param.charCodeAt(0);
+        iterCount *= 256;
+        iterCount += param.charCodeAt(1);
+        iterCount *= 256;
+        iterCount += param.charCodeAt(2);
+        iterCount *= 256;
+        iterCount += param.charCodeAt(3);
+        if (iterCount == 0)
+            iterCount = 4294967296;
+        // Pass SHA-1 instead of SHA-256 into hmac constructor.
+        function sha1Hmac(pass) {
+            sjcl.misc.hmac.call(this, pass, sjcl.hash.sha1);
+        }
+        sha1Hmac.prototype = sjcl.misc.hmac.prototype;
+        var tkey = this.randomToKey(
+            sjcl.codec.byteString.fromBits(
+                sjcl.misc.pbkdf2(
+                    sjcl.codec.utf8String.toBits(pass),
+                    sjcl.codec.utf8String.toBits(salt),
+                    iterCount, this.keyGenerationSeedLength, sha1Hmac)));
+        return profile.DK(tkey, "kerberos");
+    }
+    function aesCtsEncrypt(key, state, plaintext) {
+        var aes = new sjcl.cipher.aes(sjcl.codec.byteString.toBits(key));
+        var stateBits = sjcl.codec.byteString.toBits(state);
+        var plaintextBits = sjcl.codec.byteString.toBits(plaintext);
+        if (plaintextBits.length <= 4) {
+            // Can't do CBC-CTS. Just pad arbitrarily and encrypt
+            // plain. Apparently you don't even xor the iv.
+            pad128(plaintextBits);
+            var outputStr = sjcl.codec.byteString.fromBits(
+                aes.encrypt(plaintextBits));
+            return [outputStr, outputStr];
+        } else {
+            var output = cbcCtsMode.encrypt(aes, plaintextBits, stateBits);
+            // State is second-to-last chunk.
+            var outLength = output.length;
+            if (outLength % 4 != 0)
+                outLength += 4 - (outLength % 4);
+            var newState = output.slice(outLength - 8, outLength - 4);
+            return [
+                sjcl.codec.byteString.fromBits(newState),
+                sjcl.codec.byteString.fromBits(output)
+            ];
+        }
+    }
+    function aesCtsDecrypt(key, state, ciphertext) {
+        var aes = new sjcl.cipher.aes(sjcl.codec.byteString.toBits(key));
+        var stateBits = sjcl.codec.byteString.toBits(state);
+        var ciphertextBits = sjcl.codec.byteString.toBits(ciphertext);
+        if (ciphertextBits.length <= 4) {
+            if (sjcl.bitArray.bitLength(ciphertextBits) != 128)
+                throw new kcrypto.DecryptionError("Bad length");
+            try {
+                var outputStr = sjcl.codec.byteString.fromBits(
+                    aes.decrypt(ciphertextBits));
+            } catch (e) {
+                if (e instanceof sjcl.exception.corrupt)
+                    throw new kcrypto.DecryptionError(e.message);
+                throw e;
+            }
+            return [ciphertext, outputStr];
+        } else {
+            var output = cbcCtsMode.decrypt(aes, ciphertextBits, stateBits);
+            // State is second-to-last chunk.
+            var outLength = ciphertextBits.length;
+            if (outLength % 4 != 0)
+                outLength += 4 - (outLength % 4);
+            var newState = ciphertextBits.slice(outLength - 8, outLength - 4);
+            return [
+                sjcl.codec.byteString.fromBits(newState),
+                sjcl.codec.byteString.fromBits(output)
+            ];
+        }
+    }
+    kcrypto.aesCtsDecrypt = aesCtsDecrypt;
+    function aesRandomToKey(x) { return x; }
+    var aes128 = profilesFromSimpleProfile({
+        enctype: kcrypto.enctype.aes128_cts_hmac_sha1_96,
+        sumtype: kcrypto.sumtype.hmac_sha1_96_aes128,
+        stringToKey: aesStringToKey,
+        keyGenerationSeedLength: 128,
+        randomToKey: aesRandomToKey,
+        unkeyedHash: sjcl.hash.sha1,
+        hmacOutputSize: 12,
+        messageBlockSize: 1,
+        encrypt: aesCtsEncrypt,
+        decrypt: aesCtsDecrypt,
+        cipherBlockSize: 16,
+    });
+    kcrypto.Aes128CtsHmacShaOne96 = aes128[0];
+    kcrypto.ShaOne96Aes128Checksum = aes128[1];
+
+    var aes256 = profilesFromSimpleProfile({
+        enctype: kcrypto.enctype.aes256_cts_hmac_sha1_96,
+        sumtype: kcrypto.sumtype.hmac_sha1_96_aes256,
+        stringToKey: aesStringToKey,
+        keyGenerationSeedLength: 256,
+        randomToKey: aesRandomToKey,
+        unkeyedHash: sjcl.hash.sha1,
+        hmacOutputSize: 12,
+        messageBlockSize: 1,
+        encrypt: aesCtsEncrypt,
+        decrypt: aesCtsDecrypt,
+        cipherBlockSize: 16,
+    });
+    kcrypto.Aes256CtsHmacShaOne96 = aes256[0];
+    kcrypto.ShaOne96Aes256Checksum = aes256[1];
+
     // The supported encryption types.
     kcrypto.encProfiles = { };
     kcrypto.encProfiles[kcrypto.DesCbcMd5Profile.enctype] =
         kcrypto.DesCbcMd5Profile;
     kcrypto.encProfiles[kcrypto.DesCbcCrcProfile.enctype] =
         kcrypto.DesCbcCrcProfile;
+    kcrypto.encProfiles[kcrypto.Aes128CtsHmacShaOne96.enctype] =
+        kcrypto.Aes128CtsHmacShaOne96;
+    kcrypto.encProfiles[kcrypto.Aes256CtsHmacShaOne96.enctype] =
+        kcrypto.Aes256CtsHmacShaOne96;
 
     kcrypto.sumProfiles = { };
     kcrypto.sumProfiles[kcrypto.RsaMd5Checksum.sumtype] =
         kcrypto.RsaMd5Checksum;
     kcrypto.sumProfiles[kcrypto.Crc32Checksum.sumtype] =
         kcrypto.Crc32Checksum;
-    kcrypto.sumProfiles[kcrypto.RsaMd5DesChecksum.sumtype] =
-        kcrypto.RsaMd5DesChecksum;
+    kcrypto.sumProfiles[kcrypto.ShaOne96Aes128Checksum.sumtype] =
+        kcrypto.ShaOne96Aes128Checksum;
+    kcrypto.sumProfiles[kcrypto.ShaOne96Aes256Checksum.sumtype] =
+        kcrypto.ShaOne96Aes256Checksum;
 
     return kcrypto;
 }());

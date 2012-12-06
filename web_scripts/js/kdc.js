@@ -153,6 +153,8 @@ KDC.Key.prototype.decrypt = function (usage, data) {
     if (data.etype != this.keytype)
         throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
     var encProfile = this.getEncProfile();
+    // TODO: cache the derived key? This'll let us also cache things
+    // computed from the derived key.
     var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
     return encProfile.decrypt(
         derivedKey,
@@ -263,7 +265,10 @@ KDC.asReq = function(principal, padata) {
 
         asReq.reqBody.till = new Date(0);
         asReq.reqBody.nonce = Crypto.randomNonce();
-        asReq.reqBody.etype = [kcrypto.enctype.des_cbc_crc,
+        // TODO: Don't duplicate this list.
+        asReq.reqBody.etype = [kcrypto.enctype.aes256_cts_hmac_sha1_96,
+                               kcrypto.enctype.aes128_cts_hmac_sha1_96,
+                               kcrypto.enctype.des_cbc_crc,
                                kcrypto.enctype.des_cbc_md5];
 
         return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
@@ -500,7 +505,9 @@ KDC.Session.prototype.getServiceSession = function (service) {
         // reasonable default I guess.
         tgsReq.reqBody.till = new Date(0);
         tgsReq.reqBody.nonce = Crypto.randomNonce();
-        tgsReq.reqBody.etype = [kcrypto.enctype.des_cbc_crc,
+        tgsReq.reqBody.etype = [kcrypto.enctype.aes256_cts_hmac_sha1_96,
+                                kcrypto.enctype.aes128_cts_hmac_sha1_96,
+                                kcrypto.enctype.des_cbc_crc,
                                 kcrypto.enctype.des_cbc_md5];
 
         // Checksum the reqBody. Note: if our DER encoder isn't completely
