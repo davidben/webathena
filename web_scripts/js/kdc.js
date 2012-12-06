@@ -57,6 +57,12 @@ var KDC = {};
 
 KDC.urlBase = '/kdc/v1/';
 KDC.realm = 'ATHENA.MIT.EDU'; // XXX
+KDC.supportedEnctypes = [
+    kcrypto.enctype.aes256_cts_hmac_sha1_96,
+    kcrypto.enctype.aes128_cts_hmac_sha1_96,
+    kcrypto.enctype.des_cbc_crc,
+    kcrypto.enctype.des_cbc_md5
+];
 
 KDC.Error = function(code, message) {
     this.code = code;
@@ -265,11 +271,7 @@ KDC.asReq = function(principal, padata) {
 
         asReq.reqBody.till = new Date(0);
         asReq.reqBody.nonce = Crypto.randomNonce();
-        // TODO: Don't duplicate this list.
-        asReq.reqBody.etype = [kcrypto.enctype.aes256_cts_hmac_sha1_96,
-                               kcrypto.enctype.aes128_cts_hmac_sha1_96,
-                               kcrypto.enctype.des_cbc_crc,
-                               kcrypto.enctype.des_cbc_md5];
+        asReq.reqBody.etype = KDC.supportedEnctypes;
 
         return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
                                    'AS_REQ', krb.AS_REP_OR_ERROR)
@@ -505,10 +507,7 @@ KDC.Session.prototype.getServiceSession = function (service) {
         // reasonable default I guess.
         tgsReq.reqBody.till = new Date(0);
         tgsReq.reqBody.nonce = Crypto.randomNonce();
-        tgsReq.reqBody.etype = [kcrypto.enctype.aes256_cts_hmac_sha1_96,
-                                kcrypto.enctype.aes128_cts_hmac_sha1_96,
-                                kcrypto.enctype.des_cbc_crc,
-                                kcrypto.enctype.des_cbc_md5];
+        tgsReq.reqBody.etype = KDC.supportedEnctypes;
 
         // Checksum the reqBody. Note: if our DER encoder isn't completely
         // correct, the proxy will re-encode it and possibly mess up the
