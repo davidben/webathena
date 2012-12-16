@@ -99,7 +99,7 @@ $(function() {
             $('#alert-text').text(string);
             $('#alert').slideDown(100);
             resetForm();
-        }).end();
+        }).done();
         return false;
     });
 

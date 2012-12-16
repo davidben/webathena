@@ -88,7 +88,7 @@ WinChan.onOpen(function (origin, args, cb) {
                 function (error) {
                     log(error);
                     deny();
-                }).end();
+                }).done();
         });
 
     document.getElementById("request-ticket-deny").addEventListener("click", deny);
