@@ -81,8 +81,8 @@ krb.PA_DATA = new asn1.SEQUENCE(
      {id: 'padataValue', type: asn1.OCTET_STRING.tagged(asn1.tag(2))}]);
 
 // 5.2.7.2.  Encrypted Timestamp Pre-authentication
-krb.PA_ENC_TIMESTAMP = krb.EncryptedData;
-krb.PA_ENC_TS_ENC = new asn1.SEQUENCE(
+krb.ENC_TIMESTAMP = krb.EncryptedData;
+krb.ENC_TS_ENC = new asn1.SEQUENCE(
     [{id: 'patimestamp', type: krb.KerberosTime.tagged(asn1.tag(0))},
      {id: 'pausec', type: krb.Microseconds.tagged(asn1.tag(1)),
       optional: true}]);
@@ -99,7 +99,8 @@ krb.ETYPE_INFO2_ENTRY = new asn1.SEQUENCE(
     [{id: 'etype', type: krb.Int32.tagged(asn1.tag(0))},
      {id: 'salt', type: krb.KerberosString.tagged(asn1.tag(1)),
       optional: true},
-     {id: 's2kparams', type: asn1.OCTET_STRING.tagged(asn1.tag(2))}]);
+     {id: 's2kparams', type: asn1.OCTET_STRING.tagged(asn1.tag(2)),
+      optional: true}]);
 krb.ETYPE_INFO2 = new asn1.SEQUENCE_OF(krb.ETYPE_INFO2_ENTRY);
 
 // 5.2.8.  KerberosFlags
@@ -191,6 +192,7 @@ krb.KRB_ERROR = new asn1.SEQUENCE(
      {id: 'eData', type: asn1.OCTET_STRING.tagged(asn1.tag(12)),
       optional: true}]
 ).tagged(asn1.tag(30, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+krb.METHOD_DATA = new asn1.SEQUENCE_OF(krb.PA_DATA);
 krb.TYPED_DATA = new asn1.SEQUENCE(
     [{id: 'dataType', type: krb.Int32.tagged(asn1.tag(0))},
      {id: 'dataValue', type: asn1.OCTET_STRING.tagged(asn1.tag(1)),
