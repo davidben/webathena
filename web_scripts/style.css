@@ -8,8 +8,8 @@ html, body {
     background: white;
     background: -moz-linear-gradient(left, white, white) repeat-y, #909098;
     background: -webkit-linear-gradient(left, white, white) repeat-y, #909098;
-    background: -ms-linear-gradient(left, white, white) repeat-y, #909098;
     background: -o-linear-gradient(left, white, white) repeat-y, #909098;
+    background: linear-gradient(to left, white, white) repeat-y, #909098;
 }
 
 #whatis {
@@ -63,8 +63,8 @@ header {
     background: url(logo.png), #ddd;
     background: url(logo.png), -moz-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -webkit-linear-gradient(top, #fff, #ddd);
-    background: url(logo.png), -ms-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -o-linear-gradient(top, #fff, #ddd);
+    background: url(logo.png), linear-gradient(to bottom, #fff, #ddd);
     background-image: -webkit-image-set(url(logo.png) 1x, url(logo@2x.png) 2x),
                 -webkit-linear-gradient(top, #fff, #ddd);
 }
@@ -98,8 +98,8 @@ header ~ * * {
     background: darkorange;
     background: -moz-linear-gradient(top, orange, darkorange);
     background: -webkit-linear-gradient(top, orange, darkorange);
-    background: -ms-linear-gradient(top, orange, darkorange);
     background: -o-linear-gradient(top, orange, darkorange);
+    background: linear-gradient(to bottom, orange, darkorange);
 }
 
 table.body {
@@ -131,8 +131,8 @@ table.body {
     background: tomato;
     background: -moz-linear-gradient(top, lightsalmon, tomato);
     background: -webkit-linear-gradient(top, lightsalmon, tomato);
-    background: -ms-linear-gradient(top, lightsalmon, tomato);
     background: -o-linear-gradient(top, lightsalmon, tomato);
+    background: linear-gradient(to bottom, lightsalmon, tomato);
 }
 
 #login td {
@@ -170,8 +170,8 @@ button {
     background: olivedrab;
     background: -moz-linear-gradient(top, limegreen, olivedrab);
     background: -webkit-linear-gradient(top, limegreen, olivedrab);
-    background: -ms-linear-gradient(top, limegreen, olivedrab);
     background: -o-linear-gradient(top, limegreen, olivedrab);
+    background: linear-gradient(to bottom, limegreen, olivedrab);
 }
 
 #authed #principal {
