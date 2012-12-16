@@ -65,6 +65,8 @@ header {
     background: url(logo.png), -webkit-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -ms-linear-gradient(top, #fff, #ddd);
     background: url(logo.png), -o-linear-gradient(top, #fff, #ddd);
+    background-image: -webkit-image-set(url(logo.png) 1x, url(logo@2x.png) 2x),
+                -webkit-linear-gradient(top, #fff, #ddd);
 }
 
 #logo img {
