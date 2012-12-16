@@ -33,23 +33,22 @@ Crypto.retryForEntropy = function (action) {
     var deferred = Q.defer();
     // We can maybe be more awesome and note that SJCL never needs to
     // re-seed its PRNG once its been seeded initially.
-    try {
-        deferred.resolve(action());
-    } catch (e) {
-        if (e instanceof sjcl.exception.notReady) {
-            // Retry when we have more entropy.
-
-            // TODO: Notify the UI in case we want to retry later.
-            log("Not enough entropy!");
-            var retry = function () {
-                sjcl.random.removeEventListener("seeded", retry);
-                Crypto.retryForEntropy(action);
-            };
-            sjcl.random.addEventListener("seeded", retry);
-        } else {
-            deferred.reject(e);
-        }
-    }
+    var retry = function() {
+        sjcl.random.removeEventListener("seeded", retry);
+	try {
+            deferred.resolve(action());
+	} catch (e) {
+            if (e instanceof sjcl.exception.notReady) {
+		// Retry when we have more entropy.
+		// TODO: Notify the UI in case we want to retry later.
+		log("Not enough entropy!");
+		sjcl.random.addEventListener("seeded", retry);
+            } else {
+		deferred.reject(e);
+            }
+	}
+    };
+    retry();
     return deferred.promise;
 };
 
