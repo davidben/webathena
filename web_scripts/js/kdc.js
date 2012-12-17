@@ -283,7 +283,7 @@ var KDC = (function() {
 	});
     };
 
-    KDC.extractPreAuthHint = function (methodData) {
+    function extractPreAuthHint(methodData) {
 	// The preferred ordering of the "hint" pre-authentication data
 	// that affect client key selection is: ETYPE-INFO2, followed by
 	// ETYPE-INFO, followed by PW-SALT.  As noted in Section 3.1.3, a
@@ -317,7 +317,7 @@ var KDC = (function() {
 		var methodData = krb.METHOD_DATA.decodeDER(asRep.eData);
 		for (var i = 0; i < methodData.length; i++) {
                     if (methodData[i].padataType == krb.PA_ENC_TIMESTAMP) {
-			var etypeInfos = KDC.extractPreAuthHint(methodData);
+			var etypeInfos = extractPreAuthHint(methodData);
 			var etypeInfo = null;
 			// Find an enctype we support.
 			for (var j = 0; j < etypeInfos.length; j++) {
@@ -378,7 +378,7 @@ var KDC = (function() {
             var s2kparams = undefined;
             if (asRep.padata) {
 		// Is this right?
-		var etypeInfos = KDC.extractPreAuthHint(asRep.padata);
+		var etypeInfos = extractPreAuthHint(asRep.padata);
 		if (etypeInfos.length != 1)
                     throw "Bad pre-auth hint";
 		if ("etype" in etypeInfos[0] &&
