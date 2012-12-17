@@ -102,8 +102,8 @@ haven't written any UI for forwarding tickets between origins yet.
 	if (recip.indexOf("@") < 0)
 	    recip = recip + "@ATHENA.MIT.EDU";
 
-	getTicket(function (session) {
-	    getIp(function (ip) {
+	getTicket().then(function (session) {
+	    getIp().then(function (ip) {
 	        console.log("session", session);
 	        console.log("ip", ip);
 
@@ -173,16 +173,15 @@ haven't written any UI for forwarding tickets between origins yet.
 		    offset += bodyPart.length;
 		}
 	    });
-	    }, function (error) {
-	        console.log("error", error);
-	    });
+	});
     });
 
     var session;
-    function getTicket(success, error) {
+    function getTicket() {
+	var deferred = Q.defer();
 	if (session) {
-	    window.setTimeout(function () { success(session); });
-	    return;
+	    deferred.resolve(session);
+	    return deferred.promise;
 	}
 	WinChan.open({
 	    url: "https://webathena.mit.edu/request_ticket_v1.html",
@@ -194,19 +193,21 @@ haven't written any UI for forwarding tickets between origins yet.
 	    }, function (err, r) {
 	    console.log("got reply", err, r);
 	    if (err) {
-		error(err);
+		deferred.reject(err);
 		return;
 	    }
 	    if (r.status !== "OK") {
-		error(r);
+		deferred.reject(r);
 		return;
 	    }
 	    session = KDC.Session.fromDict(r.session);
-	    success(session);
+	    deferred.resolve(session);
 	});
+	return deferred.promise;
     }
 
-    function getIp(success) {
+    function getIp() {
+	var deferred = Q.defer();
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', 'ip.cgi');
 	xhr.onreadystatechange = function (e) {
@@ -214,12 +215,14 @@ haven't written any UI for forwarding tickets between origins yet.
 	    return;
 	    if (this.status == 200) {
 		var data = JSON.parse(this.responseText);
-		success(data.ip);
+		deferred.resolve(data.ip);
 	    } else {
 		console.log("XHR failed");
+		deferred.reject("XHR failed");
 	    }
 	};
 	xhr.send();
+	return deferred.promise;
     }
 
     function sendZnotice(notice, cb) {
