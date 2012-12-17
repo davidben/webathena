@@ -102,78 +102,81 @@ haven't written any UI for forwarding tickets between origins yet.
 	if (recip.indexOf("@") < 0)
 	    recip = recip + "@ATHENA.MIT.EDU";
 
-	getTicket().then(function (session) {
-	    getIp().then(function (ip) {
+	getTicket().then(function(session) {
+	    return getIp().then(function(ip) {
 	        console.log("session", session);
 	        console.log("ip", ip);
 
-		var apReq = krb.AP_REQ.encodeDER(session.makeAPReq(krb.KU_AP_REQ_AUTHENTICATOR));
-		// FIXME: This NEEDS to be part of the KDC.Session API
-		// FIXME: Mumble escaping mumble.
-		var sender = session.cname.nameString.join("/") + "@" + session.crealm;
+		return Crypto.retryForEntropy(function() {
+		    return krb.AP_REQ.encodeDER(session.makeAPReq(krb.KU_AP_REQ_AUTHENTICATOR));
+		}).then(function(apReq) {
+		    // FIXME: This NEEDS to be part of the KDC.Session API
+		    // FIXME: Mumble escaping mumble.
+		    var sender = session.cname.nameString.join("/") + "@" + session.crealm;
 
-		var uid = makeUid(ip);
+		    var uid = makeUid(ip);
 
-		var before_checksum = [
-		    "ZEPH0.2",
-		    null,
-		    z_make_ascii_32(0), // kind, UNSAFE (no acks)
-		    uid,
-		    z_make_ascii_16(0), // port
-		    z_make_ascii_32(1), // authstatus
-		    z_make_ascii_32(apReq.length), // authlen
-		    z_make_zcode(apReq), // authenticator
-		    toUtf8(class_),
-		    toUtf8(inst),
-		    "", // opcode
-		    sender,
-		    recip,
-		    "" // default_format
+		    var before_checksum = [
+			"ZEPH0.2",
+			null,
+			z_make_ascii_32(0), // kind, UNSAFE (no acks)
+			uid,
+			z_make_ascii_16(0), // port
+			z_make_ascii_32(1), // authstatus
+			z_make_ascii_32(apReq.length), // authlen
+			z_make_zcode(apReq), // authenticator
+			toUtf8(class_),
+			toUtf8(inst),
+			"", // opcode
+			sender,
+			recip,
+			"" // default_format
 		    ];
-		var after_checksum = [
-		    "", // multipart
-		    uid // multiuid
+		    var after_checksum = [
+			"", // multipart
+			uid // multiuid
 		    ];
-		var body = [
-		    "Sent from zwrite.js", // sig
-		    toUtf8(message)
+		    var body = [
+			"Sent from zwrite.js", // sig
+			toUtf8(message)
 		    ];
 
-		var header_count = before_checksum.length + 1 + after_checksum.length;
-		before_checksum[1] = z_make_ascii_32(header_count);
+		    var header_count = before_checksum.length + 1 + after_checksum.length;
+		    before_checksum[1] = z_make_ascii_32(header_count);
 
-		// Compute the header length.
-		var headerLength = before_checksum.concat(after_checksum).join("\0").length;
-		// Checksum length could up to double if we're unlucky. Also \0 and Z
-		headerLength += 1 + 1 + 2 * session.key.getEncProfile().checksum.checksumBytes;
-		// How much body can we fit in one fragment?
-		var fragSize = Z_MAXPKTLEN - headerLength - Z_FRAGFUDGE;
-		var bodyText = body.join("\0");
-		console.log("fragSize", fragSize);
-		console.log("bodyText.length", bodyText.length);
+		    // Compute the header length.
+		    var headerLength = before_checksum.concat(after_checksum).join("\0").length;
+		    // Checksum length could up to double if we're unlucky. Also \0 and Z
+		    headerLength += 1 + 1 + 2 * session.key.getEncProfile().checksum.checksumBytes;
+		    // How much body can we fit in one fragment?
+		    var fragSize = Z_MAXPKTLEN - headerLength - Z_FRAGFUDGE;
+		    var bodyText = body.join("\0");
+		    console.log("fragSize", fragSize);
+		    console.log("bodyText.length", bodyText.length);
 
-		for (var offset = 0; offset < bodyText.length; ) {
-		    var multipart = String(offset) + "/" + String(bodyText.length);
-		    console.log("multipart", multipart);
-		    after_checksum[0] = multipart;
-		    if (offset != 0)
-			before_checksum[3] = makeUid(ip);
+		    for (var offset = 0; offset < bodyText.length; ) {
+			var multipart = String(offset) + "/" + String(bodyText.length);
+			console.log("multipart", multipart);
+			after_checksum[0] = multipart;
+			if (offset != 0)
+			    before_checksum[3] = makeUid(ip);
 
-		    var bodyPart = bodyText.substr(offset, fragSize);
-		    console.log("bodyPart", bodyPart);
+			var bodyPart = bodyText.substr(offset, fragSize);
+			console.log("bodyPart", bodyPart);
 
-		    var checksum_data = before_checksum.concat(after_checksum).concat([bodyPart]).join("\0");
-		    var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
+			var checksum_data = before_checksum.concat(after_checksum).concat([bodyPart]).join("\0");
+			var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
 
-		    var notice = before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]).join("\0");
-		    console.log("notice", JSON.stringify(notice));
-		    console.log(before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]))
+			var notice = before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]).join("\0");
+			console.log("notice", JSON.stringify(notice));
+			console.log(before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]))
 
-		    sendZnotice(notice, function (result) { console.log(result); });
-		    offset += bodyPart.length;
-		}
+			sendZnotice(notice, function (result) { console.log(result); });
+			offset += bodyPart.length;
+		    }
+		});
 	    });
-	});
+	}).done();
     });
 
     var session;
