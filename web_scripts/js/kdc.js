@@ -40,8 +40,8 @@ Crypto.retryForEntropy = function (action) {
 	} catch (e) {
             if (e instanceof sjcl.exception.notReady) {
 		// Retry when we have more entropy.
-		// TODO: Notify the UI in case we want to retry later.
-		log("Not enough entropy!");
+		// FIXME: NO. Just... no.
+		alert("Not enough entropy! Please jiggle the mouse a bunch.");
 		sjcl.random.addEventListener("seeded", retry);
             } else {
 		deferred.reject(e);
