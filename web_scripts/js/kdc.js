@@ -303,6 +303,9 @@ var KDC = (function() {
 	}
 	return [];
     }
+    function defaultSaltForPrincipal(principal) {
+	return principal.realm + principal.principalName.nameString.join("");
+    }
 
     KDC.getTGTSession = function (principal, password) {
 	return KDC.asReq(principal).then(function (ret) {
@@ -331,8 +334,7 @@ var KDC = (function() {
 					  'No supported enctypes');
 
 			// Derive a key.
-			var salt = principal.realm +
-                            principal.principalName.nameString.join("");
+			var salt = defaultSaltForPrincipal(principal);
 			if ("salt" in etypeInfo)
                             salt = etypeInfo.salt;
 			var key = KDC.Key.fromPassword(etypeInfo.etype, password,
@@ -373,8 +375,7 @@ var KDC = (function() {
             //
             // If any padata fields are present, they may be used to
             // derive the proper secret key to decrypt the message.
-            var salt = principal.realm +
-		principal.principalName.nameString.join("");
+            var salt = defaultSaltForPrincipal(principal);
             var s2kparams = undefined;
             if (asRep.padata) {
 		// Is this right?
