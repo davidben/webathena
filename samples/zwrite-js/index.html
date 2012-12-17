@@ -16,9 +16,9 @@
 
 <h1>zwrite.js proof of concept</h1>
 
-<p>(Sorry, this apparently only works in WebKit right now. The <a href="http://crypto.stanford.edu/sjcl/">SJCL</a> stuff
+<p>(Sorry, this works best in WebKit right now. The <a href="http://crypto.stanford.edu/sjcl/">SJCL</a> stuff
 to get around lack of <code><a href="https://developer.mozilla.org/en/DOM/window.crypto.getRandomValues">window.crypto.getRandomValues</a></code>
-doesn't work in invisible iframes. For now try it in Chrome or something.)</p>
+requires jiggling the mouse a lot. For now try it in Chrome or something.)</p>
 
 <form id="z-form">
   Class: <input id="z-class" autofocus placeholder="message"><br>
@@ -37,11 +37,6 @@ The page is protected by certificates for now to prevent potential abuse of the
 zhm proxy; it's possible that a real web-based zephyr client will want more
 sanity checking on the proxy. Perhaps independent authentication (through
 something less evil than SSL client auth) and stuff. I dunno.
-</p>
-
-<p>
-Note: you have to be already "logged in" to Webathena for this to work. We
-haven't written any UI for forwarding tickets between origins yet.
 </p>
 <script>
     var Z_MAXPKTLEN = 1024;
