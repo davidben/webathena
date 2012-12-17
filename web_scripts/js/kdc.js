@@ -304,7 +304,20 @@ var KDC = (function() {
 	return [];
     }
     function defaultSaltForPrincipal(principal) {
+        // The default salt string, if none is provided via
+        // pre-authentication data, is the concatenation of the
+        // principal's realm and name components, in order, with no
+        // separators.
 	return principal.realm + principal.principalName.nameString.join("");
+    }
+    function keyFromPassword(etypeInfo, principal, password) {
+	var salt;
+	if ("salt" in etypeInfo)
+	    salt = etypeInfo.salt;
+	else
+	    salt = defaultSaltForPrincipal(principal);
+	return KDC.Key.fromPassword(etypeInfo.etype,
+				    password, salt, etypeInfo.s2kparams);
     }
 
     KDC.getTGTSession = function (principal, password) {
@@ -334,11 +347,7 @@ var KDC = (function() {
 					  'No supported enctypes');
 
 			// Derive a key.
-			var salt = defaultSaltForPrincipal(principal);
-			if ("salt" in etypeInfo)
-                            salt = etypeInfo.salt;
-			var key = KDC.Key.fromPassword(etypeInfo.etype, password,
-                                                       salt, etypeInfo.s2kparams);
+			var key = keyFromPassword(etypeInfo, principal, password);
 
 			// Encrypt a timestamp.
 			return Crypto.retryForEntropy(function () {
@@ -368,29 +377,22 @@ var KDC = (function() {
             if (asRep.msgType == krb.KRB_MT_ERROR)
 		throw new KDC.Error(asRep.errorCode, asRep.eText);
 
-            // The default salt string, if none is provided via
-            // pre-authentication data, is the concatenation of the
-            // principal's realm and name components, in order, with
-            // no separators.
-            //
             // If any padata fields are present, they may be used to
             // derive the proper secret key to decrypt the message.
-            var salt = defaultSaltForPrincipal(principal);
-            var s2kparams = undefined;
-            if (asRep.padata) {
-		// Is this right?
+	    var etypeInfo = { };
+	    if (asRep.padata) {
 		var etypeInfos = extractPreAuthHint(asRep.padata);
-		if (etypeInfos.length != 1)
-                    throw "Bad pre-auth hint";
-		if ("etype" in etypeInfos[0] &&
-                    etypeInfos[0].etype != asRep.encPart.etype)
-                    throw "Bad pre-auth hint";
-		if ("salt" in etypeInfos[0])
-                    salt = etypeInfos[0].salt;
-		s2kparams = etypeInfos[0].s2kparams;
-            }
-            var key = KDC.Key.fromPassword(asRep.encPart.etype, password, salt,
-					   s2kparams);
+		if (etypeInfos) {
+		    if (etypeInfos.length != 1)
+			throw "Bad pre-auth hint";
+		    etypeInfo = etypeInfos[0];
+		    if ("etype" in etypeInfo &&
+			etypeInfo.etype != asRep.encPart.etype)
+			throw "Bad pre-auth hint";
+		}
+	    }
+	    etypeInfo.etype = asRep.encPart.etype;
+	    var key = keyFromPassword(etypeInfo, principal, password);
 
             // The key usage value for encrypting this field is 3 in
             // an AS-REP message, using the client's long-term key or
