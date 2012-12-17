@@ -164,7 +164,7 @@ var KDC = (function() {
 	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
 	return encProfile.decrypt(
             derivedKey,
-            encProfile.initialCipherState(derivedKey, false),
+            encProfile.initialCipherState(derivedKey, kcrypto.DECRYPT),
             data.cipher)[1];
     };
     KDC.Key.prototype.decryptAs = function (asn1Type, usage, data) {
@@ -180,7 +180,7 @@ var KDC = (function() {
             // kvno??
             cipher: encProfile.encrypt(
 		derivedKey,
-		encProfile.initialCipherState(derivedKey, true),
+		encProfile.initialCipherState(derivedKey, kcrypto.ENCRYPT),
 		data)[1]
 	};
     };

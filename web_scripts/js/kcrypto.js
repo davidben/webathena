@@ -16,6 +16,9 @@ var kcrypto = (function() {
         return "InvalidParameters: " + this.message;
     };
 
+    kcrypto.DECRYPT = 0;
+    kcrypto.ENCRYPT = 1;
+
     // 3.  Encryption Algorithm Profile
     //
     // An encryption profile includes the following methods:
@@ -797,7 +800,7 @@ var kcrypto = (function() {
     // 6.2.1.  DES with MD5
     kcrypto.DesCbcMd5Profile = makeDesEncryptionProfile(kcrypto.RsaMd5Checksum);
     kcrypto.DesCbcMd5Profile.enctype = kcrypto.enctype.des_cbc_md5;
-    kcrypto.DesCbcMd5Profile.initialCipherState = function (key, isEncrypt) {
+    kcrypto.DesCbcMd5Profile.initialCipherState = function(key, dir) {
         return "\0\0\0\0\0\0\0\0";
     };
     kcrypto.DesCbcMd5Profile.checksum = kcrypto.RsaMd5DesChecksum;
@@ -805,7 +808,7 @@ var kcrypto = (function() {
     // 6.2.3.  DES with CRC
     kcrypto.DesCbcCrcProfile = makeDesEncryptionProfile(kcrypto.Crc32Checksum);
     kcrypto.DesCbcCrcProfile.enctype = kcrypto.enctype.des_cbc_crc;
-    kcrypto.DesCbcCrcProfile.initialCipherState = function (key, isEncrypt) {
+    kcrypto.DesCbcCrcProfile.initialCipherState = function(key, dir) {
         return key;
     };
     kcrypto.DesCbcCrcProfile.checksum = kcrypto.RsaMd5DesChecksum;
