@@ -14,11 +14,11 @@ Err.Context.UNK = 0x0f;
 var Crypto = {};
 
 Crypto.toBase64 = function(str) {
-    return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Latin1.parse(str));
+    return sjcl.codec.base64.fromBits(sjcl.codec.byteString.toBits(str));
 };
 
 Crypto.fromBase64 = function(str) {
-    return CryptoJS.enc.Latin1.stringify(CryptoJS.enc.Base64.parse(str));
+    return sjcl.codec.byteString.fromBits(sjcl.codec.base64.toBits(str));
 };
 
 Crypto.randomNonce = function() {
