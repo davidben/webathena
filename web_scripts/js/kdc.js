@@ -13,14 +13,6 @@ Err.Context.UNK = 0x0f;
 
 var Crypto = {};
 
-Crypto.toBase64 = function(str) {
-    return sjcl.codec.base64.fromBits(sjcl.codec.byteString.toBits(str));
-};
-
-Crypto.fromBase64 = function(str) {
-    return sjcl.codec.byteString.fromBits(sjcl.codec.base64.toBits(str));
-};
-
 Crypto.randomNonce = function() {
     var word = sjcl.random.randomWords(1)[0];
     // Twos-complement it if negative.
@@ -229,7 +221,7 @@ var KDC = (function() {
                                             'KDC connection timed out'));
                     break;
 		case 'OK':
-                    var der = Crypto.fromBase64(data.reply);
+                    var der = atob(data.reply);
                     var reply = outputType.decodeDER(der)[1];
                     deferred.resolve(reply);
                     break;
@@ -238,7 +230,7 @@ var KDC = (function() {
 		deferred.reject(new Err(Err.Context.NET, 'error', xhr.status));
             }
 	};
-	xhr.send(Crypto.toBase64(data));
+	xhr.send(btoa(data));
 	return deferred.promise;
     };
 

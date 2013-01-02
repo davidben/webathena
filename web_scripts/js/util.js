@@ -53,3 +53,14 @@ if (!Object.create) {
         return new F();
     };
 }
+
+if (!window.atob) {
+    window.atob = function(a) {
+        return sjcl.codec.byteString.fromBits(sjcl.codec.base64.toBits(a));
+    };
+}
+if (!window.btoa) {
+    window.btoa = function(b) {
+        return sjcl.codec.base64.fromBits(sjcl.codec.byteString.toBits(b));
+    };
+}
