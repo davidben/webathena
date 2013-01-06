@@ -1,6 +1,8 @@
 Project Webathena
 -----------------
 
+https://webathena.mit.edu
+
 Webathena is an experiment to bring Project Athena and particularly
 Kerberos to the web. It is a JavaScript Kerberos client, paired with a
 simple server-side KDC proxy which wraps the Kerberos protocol in
