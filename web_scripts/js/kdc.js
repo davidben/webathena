@@ -339,22 +339,26 @@ var KDC = (function() {
 					  'No supported enctypes');
 
 			// Derive a key.
-			var key = keyFromPassword(etypeInfo, principal, password);
+			var key = keyFromPassword(etypeInfo,
+						  principal, password);
 
 			// Encrypt a timestamp.
 			return Crypto.retryForEntropy(function () {
                             var ts = { };
                             ts.patimestamp = new Date();
-                            ts.pausec = ts.patimestamp.getUTCMilliseconds() * 1000;
+                            ts.pausec =
+				ts.patimestamp.getUTCMilliseconds() * 1000;
                             ts.patimestamp.setUTCMilliseconds(0);
                             var encTs = key.encryptAs(
-				krb.ENC_TS_ENC, krb.KU_AS_REQ_PA_ENC_TIMESTAMP, ts);
+				krb.ENC_TS_ENC, krb.KU_AS_REQ_PA_ENC_TIMESTAMP,
+				ts);
                             return {
 				padataType: krb.PA_ENC_TIMESTAMP,
 				padataValue: krb.ENC_TIMESTAMP.encodeDER(encTs)
                             };
 			}).then(function (padata) {
-                            // Make a new AS-REQ with our PA-DATA and process that.
+                            // Make a new AS-REQ with our PA-DATA and
+                            // process that.
                             return KDC.asReq(principal, [padata]);
 			});
                     }
@@ -485,7 +489,8 @@ var KDC = (function() {
 	if (seqNumber !== undefined) auth.seqNumber = seqNumber;
 
 	// Encode the authenticator.
-	apReq.authenticator = this.key.encryptAs(krb.Authenticator, keyUsage, auth);
+	apReq.authenticator = this.key.encryptAs(krb.Authenticator,
+						 keyUsage, auth);
 	return apReq;
     };
 
