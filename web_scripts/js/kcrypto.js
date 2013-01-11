@@ -37,8 +37,8 @@ var kcrypto = (function() {
     //  };
     //
     //  var checksumProfile = {
-    //    getMic: function (?) -> ?,
-    //    verifyMic: function (?) -> ?
+    //    getMIC: function (?) -> ?,
+    //    verifyMIC: function (?) -> ?
     //  };
     //
     // Stuff to deal with: these strings are UTF-8 strings and octet
@@ -414,11 +414,11 @@ var kcrypto = (function() {
         var checksum = { };
         checksum.sumtype = simpleProfile.sumtype;
         checksum.checksumBytes = simpleProfile.hmacOutputSize;
-        checksum.getMic = function(key, msg) {
+        checksum.getMIC = function(key, msg) {
             return truncatedHmac(key.C, msg);
         };
-        checksum.verifyMic = function(key, msg, token) {
-            return token == this.getMic(key, msg);
+        checksum.verifyMIC = function(key, msg, token) {
+            return token == this.getMIC(key, msg);
         };
 
         enc.checksum = checksum;
@@ -430,13 +430,13 @@ var kcrypto = (function() {
     kcrypto.RsaMd5Checksum = {
         sumtype: kcrypto.sumtype.rsa_md5,
         checksumBytes: 16,
-        getMic: function (key, msg) {
+        getMIC: function (key, msg) {
             msg = CryptoJS.enc.Latin1.parse(msg);
             var hash = CryptoJS.MD5(msg);
             return CryptoJS.enc.Latin1.stringify(hash);
         },
-        verifyMic: function (key, msg, token) {
-            return token == this.getMic(key, msg);
+        verifyMIC: function (key, msg, token) {
+            return token == this.getMIC(key, msg);
         }
     };
 
@@ -444,7 +444,7 @@ var kcrypto = (function() {
     kcrypto.Crc32Checksum = {
         sumtype: kcrypto.sumtype.CRC32,
         checksumBytes: 4,
-        getMic: function (key, msg) {
+        getMIC: function (key, msg) {
             // The CRC-32 checksum used in the des-cbc-crc encryption
             // mode is identical to the 32-bit FCS described in ISO
             // 3309 with two exceptions: The sum with the all-ones
@@ -459,8 +459,8 @@ var kcrypto = (function() {
                                        (checksum >>> 16) & 0xff,
                                        (checksum >>> 24) & 0xff);
         },
-        verifyMic: function (key, msg, token) {
-            return token == this.getMic(key, msg);
+        verifyMIC: function (key, msg, token) {
+            return token == this.getMIC(key, msg);
         }
     };
 
@@ -681,7 +681,7 @@ var kcrypto = (function() {
             for (var i = 0; i < checksumWords; i++) {
                 checksumData.words[2 + i] = 0;
             }
-            if (!checksumProfile.verifyMic(
+            if (!checksumProfile.verifyMIC(
                 key, CryptoJS.enc.Latin1.stringify(checksumData),
                 CryptoJS.enc.Latin1.stringify(checksum)))
                 throw new kcrypto.DecryptionError('Checksum mismatch!');
@@ -726,7 +726,7 @@ var kcrypto = (function() {
             // lot. Perhaps we should just standardize on the latter, much
             // of a pain as it is to use sometimes.
             var cksum = CryptoJS.enc.Latin1.parse(
-                checksumProfile.getMic(
+                checksumProfile.getMIC(
                     key, CryptoJS.enc.Latin1.stringify(plaintext)));
             for (var i = 0; i < checksumWords; i++) {
                 plaintext.words[2 + i] = cksum.words[i];
@@ -752,7 +752,7 @@ var kcrypto = (function() {
     kcrypto.RsaMd5DesChecksum = {
         sumtype: kcrypto.sumtype.rsa_md5_des,
         checksumBytes: 24,
-        getMic: function (key, msg) {
+        getMIC: function (key, msg) {
             // XOR key with 0xf0f0f0f0f0f0f0f0
             key = CryptoJS.enc.Latin1.parse(key);
             for (var i = 0; i < key.words.length; i++) {
@@ -775,7 +775,7 @@ var kcrypto = (function() {
                     conf, key, { iv: iv, padding: CryptoJS.pad.NoPadding }
                 ).ciphertext);
         },
-        verifyMic: function (key, msg, token) {
+        verifyMIC: function (key, msg, token) {
             // XOR key with 0xf0f0f0f0f0f0f0f0
             key = CryptoJS.enc.Latin1.parse(key);
             token = CryptoJS.enc.Latin1.parse(token);

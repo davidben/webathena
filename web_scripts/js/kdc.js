@@ -184,7 +184,7 @@ var KDC = (function() {
 	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
 	return {
             cksumtype: encProfile.checksum.sumtype,
-            checksum: encProfile.checksum.getMic(derivedKey, data)
+            checksum: encProfile.checksum.getMIC(derivedKey, data)
 	};
     };
 
