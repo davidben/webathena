@@ -67,10 +67,8 @@ $(function() {
             clearInterval(interval);
             $('#submit').attr('disabled', null).text(text);
         };
-        Q.fcall(function() {
-            var principal = KDC.Principal.fromString(username);
-            return KDC.getTGTSession(principal, password);
-        }).then(function(tgtSession) {
+        var principal = KDC.Principal.fromString(username);
+        KDC.getTGTSession(principal, password).then(function(tgtSession) {
             log(tgtSession);
             // Save in local storage.
             localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
@@ -78,8 +76,7 @@ $(function() {
             resetForm();
             $('#login').fadeOut();
             $('#authed').fadeIn();
-            // FIXME: Property stringifying of principals
-            $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
+            $('#principal').text(principal.toString());
         }, function(error) {
             var string;
             if (error instanceof kcrypto.DecryptionError) {
@@ -110,7 +107,7 @@ $(function() {
         // TODO: check tgtSession.isExpired
         $('#login').hide();
         $('#authed').show();
-        // FIXME: Property stringifying of principals
-        $('#principal').text(tgtSession.cname.nameString.join('/') + '@' + tgtSession.crealm);
+        $('#principal').text(new KDC.Principal(tgtSession.cname,
+                                               tgtSession.crealm).toString());
     }
 });
