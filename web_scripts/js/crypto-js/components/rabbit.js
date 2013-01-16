@@ -1,7 +1,7 @@
 /*
-CryptoJS v3.x
+CryptoJS v3.1.2
 code.google.com/p/crypto-js
-(c) 2009-2012 by Jeff Mott. All rights reserved.
+(c) 2009-2013 by Jeff Mott. All rights reserved.
 code.google.com/p/crypto-js/wiki/License
 */
 (function () {
@@ -24,6 +24,12 @@ code.google.com/p/crypto-js/wiki/License
             // Shortcuts
             var K = this._key.words;
             var iv = this.cfg.iv;
+
+            // Swap endian
+            for (var i = 0; i < 4; i++) {
+                K[i] = (((K[i] << 8)  | (K[i] >>> 24)) & 0x00ff00ff) |
+                       (((K[i] << 24) | (K[i] >>> 8))  & 0xff00ff00);
+            }
 
             // Generate initial state values
             var X = this._X = [

@@ -1,7 +1,7 @@
 /*
-CryptoJS v3.x
+CryptoJS v3.1.2
 code.google.com/p/crypto-js
-(c) 2009-2012 by Jeff Mott. All rights reserved.
+(c) 2009-2013 by Jeff Mott. All rights reserved.
 code.google.com/p/crypto-js/wiki/License
 */
 (function () {
@@ -75,11 +75,11 @@ code.google.com/p/crypto-js/wiki/License
      */
     var SHA512 = C_algo.SHA512 = Hasher.extend({
         _doReset: function () {
-            this._hash = X64WordArray.create([
-                X64Word_create(0x6a09e667, 0xf3bcc908), X64Word_create(0xbb67ae85, 0x84caa73b),
-                X64Word_create(0x3c6ef372, 0xfe94f82b), X64Word_create(0xa54ff53a, 0x5f1d36f1),
-                X64Word_create(0x510e527f, 0xade682d1), X64Word_create(0x9b05688c, 0x2b3e6c1f),
-                X64Word_create(0x1f83d9ab, 0xfb41bd6b), X64Word_create(0x5be0cd19, 0x137e2179)
+            this._hash = new X64WordArray.init([
+                new X64Word.init(0x6a09e667, 0xf3bcc908), new X64Word.init(0xbb67ae85, 0x84caa73b),
+                new X64Word.init(0x3c6ef372, 0xfe94f82b), new X64Word.init(0xa54ff53a, 0x5f1d36f1),
+                new X64Word.init(0x510e527f, 0xade682d1), new X64Word.init(0x9b05688c, 0x2b3e6c1f),
+                new X64Word.init(0x1f83d9ab, 0xfb41bd6b), new X64Word.init(0x5be0cd19, 0x137e2179)
             ]);
         },
 
@@ -251,6 +251,7 @@ code.google.com/p/crypto-js/wiki/License
 
             // Add padding
             dataWords[nBitsLeft >>> 5] |= 0x80 << (24 - nBitsLeft % 32);
+            dataWords[(((nBitsLeft + 128) >>> 10) << 5) + 30] = Math.floor(nBitsTotal / 0x100000000);
             dataWords[(((nBitsLeft + 128) >>> 10) << 5) + 31] = nBitsTotal;
             data.sigBytes = dataWords.length * 4;
 
@@ -258,7 +259,17 @@ code.google.com/p/crypto-js/wiki/License
             this._process();
 
             // Convert hash to 32-bit word array before returning
-            this._hash = this._hash.toX32();
+            var hash = this._hash.toX32();
+
+            // Return final computed hash
+            return hash;
+        },
+
+        clone: function () {
+            var clone = Hasher.clone.call(this);
+            clone._hash = this._hash.clone();
+
+            return clone;
         },
 
         blockSize: 1024/32
