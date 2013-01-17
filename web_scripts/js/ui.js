@@ -76,7 +76,7 @@ $(function() {
             resetForm();
             $('#login').fadeOut();
             $('#authed').fadeIn();
-            $('#principal').text(principal.toString());
+            $('#principal').text(tgtSession.client.toString());
         }, function(error) {
             var string;
             if (error instanceof kcrypto.DecryptionError) {
@@ -107,7 +107,6 @@ $(function() {
         // TODO: check tgtSession.isExpired
         $('#login').hide();
         $('#authed').show();
-        $('#principal').text(new KDC.Principal(tgtSession.cname,
-                                               tgtSession.crealm).toString());
+        $('#principal').text(tgtSession.client.toString());
     }
 });

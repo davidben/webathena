@@ -447,19 +447,17 @@ var KDC = (function() {
     };
 
     KDC.Session = function (asRep, encRepPart) {
-	// Just store everything. Whatever.
-	this.crealm = asRep.crealm;
-	this.cname = asRep.cname;
-	this.ticket = asRep.ticket;
+        // Just store everything. Whatever.
+        this.client = new KDC.Principal(asRep.cname, asRep.crealm);
+        this.ticket = asRep.ticket;
 
-	this.key = KDC.Key.fromDict(encRepPart.key);
-	this.flags = encRepPart.flags;
-	this.starttime = new Date(encRepPart.starttime);
-	this.endtime = new Date(encRepPart.endtime);
-	this.renewTill = new Date(encRepPart.renewTill);
-	this.srealm = encRepPart.srealm;
-	this.sname = encRepPart.sname;
-	this.caddr = encRepPart.caddr;
+        this.key = KDC.Key.fromDict(encRepPart.key);
+        this.flags = encRepPart.flags;
+        this.starttime = new Date(encRepPart.starttime);
+        this.endtime = new Date(encRepPart.endtime);
+        this.renewTill = new Date(encRepPart.renewTill);
+        this.service = new KDC.Principal(encRepPart.sname, encRepPart.srealm);
+        this.caddr = encRepPart.caddr;
     };
 
     KDC.Session.fromDict = function (dict) {
@@ -468,16 +466,16 @@ var KDC = (function() {
 
     KDC.Session.prototype.toDict = function() {
         return {
-            crealm: this.crealm,
-            cname: this.cname,
+            crealm: this.client.realm,
+            cname: this.client.principalName,
             ticket: this.ticket,
             key: this.key.toDict(),
             flags: this.flags,
             starttime: this.starttime.getTime(),
             endtime: this.endtime.getTime(),
             renewTill: this.renewTill.getTime(),
-            srealm: this.srealm,
-            sname: this.sname,
+            srealm: this.service.realm,
+            sname: this.service.principalName,
             caddr: this.caddr
         };
     };
@@ -494,8 +492,8 @@ var KDC = (function() {
 
 	var auth = { };
 	auth.authenticatorVno = krb.pvno;
-	auth.crealm = this.crealm;
-	auth.cname = this.cname;
+	auth.crealm = this.client.realm;
+	auth.cname = this.client.principalName;
 	if (cksum !== undefined) auth.cksum = cksum;
 	auth.ctime = new Date();
 	auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
