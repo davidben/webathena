@@ -563,7 +563,7 @@ var KDC = (function() {
                     // If we use a subkey, the usage might change I think.
                     return KDC.sessionFromKDCRep(
 			this.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
-		});
+		}.bind(this));
 	}.bind(this));
     };
 
