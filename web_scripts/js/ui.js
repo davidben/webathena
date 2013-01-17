@@ -118,10 +118,7 @@ $(function() {
         return false;
     });
 
-    if (location.hash == '#!request_ticket_v1') {
-        registerTicketAPI();
-    } else {
-        // Main page.
+    function mainPage() {
         getTGTSession().then(function(r) {
             var tgtSession = r[0], prompted = r[1];
             log(tgtSession);
@@ -130,11 +127,24 @@ $(function() {
             authed.appendTo(document.body);
             if (prompted)
                 authed.fadeIn();
+            // TODO: The main page should be more useful. Maybe a
+            // listing of random things you can do with your Athena
+            // account.
             authed.find('.client-principal').text(tgtSession.client.toString());
             authed.find('button.logout').click(function() {
                 localStorage.removeItem('tgtSession');
-                window.location.reload(); // XXX
+                // TODO: Fade this out and the login panel
+                // in. Probably fades of the currently active panel
+                // should be handled be a container.
+                authed.remove();
+                mainPage();
             });
         }).done();
+    }
+
+    if (location.hash == '#!request_ticket_v1') {
+        registerTicketAPI();
+    } else {
+        mainPage();
     }
 });
