@@ -75,68 +75,53 @@
                 <td id="alert-content"><b id="alert-title"></b><br><span id="alert-text"></span></td>
             </tr>
         </table>
+
         <div hidden id="login-template">
           <form class="login" action="about:blank">
             <table class="body">
-                <tr>
-                    <td>
-                        <label for="username">Username</label>
-                    </td>
-                    <td>
-                        <div class="container">
-                            <input class="username" type="text" autofocus>
-                            <div class="error">&#x25C0;   Please enter your username</div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <label for="password">Password</label>
-                    </td>
-                    <td>
-                        <div class="container">
-                            <input class="password" type="password" autocomplete="off">
-                            <div class="error">&#x25C0;   Please enter your password</div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan=2>
-                        <button name="submit" class="submit">Log in to Athena</button>
-                    </td>
-                </tr>
+              <tr>
+                <td><label for="username">Username</label></td>
+                <td>
+                  <div class="container">
+                    <input class="username" type="text" autofocus>
+                    <div class="error">&#x25C0;   Please enter your username</div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><label for="password">Password</label></td>
+                <td>
+                  <div class="container">
+                    <input class="password" type="password" autocomplete="off">
+                    <div class="error">&#x25C0;   Please enter your password</div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan=2>
+                  <button name="submit" class="submit">Log in to Athena</button>
+                </td>
+              </tr>
             </table>
           </form>
         </div>
+
         <div hidden id="authed-template">
           <table class="authed body">
-            <tr>
-                <td>You are logged in as</td>
-            </tr>
-            <tr>
-                <td class="client-principal identifier"></td>
-            </tr>
-            <tr>
-                <td>
-                  <button class="logout">Log out</button>
-                </td>
-            </tr>
+            <tr><td>You are logged in as</td></tr>
+            <tr><td class="client-principal identifier"></td></tr>
+            <tr><td><button class="logout">Log out</button></td></tr>
           </table>
         </div>
+
         <div hidden id="request-ticket-template">
           <table class="authed body">
-            <tr>
-                <td colspan=2>You are logged in as</td>
-            </tr>
-            <tr>
-                <td class="client-principal identifier" colspan=2></td>
-            </tr>
+            <tr><td colspan=2>You are logged in as</td></tr>
+            <tr><td class="client-principal identifier" colspan=2></td></tr>
             <tr>
                 <td class="foreign-origin identifier" colspan=2>https://example.com</td>
             </tr>
-            <tr>
-                <td colspan=2>requests to access</td>
-            </tr>
+            <tr><td colspan=2>requests to access</td></tr>
             <tr>
                 <td class="service-principal identifier" colspan=2>example/service@ATHENA.MIT.EDU</td>
             </tr>
@@ -146,12 +131,8 @@
                     of appropriate text here. Also this UI is too wide.</td>
             </tr>
             <tr>
-                <td>
-                    <button class="request-ticket-allow">Allow</button>
-                </td>
-                <td>
-                    <button class="request-ticket-deny">Deny</button>
-                </td>
+                <td><button class="request-ticket-allow">Allow</button></td>
+                <td><button class="request-ticket-deny">Deny</button></td>
             </tr>
           </table>
         </div>
