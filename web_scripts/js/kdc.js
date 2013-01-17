@@ -318,6 +318,40 @@ var KDC = (function() {
 				    password, salt, etypeInfo.s2kparams);
     }
 
+    var padataHandlers = { };
+    // TODO: Implement other types of PA-DATA.
+    padataHandlers[krb.PA_ENC_TIMESTAMP] = function(asReq, asRep, methodData,
+                                                    paData, principal, password) {
+        var etypeInfos = extractPreAuthHint(methodData);
+	var etypeInfo = null;
+	// Find an enctype we support.
+	for (var j = 0; j < etypeInfos.length; j++) {
+            if (etypeInfos[j].etype in kcrypto.encProfiles) {
+		etypeInfo = etypeInfos[j];
+		break;
+            }
+	}
+	if (etypeInfo === null)
+            throw new Err(Err.Context.KEY, 0x03, 'No supported enctypes');
+
+	// Derive a key.
+	var key = keyFromPassword(etypeInfo, principal, password);
+
+	// Encrypt a timestamp.
+	return Crypto.retryForEntropy(function () {
+            var ts = { };
+            ts.patimestamp = new Date();
+            ts.pausec = ts.patimestamp.getUTCMilliseconds() * 1000;
+            ts.patimestamp.setUTCMilliseconds(0);
+            var encTs = key.encryptAs(
+                krb.ENC_TS_ENC, krb.KU_AS_REQ_PA_ENC_TIMESTAMP, ts);
+            return {
+		padataType: krb.PA_ENC_TIMESTAMP,
+		padataValue: krb.ENC_TIMESTAMP.encodeDER(encTs)
+            };
+	});
+    };
+
     KDC.getTGTSession = function (principal, password) {
 	return KDC.asReq(principal).then(function (ret) {
             var asReq = ret.asReq, asRep = ret.asRep;
@@ -326,43 +360,16 @@ var KDC = (function() {
 		asRep.errorCode == krb.KDC_ERR_PREAUTH_REQUIRED) {
 		// Got a pre-auth request. Retry with pre-auth. Pick the
 		// first PA-DATA we can handle.
-		// TODO: Implement other types of PA-DATA.
 		// TODO: Implement RFC 6113.
 		var methodData = krb.METHOD_DATA.decodeDER(asRep.eData);
 		for (var i = 0; i < methodData.length; i++) {
-                    if (methodData[i].padataType == krb.PA_ENC_TIMESTAMP) {
-			var etypeInfos = extractPreAuthHint(methodData);
-			var etypeInfo = null;
-			// Find an enctype we support.
-			for (var j = 0; j < etypeInfos.length; j++) {
-                            if (etypeInfos[j].etype in kcrypto.encProfiles) {
-				etypeInfo = etypeInfos[j];
-				break;
-                            }
-			}
-			if (etypeInfo === null)
-                            throw new Err(Err.Context.KEY, 0x03,
-					  'No supported enctypes');
-
-			// Derive a key.
-			var key = keyFromPassword(etypeInfo,
-						  principal, password);
-
-			// Encrypt a timestamp.
-			return Crypto.retryForEntropy(function () {
-                            var ts = { };
-                            ts.patimestamp = new Date();
-                            ts.pausec =
-				ts.patimestamp.getUTCMilliseconds() * 1000;
-                            ts.patimestamp.setUTCMilliseconds(0);
-                            var encTs = key.encryptAs(
-				krb.ENC_TS_ENC, krb.KU_AS_REQ_PA_ENC_TIMESTAMP,
-				ts);
-                            return {
-				padataType: krb.PA_ENC_TIMESTAMP,
-				padataValue: krb.ENC_TIMESTAMP.encodeDER(encTs)
-                            };
-			}).then(function (padata) {
+                    if (methodData[i].padataType in padataHandlers) {
+                        // Found one we have a handler for. Pre-auth
+                        // and redo the request.
+                        return padataHandlers[methodData[i].padataType](
+                            asReq, asRep, methodData, methodData[i],
+                            principal, password
+                        ).then(function(padata) {
                             // Make a new AS-REQ with our PA-DATA and
                             // process that.
                             return KDC.asReq(principal, [padata]);
