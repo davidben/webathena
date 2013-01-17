@@ -451,11 +451,15 @@ var KDC = (function() {
         this.client = new KDC.Principal(asRep.cname, asRep.crealm);
         this.ticket = asRep.ticket;
 
+        function dateOrNull(d) {
+            return (d === null) ? null : new Date(d);
+        }
+
         this.key = KDC.Key.fromDict(encRepPart.key);
         this.flags = encRepPart.flags;
-        this.starttime = new Date(encRepPart.starttime);
+        this.starttime = dateOrNull(encRepPart.starttime),
         this.endtime = new Date(encRepPart.endtime);
-        this.renewTill = new Date(encRepPart.renewTill);
+        this.renewTill = dateOrNull(encRepPart.renewTill);
         this.service = new KDC.Principal(encRepPart.sname, encRepPart.srealm);
         this.caddr = encRepPart.caddr;
     };
@@ -465,15 +469,18 @@ var KDC = (function() {
     };
 
     KDC.Session.prototype.toDict = function() {
+        function getTimeOrNull(d) {
+            return (d === null) ? null : d.getTime();
+        }
         return {
             crealm: this.client.realm,
             cname: this.client.principalName,
             ticket: this.ticket,
             key: this.key.toDict(),
             flags: this.flags,
-            starttime: this.starttime.getTime(),
+            starttime: getTimeOrNull(this.starttime),
             endtime: this.endtime.getTime(),
-            renewTill: this.renewTill.getTime(),
+            renewTill: getTimeOrNull(this.renewTill),
             srealm: this.service.realm,
             sname: this.service.principalName,
             caddr: this.caddr
