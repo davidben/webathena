@@ -108,21 +108,22 @@
             </table>
           </form>
         </div>
-        <table id="authed" class="body">
+        <div hidden id="authed-template">
+          <table class="authed body">
             <tr>
                 <td colspan=2>You are logged in as</td>
             </tr>
             <tr>
-                <td id="principal" class="principal" colspan=2></td>
+                <td class="client-principal identifier" colspan=2></td>
             </tr>
             <tr>
-                <td id="foreign-origin" class="principal" colspan=2>https://example.com</td>
+                <td class="foreign-origin identifier" colspan=2>https://example.com</td>
             </tr>
             <tr>
                 <td colspan=2>requests to access</td>
             </tr>
             <tr>
-                <td id="service-principal" class="principal" colspan=2>example/service@ATHENA.MIT.EDU</td>
+                <td class="service-principal identifier" colspan=2>example/service@ATHENA.MIT.EDU</td>
             </tr>
             <tr>
                 <td colspan=2>on your behalf. This will allow the website to
@@ -131,12 +132,13 @@
             </tr>
             <tr>
                 <td>
-                    <button id="request-ticket-allow">Allow</button>
+                    <button class="request-ticket-allow">Allow</button>
                 </td>
                 <td>
-                    <button id="request-ticket-deny">Deny</button>
+                    <button class="request-ticket-deny">Deny</button>
                 </td>
             </tr>
-        </table>
+          </table>
+        </div>
     </body>
 </html>

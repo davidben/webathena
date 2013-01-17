@@ -29,16 +29,12 @@ $(function() {
                   .slideToggle();
         return false;
     });
-    $('#logout button').click(function() {
-        localStorage.removeItem('tgtSession');
-        window.location.reload(); // XXX
-    });
 
     function loginTgtSession() {
         var deferred = Q.defer();
         var login = $('#login-template').children().clone();
         // FIXME: Silly thing to deal with positioning for now.
-        login.insertBefore($('#authed'));
+        login.appendTo(document.body);
         login.find('.username').focus();
         
         login.submit(function(e) {
@@ -113,13 +109,23 @@ $(function() {
     if (sessionJson) {
         var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
         // TODO: check tgtSession.isExpired
-        $('#authed').show();
-        $('#principal').text(tgtSession.client.toString());
+        var authed = $('#authed-template').children().clone();
+        authed.appendTo(document.body);
+        authed.find('.client-principal').text(tgtSession.client.toString());
+        authed.find('button.logout').click(function() {
+            localStorage.removeItem('tgtSession');
+            window.location.reload(); // XXX
+        });
     } else {
         loginTgtSession().then(function(tgtSession) {
-            console.log(tgtSession);
-            $('#authed').fadeIn();
-            $('#principal').text(tgtSession.client.toString());
+            log(tgtSession);
+            var authed = $('#authed-template').children().clone();
+            authed.appendTo(document.body).fadeIn();
+            authed.find('.client-principal').text(tgtSession.client.toString());
+            authed.find('button.logout').click(function() {
+                localStorage.removeItem('tgtSession');
+                window.location.reload(); // XXX
+            });
         }).done();
     }
 });

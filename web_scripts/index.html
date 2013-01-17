@@ -105,18 +105,20 @@
             </table>
           </form>
         </div>
-        <table id="authed" class="body">
+        <div hidden id="authed-template">
+          <table class="authed body">
             <tr>
                 <td>You are logged in as</td>
             </tr>
             <tr>
-                <td id="principal" class="principal"></td>
+                <td class="client-principal identifier"></td>
             </tr>
             <tr>
-                <td id="logout">
-                    <button>Log out</button>
+                <td>
+                  <button class="logout">Log out</button>
                 </td>
             </tr>
-        </table>
+          </table>
+        </div>
     </body>
 </html>

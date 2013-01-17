@@ -44,52 +44,50 @@ WinChan.onOpen(function (origin, args, cb) {
         nameString: args.principal
     }, args.realm);
 
-    document.getElementById("foreign-origin").textContent = origin;
-    document.getElementById("service-principal").textContent =
-        principal.toString();
+    $(".authed .foreign-origin").text(origin);
+    $(".authed .service-principal").text(principal.toString());
     
-    document.getElementById("request-ticket-allow").addEventListener(
-        "click", function (e) {
-            // None of these errors should really happen. Ideally this
-            // file would be in control of the UI and this event
-            // listener would only be hooked up when we've got a valid
-            // tgtSession.
-            if (!localStorage.getItem("tgtSession")) {
-                log('No ticket');
+    $(".authed .request-ticket-allow").click(function(e) {
+        // None of these errors should really happen. Ideally this
+        // file would be in control of the UI and this event
+        // listener would only be hooked up when we've got a valid
+        // tgtSession.
+        if (!localStorage.getItem("tgtSession")) {
+            log('No ticket');
+            deny();
+            return;
+        }
+
+        // Pull out the ticket.
+        var tgtSession = KDC.Session.fromDict(
+            JSON.parse(localStorage.getItem('tgtSession')));
+
+        if (tgtSession.isExpired()) {
+            // I guess this is actually possible if the ticket
+            // expires while this user is deliberating.
+            log('Ticket expired');
+            deny();
+            return;
+        }
+
+        // User gave us permission and we have a legit TGT. Let's go!
+        tgtSession.getServiceSession(principal).then(
+            function (session) {
+                // TODO: Do we want to store this in the ccache
+                // too, so a service which doesn't cache its own
+                // tickets needn't get new ones all the time?
+                // Also, the ccache needs some fancy abstraction
+                // or something.
+                cb({
+                    status: 'OK',
+                    session: session.toDict(),
+                });
+            },
+            function (error) {
+                log(error);
                 deny();
-                return;
-            }
+            }).done();
+    });
 
-            // Pull out the ticket.
-            var tgtSession = KDC.Session.fromDict(
-                JSON.parse(localStorage.getItem('tgtSession')));
-
-            if (tgtSession.isExpired()) {
-                // I guess this is actually possible if the ticket
-                // expires while this user is deliberating.
-                log('Ticket expired');
-                deny();
-                return;
-            }
-
-            // User gave us permission and we have a legit TGT. Let's go!
-            tgtSession.getServiceSession(principal).then(
-                function (session) {
-                    // TODO: Do we want to store this in the ccache
-                    // too, so a service which doesn't cache its own
-                    // tickets needn't get new ones all the time?
-                    // Also, the ccache needs some fancy abstraction
-                    // or something.
-                    cb({
-                        status: 'OK',
-                        session: session.toDict(),
-                    });
-                },
-                function (error) {
-                    log(error);
-                    deny();
-                }).done();
-        });
-
-    document.getElementById("request-ticket-deny").addEventListener("click", deny);
+    $(".authed .request-ticket-deny").click(deny);
 });

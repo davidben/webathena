@@ -165,9 +165,8 @@ button {
     font-size: 1em;
 }
 
-#authed {
+.authed {
     text-align: center;
-    display: none;
     box-shadow: 1pt 1pt 4pt black;
     background: olivedrab;
     background: -moz-linear-gradient(top, limegreen, olivedrab);
@@ -176,11 +175,11 @@ button {
     background: linear-gradient(to bottom, limegreen, olivedrab);
 }
 
-#authed #principal {
+.authed .client-principal {
     padding-bottom: 1em;
 }
 
-#authed .principal {
+.identifier {
     text-transform: none;
     font-family: 'PT Mono', monospace;
     font-size: 18pt;
