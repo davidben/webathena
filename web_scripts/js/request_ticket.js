@@ -82,7 +82,7 @@ WinChan.onOpen(function (origin, args, cb) {
                     // or something.
                     cb({
                         status: 'OK',
-                        session: session,
+                        session: session.toDict(),
                     });
                 },
                 function (error) {
