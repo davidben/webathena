@@ -313,14 +313,14 @@ asn1.INTEGER.valueConstrained = function () {
         if (allowed.indexOf(v) == -1)
             throw new RangeError("Invalid value: " + v);
     });
-}
+};
 
 asn1.INTEGER.rangeConstrained = function (lo, hi) {
     return this.constrained(function (v) {
         if (v < lo || v > hi)
             throw new RangeError("Invalid value: " + v);
     });
-}
+};
 
 
 /**

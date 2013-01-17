@@ -24,7 +24,7 @@ krb.principalNamesEqual = function (a, b) {
             return false;
     }
     return true;
-}
+};
 
 // 5.2.3.  KerberosTime
 krb.KerberosTime = asn1.GeneralizedTime.constrained(function (date) {
