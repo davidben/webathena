@@ -135,6 +135,6 @@ $(function() {
                 localStorage.removeItem('tgtSession');
                 window.location.reload(); // XXX
             });
-        });
+        }).done();
     }
 });
