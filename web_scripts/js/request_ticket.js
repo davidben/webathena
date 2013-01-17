@@ -44,50 +44,55 @@ WinChan.onOpen(function (origin, args, cb) {
         nameString: args.principal
     }, args.realm);
 
-    $(".authed .foreign-origin").text(origin);
-    $(".authed .service-principal").text(principal.toString());
-    
-    $(".authed .request-ticket-allow").click(function(e) {
-        // None of these errors should really happen. Ideally this
-        // file would be in control of the UI and this event
-        // listener would only be hooked up when we've got a valid
-        // tgtSession.
-        if (!localStorage.getItem("tgtSession")) {
-            log('No ticket');
-            deny();
-            return;
-        }
+    getTGTSession().then(function(r) {
+        var tgtSession = r[0], prompted = r[1];
 
-        // Pull out the ticket.
-        var tgtSession = KDC.Session.fromDict(
-            JSON.parse(localStorage.getItem('tgtSession')));
+        var authed = $('#authed-template').children().clone();
+        authed.appendTo(document.body);
+        if (prompted)
+            authed.fadeIn();
 
-        if (tgtSession.isExpired()) {
-            // I guess this is actually possible if the ticket
-            // expires while this user is deliberating.
-            log('Ticket expired');
-            deny();
-            return;
-        }
+        authed.find('.client-principal').text(tgtSession.client.toString());
+        authed.find('.foreign-origin').text(origin);
+        authed.find('.service-principal').text(principal.toString());
 
-        // User gave us permission and we have a legit TGT. Let's go!
-        tgtSession.getServiceSession(principal).then(
-            function (session) {
-                // TODO: Do we want to store this in the ccache
-                // too, so a service which doesn't cache its own
-                // tickets needn't get new ones all the time?
-                // Also, the ccache needs some fancy abstraction
-                // or something.
-                cb({
-                    status: 'OK',
-                    session: session.toDict(),
-                });
-            },
-            function (error) {
-                log(error);
+        authed.find('.request-ticket-deny').click(deny);
+        authed.find('.request-ticket-allow').click(function(e) {
+            // None of these errors should really happen. Ideally this
+            // file would be in control of the UI and this event
+            // listener would only be hooked up when we've got a valid
+            // tgtSession.
+            if (!localStorage.getItem("tgtSession")) {
+                log('No ticket');
                 deny();
-            }).done();
-    });
+                return;
+            }
 
-    $(".authed .request-ticket-deny").click(deny);
+            if (tgtSession.isExpired()) {
+                // I guess this is actually possible if the ticket
+                // expires while this user is deliberating.
+                log('Ticket expired');
+                deny();
+                return;
+            }
+
+            // User gave us permission and we have a legit TGT. Let's go!
+            tgtSession.getServiceSession(principal).then(
+                function (session) {
+                    // TODO: Do we want to store this in the ccache
+                    // too, so a service which doesn't cache its own
+                    // tickets needn't get new ones all the time?
+                    // Also, the ccache needs some fancy abstraction
+                    // or something.
+                    cb({
+                        status: 'OK',
+                        session: session.toDict(),
+                    });
+                },
+                function (error) {
+                    log(error);
+                    deny();
+                }).done();
+        });
+    }).done();
 });
