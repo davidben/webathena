@@ -16,14 +16,17 @@
         <script src="js/jquery.min.js"></script>
         <script src="js/q.min.js"></script>
         <script src="js/sjcl.js"></script>
-        <script src="js/util.js"></script>
         <script src="js/crypto-js/rollups/tripledes.js"></script>
         <script src="js/crypto-js/components/pad-nopadding-min.js"></script>
+        <script src="js/winchan.js"></script>
+
+        <script src="js/util.js"></script>
         <script src="js/crc32.js"></script>
         <script src="js/asn1.js"></script>
         <script src="js/krb.js"></script>
         <script src="js/kcrypto.js"></script>
         <script src="js/kdc.js"></script>
+        <script src="js/request_ticket.js"></script>
         <script src="js/ui.js"></script>
     </head>
     <body>
@@ -116,6 +119,38 @@
             <tr>
                 <td>
                   <button class="logout">Log out</button>
+                </td>
+            </tr>
+          </table>
+        </div>
+        <div hidden id="request-ticket-template">
+          <table class="authed body">
+            <tr>
+                <td colspan=2>You are logged in as</td>
+            </tr>
+            <tr>
+                <td class="client-principal identifier" colspan=2></td>
+            </tr>
+            <tr>
+                <td class="foreign-origin identifier" colspan=2>https://example.com</td>
+            </tr>
+            <tr>
+                <td colspan=2>requests to access</td>
+            </tr>
+            <tr>
+                <td class="service-principal identifier" colspan=2>example/service@ATHENA.MIT.EDU</td>
+            </tr>
+            <tr>
+                <td colspan=2>on your behalf. This will allow the website to
+                    use the service with your credentials. Blah blah some sort
+                    of appropriate text here. Also this UI is too wide.</td>
+            </tr>
+            <tr>
+                <td>
+                    <button class="request-ticket-allow">Allow</button>
+                </td>
+                <td>
+                    <button class="request-ticket-deny">Deny</button>
                 </td>
             </tr>
           </table>

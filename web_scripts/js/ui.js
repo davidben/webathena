@@ -118,8 +118,10 @@ $(function() {
         return false;
     });
 
-    // Sily hack.
-    if (location.pathname != '/request_ticket_v1.html') {
+    if (location.hash == '#!request_ticket_v1') {
+        registerTicketAPI();
+    } else {
+        // Main page.
         getTGTSession().then(function(r) {
             var tgtSession = r[0], prompted = r[1];
             log(tgtSession);

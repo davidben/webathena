@@ -1,6 +1,7 @@
 "use strict";
 
-WinChan.onOpen(function (origin, args, cb) {
+function registerTicketAPI() {
+  WinChan.onOpen(function (origin, args, cb) {
     // NOTE: origin is a trusted value we get from the browser. args
     // is untrusted data from some other origin. It is absolutely
     // critical that we do not eval anything in there, including as
@@ -47,7 +48,7 @@ WinChan.onOpen(function (origin, args, cb) {
     getTGTSession().then(function(r) {
         var tgtSession = r[0], prompted = r[1];
 
-        var authed = $('#authed-template').children().clone();
+        var authed = $('#request-ticket-template').children().clone();
         authed.appendTo(document.body);
         if (prompted)
             authed.fadeIn();
@@ -95,4 +96,5 @@ WinChan.onOpen(function (origin, args, cb) {
                 }).done();
         });
     }).done();
-});
+  });
+}
