@@ -507,9 +507,8 @@ var KDC = (function() {
 	return apReq;
     };
 
-    KDC.Session.prototype.getServiceSession = function (service) {
-	var self = this;
-	return Crypto.retryForEntropy(function () {
+    KDC.Session.prototype.getServiceSession = function(service) {
+	return Crypto.retryForEntropy(function() {
             var tgsReq = { };
             tgsReq.pvno = krb.pvno;
             tgsReq.msgType = krb.KRB_MT_TGS_REQ;
@@ -529,13 +528,13 @@ var KDC = (function() {
             // Checksum the reqBody. Note: if our DER encoder isn't completely
             // correct, the proxy will re-encode it and possibly mess up the
             // checksum. This is probably a little poor.
-            var checksum = self.key.checksum(
+            var checksum = this.key.checksum(
 		krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM,
 		krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody));
 
             // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
             // padata of PA-TGS-REQ.
-            var apReq = self.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
+            var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
             tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                                padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
@@ -556,9 +555,9 @@ var KDC = (function() {
                     //
                     // If we use a subkey, the usage might change I think.
                     return KDC.sessionFromKDCRep(
-			self.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
+			this.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
 		});
-	});
+	}.bind(this));
     };
 
     KDC.Session.prototype.isExpired = function () {
