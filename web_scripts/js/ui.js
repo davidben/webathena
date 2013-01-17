@@ -30,7 +30,7 @@ $(function() {
         return false;
     });
 
-    function loginTgtSession() {
+    function promptForTGTSession() {
         var deferred = Q.defer();
         var login = $('#login-template').children().clone();
         // FIXME: Silly thing to deal with positioning for now.
@@ -74,9 +74,6 @@ $(function() {
             };
             var principal = KDC.Principal.fromString(username);
             KDC.getTGTSession(principal, password).then(function(tgtSession) {
-                // Save in local storage.
-                localStorage.setItem('tgtSession', JSON.stringify(tgtSession.toDict()));
-
                 resetForm();
                 login.fadeOut(function() { $(this).remove(); });
                 deferred.resolve(tgtSession);
@@ -104,28 +101,35 @@ $(function() {
         return deferred.promise;
     }
 
-    // Check if we're already logged in.
-    var sessionJson = localStorage.getItem('tgtSession');
-    if (sessionJson) {
-        var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
-        // TODO: check tgtSession.isExpired
+    function getTGTSession() {
+        // Check if we're already logged in.
+        var sessionJson = localStorage.getItem('tgtSession');
+        if (sessionJson) {
+            var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
+            // TODO: check tgtSession.isExpired
+            return Q.resolve([tgtSession, false]);
+        }
+
+        return promptForTGTSession().then(function(tgtSession) {
+            // Save in local storage.
+            localStorage.setItem('tgtSession',
+                                 JSON.stringify(tgtSession.toDict()));
+            return [tgtSession, true];
+        });
+    }
+
+    getTGTSession().then(function(r) {
+        var tgtSession = r[0], prompted = r[1];
+        log(tgtSession);
+
         var authed = $('#authed-template').children().clone();
         authed.appendTo(document.body);
+        if (prompted)
+            authed.fadeIn();
         authed.find('.client-principal').text(tgtSession.client.toString());
         authed.find('button.logout').click(function() {
             localStorage.removeItem('tgtSession');
             window.location.reload(); // XXX
         });
-    } else {
-        loginTgtSession().then(function(tgtSession) {
-            log(tgtSession);
-            var authed = $('#authed-template').children().clone();
-            authed.appendTo(document.body).fadeIn();
-            authed.find('.client-principal').text(tgtSession.client.toString());
-            authed.find('button.logout').click(function() {
-                localStorage.removeItem('tgtSession');
-                window.location.reload(); // XXX
-            });
-        }).done();
-    }
+    });
 });
