@@ -187,6 +187,12 @@ var KDC = (function() {
             checksum: encProfile.checksum.getMIC(derivedKey, data)
 	};
     };
+    KDC.Key.prototype.toDict = function() {
+        return {
+            keytype: this.keytype,
+            keyvalue: this.keyvalue
+        };
+    };
 
     KDC.Key.fromDict = function (key) {
 	return new KDC.Key(key.keytype, key.keyvalue);
@@ -441,13 +447,6 @@ var KDC = (function() {
     };
 
     KDC.Session = function (asRep, encRepPart) {
-	// Make sure this thing is trivial JSON-able.
-	function dateToInt(d) {
-            if (d instanceof Date)
-		return d.getTime();
-            return d;
-	}
-
 	// Just store everything. Whatever.
 	this.crealm = asRep.crealm;
 	this.cname = asRep.cname;
@@ -455,9 +454,9 @@ var KDC = (function() {
 
 	this.key = KDC.Key.fromDict(encRepPart.key);
 	this.flags = encRepPart.flags;
-	this.starttime = dateToInt(encRepPart.starttime);
-	this.endtime = dateToInt(encRepPart.endtime);
-	this.renewTill = dateToInt(encRepPart.renewTill);
+	this.starttime = new Date(encRepPart.starttime);
+	this.endtime = new Date(encRepPart.endtime);
+	this.renewTill = new Date(encRepPart.renewTill);
 	this.srealm = encRepPart.srealm;
 	this.sname = encRepPart.sname;
 	this.caddr = encRepPart.caddr;
@@ -465,6 +464,22 @@ var KDC = (function() {
 
     KDC.Session.fromDict = function (dict) {
 	return new KDC.Session(dict, dict);
+    };
+
+    KDC.Session.prototype.toDict = function() {
+        return {
+            crealm: this.crealm,
+            cname: this.cname,
+            ticket: this.ticket,
+            key: this.key.toDict(),
+            flags: this.flags,
+            starttime: this.starttime.getTime(),
+            endtime: this.endtime.getTime(),
+            renewTill: this.renewTill.getTime(),
+            srealm: this.srealm,
+            sname: this.sname,
+            caddr: this.caddr
+        };
     };
 
     KDC.Session.prototype.makeAPReq = function (keyUsage,
@@ -549,7 +564,7 @@ var KDC = (function() {
     };
 
     KDC.Session.prototype.isExpired = function () {
-	return new Date(this.endtime) <= new Date();
+	return this.endtime <= new Date();
     };
 
     return KDC;

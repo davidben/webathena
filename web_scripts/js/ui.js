@@ -71,7 +71,7 @@ $(function() {
         KDC.getTGTSession(principal, password).then(function(tgtSession) {
             log(tgtSession);
             // Save in local storage.
-            localStorage.setItem('tgtSession', JSON.stringify(tgtSession));
+            localStorage.setItem('tgtSession', JSON.stringify(tgtSession.toDict()));
 
             resetForm();
             $('#login').fadeOut();
@@ -101,9 +101,9 @@ $(function() {
     });
 
     // Check if we're already logged in.
-    if (localStorage.getItem('tgtSession')) {
-        var tgtSession = KDC.Session.fromDict(
-            JSON.parse(localStorage.getItem('tgtSession')));
+    var sessionJson = localStorage.getItem('tgtSession');
+    if (sessionJson) {
+        var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
         // TODO: check tgtSession.isExpired
         $('#login').hide();
         $('#authed').show();
