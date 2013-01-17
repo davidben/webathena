@@ -1,9 +1,8 @@
 "use strict";
 
-function promptForTGTSession() {
+function showLoginPrompt() {
     var deferred = Q.defer();
     var login = $('#login-template').children().clone();
-    // FIXME: Silly thing to deal with positioning for now.
     login.appendTo(document.body);
     login.find('.username').focus();
 
@@ -12,10 +11,10 @@ function promptForTGTSession() {
 
         $('#alert').slideUp(100);
         var usernameInput = $(this).find('.username')[0],
-        passwordInput = $(this).find('.password')[0],
-        username = usernameInput.value,
-        password = passwordInput.value,
-        fail = false;
+            passwordInput = $(this).find('.password')[0],
+            username = usernameInput.value,
+            password = passwordInput.value,
+            fail = false;
         if (!username) {
             $(this).find('.username + .error').fadeIn();
             fail = true;
@@ -71,16 +70,86 @@ function promptForTGTSession() {
     return deferred.promise;
 }
 
+function showRenewPrompt(oldSession) {
+    var deferred = Q.defer();
+    var login = $('#renew-template').children().clone();
+    login.find('.client-principal').text(oldSession.client.toString());
+    login.find('.logout-link').click(function(e) {
+        e.preventDefault();
+        login.remove(); // TODO: Fade out?
+        deferred.resolve(showLoginPrompt());
+    });
+    login.appendTo(document.body);
+    login.find('.password').focus();
+
+    login.submit(function(e) {
+        e.preventDefault();
+
+        $('#alert').slideUp(100);
+        var passwordInput = $(this).find('.password')[0],
+            password = passwordInput.value;
+        if (!password) {
+            $(this).find('.password + .error').fadeIn();
+            return;
+        }
+        $(this).find('.password + .error').fadeOut();
+
+        passwordInput.value = '';
+        var submit = $(this).find('.submit');
+        var text = submit.text();
+        submit.attr('disabled', 'disabled').text('.');
+        var interval = setInterval(function() {
+            submit.text((submit.text() + '.').replace('.....', '.'));
+        }, 500);
+        var resetForm = function() {
+            clearInterval(interval);
+            submit.attr('disabled', null).text(text);
+        };
+        KDC.getTGTSession(oldSession.client, password).then(function(tgtSession) {
+            resetForm();
+            login.fadeOut(function() { $(this).remove(); });
+            deferred.resolve(tgtSession);
+        }, function(error) {
+            var string;
+            if (error instanceof kcrypto.DecryptionError) {
+                string = 'Incorrect password!';
+            } else if (error instanceof KDC.Error) {
+                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+                    string = 'User does not exist!';
+                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
+                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
+                    string = 'Incorrect password!';
+                else
+                    string = error.message;
+            } else {
+                string = String(error);
+            }
+            $('#alert-title').text('Error logging in:');
+            $('#alert-text').text(string);
+            $('#alert').slideDown(100);
+            resetForm();
+        }).done();
+    });
+    return deferred.promise;
+}
+
+
 function getTGTSession() {
     // Check if we're already logged in.
     var sessionJson = localStorage.getItem('tgtSession');
     if (sessionJson) {
         var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
-        // TODO: check tgtSession.isExpired
+        if (tgtSession.isExpired())
+            return showRenewPrompt(tgtSession).then(function(tgtSession) {
+                // Save in local storage.
+                localStorage.setItem('tgtSession',
+                                     JSON.stringify(tgtSession.toDict()));
+                return [tgtSession, true];
+            });
         return Q.resolve([tgtSession, false]);
     }
 
-    return promptForTGTSession().then(function(tgtSession) {
+    return showLoginPrompt().then(function(tgtSession) {
         // Save in local storage.
         localStorage.setItem('tgtSession',
                              JSON.stringify(tgtSession.toDict()));

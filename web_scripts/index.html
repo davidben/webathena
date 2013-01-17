@@ -106,6 +106,38 @@
           </form>
         </div>
 
+        <div hidden id="renew-template">
+          <form class="login" action="about:blank">
+            <table class="body">
+              <tr>
+                <td class="login-message" colspan=2>
+                  Your login has expired.
+                </td>
+              </tr>
+              <tr><td colspan=2 class="client-principal identifier">example@ATHENA.MIT.EDU</td></tr>
+              <tr>
+                <td><label for="password">Password</label></td>
+                <td>
+                  <div class="container">
+                    <input class="password" type="password" autocomplete="off">
+                    <div class="error">&#x25C0;   Please enter your password</div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan=2>
+                  <button name="submit" class="submit">Renew login</button>
+                </td>
+              </tr>
+              <tr>
+                <td colspan=2>
+                  <a class="logout-link" href="#">Login as another user.</a>
+                </td>
+              </tr>
+            </table>
+          </form>
+        </div>
+
         <div hidden id="authed-template">
           <table class="authed body">
             <tr><td>You are logged in as</td></tr>

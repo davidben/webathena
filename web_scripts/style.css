@@ -137,6 +137,14 @@ table.body {
     background: linear-gradient(to bottom, lightsalmon, tomato);
 }
 
+.login-message {
+    text-align: center;
+}
+
+.logout-link {
+    font-size: 0.8em;
+}
+
 .login td {
     height: 30pt;
 }
