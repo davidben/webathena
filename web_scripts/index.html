@@ -72,7 +72,8 @@
                 <td id="alert-content"><b id="alert-title"></b><br><span id="alert-text"></span></td>
             </tr>
         </table>
-        <form id="login" action="about:blank">
+        <div hidden id="login-template">
+          <form class="login" action="about:blank">
             <table class="body">
                 <tr>
                     <td>
@@ -80,7 +81,7 @@
                     </td>
                     <td>
                         <div class="container">
-                            <input id="username" type="text" autofocus>
+                            <input class="username" type="text" autofocus>
                             <div class="error">&#x25C0;   Please enter your username</div>
                         </div>
                     </td>
@@ -91,18 +92,19 @@
                     </td>
                     <td>
                         <div class="container">
-                            <input id="password" type="password" autocomplete="off">
+                            <input class="password" type="password" autocomplete="off">
                             <div class="error">&#x25C0;   Please enter your password</div>
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td colspan=2>
-                        <button name="submit" id="submit">Log in to Athena</button>
+                        <button name="submit" class="submit">Log in to Athena</button>
                     </td>
                 </tr>
             </table>
-        </form>
+          </form>
+        </div>
         <table id="authed" class="body">
             <tr>
                 <td>You are logged in as</td>

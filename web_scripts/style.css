@@ -12,6 +12,8 @@ html, body {
     background: linear-gradient(to left, white, white) repeat-y, #909098;
 }
 
+[hidden] { display: none !important; visibility: hidden !important; }
+
 #whatis {
     text-align: right;
     margin-right: 20px;
@@ -119,13 +121,13 @@ table.body {
     max-width: 300px;
 }
 
-#login {
+.login {
     position: absolute;
     left: 0;
     right: 0;
 }
 
-#login table {
+.login table {
     text-align: right;
     box-shadow: 1pt 1pt 4pt black;
     background: tomato;
@@ -135,20 +137,20 @@ table.body {
     background: linear-gradient(to bottom, lightsalmon, tomato);
 }
 
-#login td {
+.login td {
     height: 30pt;
 }
 
-#login .container {
+.login .container {
     position: relative;
 }
 
-#login input {
+.login input {
     border: 2px inset chocolate;
     font-family: 'PT Mono', monospace;
 }
 
-#login .error {
+.login .error {
     position: absolute;
     top: -4pt;
     left: 100%;

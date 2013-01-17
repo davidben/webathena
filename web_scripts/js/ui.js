@@ -33,80 +33,93 @@ $(function() {
         localStorage.removeItem('tgtSession');
         window.location.reload(); // XXX
     });
-    
-    $('#login').submit(function(e) {
-        // Even if we throw an exception, don't submit the form.
-        e.preventDefault();
 
-        $('#alert').slideUp(100);
-        var username = $('#username')[0].value,
-            password = $('#password')[0].value,
-            fail = false;
-        if(!username) {
-            $('#username + .error').fadeIn();
-            fail = true;
-        } else {
-            $('#username + .error').fadeOut();
-        }
-        if(!password) {
-            $('#password + .error').fadeIn();
-            fail = true;
-        } else {
-            $('#password + .error').fadeOut();
-        }
-        if(fail)
-            return false;
+    function loginTgtSession() {
+        var deferred = Q.defer();
+        var login = $('#login-template').children().clone();
+        // FIXME: Silly thing to deal with positioning for now.
+        login.insertBefore($('#authed'));
+        login.find('.username').focus();
         
-        $('#password')[0].value = '';
-        var text = $('#submit').text();
-        $('#submit').attr('disabled', 'disabled').text('.');
-        var interval = setInterval(function() {
-            $('#submit').text(($('#submit').text() + '.').replace('.....', '.'));
-        }, 500);
-        var resetForm = function() {
-            clearInterval(interval);
-            $('#submit').attr('disabled', null).text(text);
-        };
-        var principal = KDC.Principal.fromString(username);
-        KDC.getTGTSession(principal, password).then(function(tgtSession) {
-            log(tgtSession);
-            // Save in local storage.
-            localStorage.setItem('tgtSession', JSON.stringify(tgtSession.toDict()));
+        login.submit(function(e) {
+            e.preventDefault();
 
-            resetForm();
-            $('#login').fadeOut();
-            $('#authed').fadeIn();
-            $('#principal').text(tgtSession.client.toString());
-        }, function(error) {
-            var string;
-            if (error instanceof kcrypto.DecryptionError) {
-                string = 'Incorrect password!';
-            } else if (error instanceof KDC.Error) {
-                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
-                    string = 'User does not exist!';
-                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
-                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
-                    string = 'Incorrect password!';
-                else
-                    string = error.message;
+            $('#alert').slideUp(100);
+            var usernameInput = $(this).find('.username')[0],
+                passwordInput = $(this).find('.password')[0],
+                username = usernameInput.value,
+                password = passwordInput.value,
+                fail = false;
+            if (!username) {
+                $(this).find('.username + .error').fadeIn();
+                fail = true;
             } else {
-                string = String(error);
+                $(this).find('.username + .error').fadeOut();
             }
-            $('#alert-title').text('Error logging in:');
-            $('#alert-text').text(string);
-            $('#alert').slideDown(100);
-            resetForm();
-        }).done();
-        return false;
-    });
+            if (!password) {
+                $(this).find('.password + .error').fadeIn();
+                fail = true;
+            } else {
+                $(this).find('.password + .error').fadeOut();
+            }
+            if (fail)
+                return;
+
+            passwordInput.value = '';
+            var submit = $(this).find('.submit');
+            var text = submit.text();
+            submit.attr('disabled', 'disabled').text('.');
+            var interval = setInterval(function() {
+                submit.text((submit.text() + '.').replace('.....', '.'));
+            }, 500);
+            var resetForm = function() {
+                clearInterval(interval);
+                submit.attr('disabled', null).text(text);
+            };
+            var principal = KDC.Principal.fromString(username);
+            KDC.getTGTSession(principal, password).then(function(tgtSession) {
+                // Save in local storage.
+                localStorage.setItem('tgtSession', JSON.stringify(tgtSession.toDict()));
+
+                resetForm();
+                login.fadeOut(function() { $(this).remove(); });
+                deferred.resolve(tgtSession);
+            }, function(error) {
+                var string;
+                if (error instanceof kcrypto.DecryptionError) {
+                    string = 'Incorrect password!';
+                } else if (error instanceof KDC.Error) {
+                    if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+                        string = 'User does not exist!';
+                    else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
+                             error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
+                        string = 'Incorrect password!';
+                    else
+                        string = error.message;
+                } else {
+                    string = String(error);
+                }
+                $('#alert-title').text('Error logging in:');
+                $('#alert-text').text(string);
+                $('#alert').slideDown(100);
+                resetForm();
+            }).done();
+        });
+        return deferred.promise;
+    }
 
     // Check if we're already logged in.
     var sessionJson = localStorage.getItem('tgtSession');
     if (sessionJson) {
         var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
         // TODO: check tgtSession.isExpired
-        $('#login').hide();
         $('#authed').show();
         $('#principal').text(tgtSession.client.toString());
+    } else {
+        loginTgtSession().then(function(tgtSession) {
+            console.log(tgtSession);
+            $('#authed').fadeIn();
+            $('#principal').text(tgtSession.client.toString());
+        }).done();
     }
 });
