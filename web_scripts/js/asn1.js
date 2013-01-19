@@ -27,12 +27,12 @@ asn1.Error.prototype.toString = function() {
 /**
  * Returns an ASN.1 tag.
  *
- * @param {Number} number The number of the tag.
- * @param {Number} pc TAG_PRIMITIVE or TAG_CONSTRUCTED. Defaults to
+ * @param {number} number The number of the tag.
+ * @param {number} pc TAG_PRIMITIVE or TAG_CONSTRUCTED. Defaults to
  *     TAG_CONSTRUCTED.
- * @param {Number} cls The class of the tag. Defaults to
+ * @param {number} cls The class of the tag. Defaults to
  *     TAG_CONTEXT.
- * @return {Number} A tag number representing the tag.
+ * @return {number} A tag number representing the tag.
  */
 asn1.tag = function (number, pc, cls) {
     if (pc === undefined)
@@ -49,8 +49,8 @@ asn1.tag = function (number, pc, cls) {
 /**
  * DER-encodes an ASN.1 tag.
  *
- * @param {Number} tag The tag to encode.
- * @return {String} The DER-encoded tag.
+ * @param {number} tag The tag to encode.
+ * @return {string} The DER-encoded tag.
  */
 asn1.encodeTagDER = function (tag) {
     return String.fromCharCode(tag);
@@ -59,8 +59,8 @@ asn1.encodeTagDER = function (tag) {
 /**
  * Encodes a length in a DER TLV tuple.
  *
- * @param {Number} length The length to encode.
- * @return {String} The DER-encoded length.
+ * @param {number} length The length to encode.
+ * @return {string} The DER-encoded length.
  */
 asn1.encodeLengthDER = function (length) {
     if (length <= 127) {
@@ -81,7 +81,7 @@ asn1.encodeLengthDER = function (length) {
 /**
  * Decodes an ASN.1 TLV tuple.
  *
- * @param {String} data The data to decode.
+ * @param {string} data The data to decode.
  * @return {Array} A tuple [tag, value, rest] containing the tag as a
  *    Number, the value as a String, and the unread data as a String.
  */
@@ -129,7 +129,7 @@ asn1.decodeTagLengthValueDER = function (data) {
  * Base class for all ASN.1 types. Types are supposed to provide
  * encodeDERValue and decodeDERValue implementations.
  *
- * @param {Number} tag The tag of this type.
+ * @param {number} tag The tag of this type.
  * @class
  */
 asn1.Type = function (tag) {
@@ -141,7 +141,7 @@ asn1.Type = function (tag) {
  * DER-encodes an object according to this type.
  *
  * @param {Object} object The object to encode.
- * @return {String} The encoding of the object.
+ * @return {string} The encoding of the object.
  */
 asn1.Type.prototype.encodeDER = function (object) {
     var value = this.encodeDERValue(object);
@@ -157,7 +157,7 @@ asn1.Type.prototype.encodeDER = function (object) {
  * Decodes DER-encoded data according to this type. Throws an
  * exception if the entire data isn't read.
  *
- * @param {String} data The data to decode.
+ * @param {string} data The data to decode.
  * @return {Object} The decoded object.
  */
 asn1.Type.prototype.decodeDER = function (data) {
@@ -171,7 +171,7 @@ asn1.Type.prototype.decodeDER = function (data) {
 /**
  * Decodes DER-encoded data according to this type.
  *
- * @param {String} data The data to decode.
+ * @param {string} data The data to decode.
  * @return {Array} A tuple of the decoded object and the unread data.
  */
 asn1.Type.prototype.decodeDERPrefix = function (data) {
@@ -185,7 +185,7 @@ asn1.Type.prototype.decodeDERPrefix = function (data) {
 /**
  * Creates an explicitly-tagged version of this type.
  *
- * @param {Number} tag The value to tag with.
+ * @param {number} tag The value to tag with.
  * @return {asn1.ExplicitlyTagged} An explicitly tagged version of
  *     this.
  */
@@ -229,7 +229,7 @@ asn1.Type.prototype.subtype = function () {
 /**
  * An explicitly-tagged type.
  *
- * @param {Number} tag The tag of this type.
+ * @param {number} tag The tag of this type.
  * @param {asn1.Type} baseType The type to tag.
  * @class
  */
@@ -251,7 +251,7 @@ asn1.ExplicitlyTagged.prototype.decodeDERValue = function (data) {
 /**
  * An implicitly-tagged type.
  *
- * @param {Number} tag The tag of this type.
+ * @param {number} tag The tag of this type.
  * @param {asn1.Type} baseType The type to tag.
  * @class
  */
