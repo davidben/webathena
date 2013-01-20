@@ -17,6 +17,7 @@ var asn1 = { };
 /** @const */ asn1.TAG_PRIMITIVE   = 0x0 << 5;
 /** @const */ asn1.TAG_CONSTRUCTED = 0x1 << 5;
 
+/** @constructor */
 asn1.Error = function(message) {
     this.message = message;
 };
@@ -130,7 +131,7 @@ asn1.decodeTagLengthValueDER = function (data) {
  * encodeDERValue and decodeDERValue implementations.
  *
  * @param {number} tag The tag of this type.
- * @class
+ * @constructor
  */
 asn1.Type = function (tag) {
     if (tag !== undefined)
@@ -231,7 +232,7 @@ asn1.Type.prototype.subtype = function () {
  *
  * @param {number} tag The tag of this type.
  * @param {asn1.Type} baseType The type to tag.
- * @class
+ * @constructor
  */
 asn1.ExplicitlyTagged = function (tag, baseType) {
     this.tag = tag;
@@ -253,7 +254,7 @@ asn1.ExplicitlyTagged.prototype.decodeDERValue = function (data) {
  *
  * @param {number} tag The tag of this type.
  * @param {asn1.Type} baseType The type to tag.
- * @class
+ * @constructor
  */
 asn1.ImplicitlyTagged = function (tag, baseType) {
     this.tag = tag;
@@ -468,7 +469,7 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
  * ASN.1 SEQUENCE OF type.
  *
  * @param {asn1.Type} componentType The type we are sequencing.
- * @class
+ * @constructor
  */
 asn1.SEQUENCE_OF = function (componentType) {
     this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
@@ -514,7 +515,7 @@ asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
  *
  * @param {Object} componentSpec A specification of the sequence's
  *     components, as described above.
- * @class
+ * @constructor
  */
 asn1.SEQUENCE = function (componentSpec) {
     this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
@@ -583,7 +584,7 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
  * it, passing the tag to decodeDERValue might do the trick?
  *
  * @param {Array.<asn1.Type>} choices A list of possible types.
- * @class
+ * @constructor
  */
 asn1.CHOICE = function (choices) {
     this.choices = choices;

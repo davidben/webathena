@@ -1,5 +1,6 @@
 "use strict";
 
+/** @constructor */
 var Err = function(ctx, code, msg) {
     this.ctx = ctx;
     this.code = code;
@@ -56,6 +57,7 @@ var KDC = (function() {
 	kcrypto.enctype.des_cbc_md5
     ];
 
+    /** @constructor */
     KDC.Error = function(code, message) {
 	this.code = code;
 	this.message = message;
@@ -64,6 +66,7 @@ var KDC = (function() {
 	return "KDC Error " + this.code + ": " + this.message;
     };
 
+    /** @constructor */
     KDC.Principal = function(principalName, realm) {
 	this.principalName = principalName;
 	this.realm = realm;
@@ -136,6 +139,7 @@ var KDC = (function() {
 	}, component);
     }
 
+    /** @constructor */
     KDC.Key = function (keytype, keyvalue) {
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
@@ -453,6 +457,7 @@ var KDC = (function() {
 	// authtime?
     };
 
+    /** @constructor */
     KDC.Session = function (asRep, encRepPart) {
         // Just store everything. Whatever.
         this.client = new KDC.Principal(asRep.cname, asRep.crealm);
