@@ -149,6 +149,14 @@ var kcrypto = (function() {
         }
     };
 
+    // This is silly. Just put it in here.
+    var CryptoJS_NoPadding = {
+        pad: function () {
+        },
+        unpad: function () {
+        }
+    };
+
     // CBC-CTS encryption mode for SJCL. Adapted from sjcl.mode.cbc.
     function pad128(l) {
         l[l.length - 1] >>>= 0;
@@ -633,7 +641,7 @@ var kcrypto = (function() {
         key_correction(tempString);
         var enc = CryptoJS.DES.encrypt(s, tempString,
                                        { iv: tempString,
-                                         padding: CryptoJS.pad.NoPadding });
+                                         padding: CryptoJS_NoPadding });
         // We want the DES-CBC checksum, which is the last hunk of
         // ciphertext.
         var keyWord1 = enc.ciphertext.words[enc.ciphertext.words.length - 2];
@@ -695,7 +703,7 @@ var kcrypto = (function() {
             });
 
             var decrypted = CryptoJS.DES.decrypt(
-                cipherParams, key, { iv: state, padding: CryptoJS.pad.NoPadding });
+                cipherParams, key, { iv: state, padding: CryptoJS_NoPadding });
             if (decrypted.sigBytes < 12)
                 throw new kcrypto.DecryptionError('Bad format');
 
@@ -768,7 +776,7 @@ var kcrypto = (function() {
 
             // Finally, encrypt the checksummed plaintext.
             var encrypted = CryptoJS.DES.encrypt(
-                plaintext, key, { iv: state, padding: CryptoJS.pad.NoPadding });
+                plaintext, key, { iv: state, padding: CryptoJS_NoPadding });
 
             // New cipher state is the last block of the ciphertext.
             state = CryptoJS.lib.WordArray.create(
@@ -806,7 +814,7 @@ var kcrypto = (function() {
 
             return CryptoJS.enc.Latin1.stringify(
                 CryptoJS.DES.encrypt(
-                    conf, key, { iv: iv, padding: CryptoJS.pad.NoPadding }
+                    conf, key, { iv: iv, padding: CryptoJS_NoPadding }
                 ).ciphertext);
         },
         verifyMIC: function (key, msg, token) {
@@ -821,7 +829,7 @@ var kcrypto = (function() {
             var iv = CryptoJS.lib.WordArray.create([0, 0]);
             var decrypted = CryptoJS.DES.decrypt(
                 CryptoJS.lib.CipherParams.create({ ciphertext: token }),
-                key, { iv: iv, padding: CryptoJS.pad.NoPadding });
+                key, { iv: iv, padding: CryptoJS_NoPadding });
 
             // Check the checksum.
             var hashIn = CryptoJS.lib.WordArray.create(decrypted.words.slice(0, 2));
