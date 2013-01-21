@@ -531,7 +531,7 @@ var kcrypto = (function() {
         181, 182, 185, 186, 188, 191, 193, 194, 196, 199,
         200, 203, 205, 206, 208, 211, 213, 214, 217, 218,
         220, 223, 224, 227, 229, 230, 233, 234, 236, 239,
-        241, 242, 244, 247, 248, 251, 253, 254,
+        241, 242, 244, 247, 248, 251, 253, 254
     ];
 
     var desWeakKeys = {
@@ -949,7 +949,7 @@ var kcrypto = (function() {
         messageBlockSize: 1,
         encrypt: aesCtsEncrypt,
         decrypt: aesCtsDecrypt,
-        cipherBlockSize: 16,
+        cipherBlockSize: 16
     });
     kcrypto.Aes128CtsHmacShaOne96 = aes128[0];
     kcrypto.ShaOne96Aes128Checksum = aes128[1];
@@ -965,7 +965,7 @@ var kcrypto = (function() {
         messageBlockSize: 1,
         encrypt: aesCtsEncrypt,
         decrypt: aesCtsDecrypt,
-        cipherBlockSize: 16,
+        cipherBlockSize: 16
     });
     kcrypto.Aes256CtsHmacShaOne96 = aes256[0];
     kcrypto.ShaOne96Aes256Checksum = aes256[1];
