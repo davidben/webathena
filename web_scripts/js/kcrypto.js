@@ -113,6 +113,42 @@ var kcrypto = (function() {
         return ret;
     }
 
+    // "Byte string" codec based on sjcl.codec.utf8String. It's pretty
+    // bogus though. We should write a typed array polyfill (either
+    // only supporting DataView or monkey-patching a non-standard
+    // Uint8Array.prototype.get/set so it's not laughingly
+    // inefficient.
+    var sjcl_byteString = {
+        /** Convert from a bitArray to a byte string. */
+        fromBits: function (arr) {
+            var out = "", bl = sjcl.bitArray.bitLength(arr), i, tmp;
+            for (i=0; i<bl/8; i++) {
+                if ((i&3) === 0) {
+                    tmp = arr[i/4];
+                }
+                out += String.fromCharCode(tmp >>> 24);
+                tmp <<= 8;
+            }
+            return out;
+        },
+
+        /** Convert from a byte string to a bitArray. */
+        toBits: function (str) {
+            var out = [], i, tmp=0;
+            for (i=0; i<str.length; i++) {
+                tmp = tmp << 8 | str.charCodeAt(i);
+                if ((i&3) === 3) {
+                    out.push(tmp);
+                    tmp = 0;
+                }
+            }
+            if (i&3) {
+                out.push(sjcl.bitArray.partial(8*(i&3), tmp));
+            }
+            return out;
+        }
+    };
+
     // CBC-CTS encryption mode for SJCL. Adapted from sjcl.mode.cbc.
     function pad128(l) {
         l[l.length - 1] >>>= 0;
@@ -260,7 +296,7 @@ var kcrypto = (function() {
         return ret;
     }
     function nFold(n, input) {
-        var inBits = sjcl.codec.byteString.toBits(input);
+        var inBits = sjcl_byteString.toBits(input);
         var inLength = sjcl.bitArray.bitLength(inBits);
         var numCopies = n / gcd(n, inLength);
         var shift = 13 % inLength;
@@ -286,7 +322,7 @@ var kcrypto = (function() {
         }
         if (sjcl.bitArray.bitLength(chunk) != 0)
             throw "Bits left over!";
-        return sjcl.codec.byteString.fromBits(ret);
+        return sjcl_byteString.fromBits(ret);
     }
 
     // 5.3.  Cryptosystem Profile Based on Simple Profile
@@ -297,10 +333,10 @@ var kcrypto = (function() {
         function truncatedHmac(hmac, msg) {
             // FIXME: Round-tripping between String and sjcl.bitArray
             // is a pain.
-            var h1 = hmac.encrypt(sjcl.codec.byteString.toBits(msg));
+            var h1 = hmac.encrypt(sjcl_byteString.toBits(msg));
             h1 = sjcl.bitArray.bitSlice(
                 h1, 0, 8 * simpleProfile.hmacOutputSize);
-            return sjcl.codec.byteString.fromBits(h1);
+            return sjcl_byteString.fromBits(h1);
         }
 
         var enc = { };
@@ -333,8 +369,8 @@ var kcrypto = (function() {
                 padLength = 0;
             var pad = sjclZeroArray(padLength * 8);
             // (C1, newIV) = E(Ke, conf | plaintext | pad, oldstate.ivec)
-            var data = sjcl.codec.byteString.fromBits(conf) +
-                plaintext + sjcl.codec.byteString.fromBits(pad);
+            var data = sjcl_byteString.fromBits(conf) +
+                plaintext + sjcl_byteString.fromBits(pad);
             var t = simpleProfile.encrypt(derivedKey.E, iv, data, this);
             var newIV = t[0], c1 = t[1];
             // H1 = HMAC(Ki, conf | plaintext | pad)
@@ -397,17 +433,15 @@ var kcrypto = (function() {
             // Ki = DK(base-key, usage | 0x55);
             var Ki = this.DK(key, usageBytes + '\x55');
             return {
-                C: new sjcl.misc.hmac(
-                    sjcl.codec.byteString.toBits(Kc),
-                    simpleProfile.unkeyedHash),
+                C: new sjcl.misc.hmac(sjcl_byteString.toBits(Kc),
+                                      simpleProfile.unkeyedHash),
                 // FIXME: Cache the profile-specific key object
                 // here. AES does a fair amount of precomputation. Not
                 // quite as easy as putting it in randomToKey as
                 // that's called to make an HMAC key too.
                 E: Ke,
-                I: new sjcl.misc.hmac(
-                    sjcl.codec.byteString.toBits(Ki),
-                    simpleProfile.unkeyedHash)
+                I: new sjcl.misc.hmac(sjcl_byteString.toBits(Ki),
+                                      simpleProfile.unkeyedHash)
             };
         };
 
@@ -834,7 +868,7 @@ var kcrypto = (function() {
         }
         sha1Hmac.prototype = sjcl.misc.hmac.prototype;
         var tkey = this.randomToKey(
-            sjcl.codec.byteString.fromBits(
+            sjcl_byteString.fromBits(
                 sjcl.misc.pbkdf2(
                     sjcl.codec.utf8String.toBits(pass),
                     sjcl.codec.utf8String.toBits(salt),
@@ -842,14 +876,14 @@ var kcrypto = (function() {
         return profile.DK(tkey, "kerberos");
     }
     function aesCtsEncrypt(key, state, plaintext) {
-        var aes = new sjcl.cipher.aes(sjcl.codec.byteString.toBits(key));
-        var stateBits = sjcl.codec.byteString.toBits(state);
-        var plaintextBits = sjcl.codec.byteString.toBits(plaintext);
+        var aes = new sjcl.cipher.aes(sjcl_byteString.toBits(key));
+        var stateBits = sjcl_byteString.toBits(state);
+        var plaintextBits = sjcl_byteString.toBits(plaintext);
         if (plaintextBits.length <= 4) {
             // Can't do CBC-CTS. Just pad arbitrarily and encrypt
             // plain. Apparently you don't even xor the iv.
             pad128(plaintextBits);
-            var outputStr = sjcl.codec.byteString.fromBits(
+            var outputStr = sjcl_byteString.fromBits(
                 aes.encrypt(plaintextBits));
             return [outputStr, outputStr];
         } else {
@@ -860,20 +894,20 @@ var kcrypto = (function() {
                 outLength += 4 - (outLength % 4);
             var newState = output.slice(outLength - 8, outLength - 4);
             return [
-                sjcl.codec.byteString.fromBits(newState),
-                sjcl.codec.byteString.fromBits(output)
+                sjcl_byteString.fromBits(newState),
+                sjcl_byteString.fromBits(output)
             ];
         }
     }
     function aesCtsDecrypt(key, state, ciphertext) {
-        var aes = new sjcl.cipher.aes(sjcl.codec.byteString.toBits(key));
-        var stateBits = sjcl.codec.byteString.toBits(state);
-        var ciphertextBits = sjcl.codec.byteString.toBits(ciphertext);
+        var aes = new sjcl.cipher.aes(sjcl_byteString.toBits(key));
+        var stateBits = sjcl_byteString.toBits(state);
+        var ciphertextBits = sjcl_byteString.toBits(ciphertext);
         if (ciphertextBits.length <= 4) {
             if (sjcl.bitArray.bitLength(ciphertextBits) != 128)
                 throw new kcrypto.DecryptionError("Bad length");
             try {
-                var outputStr = sjcl.codec.byteString.fromBits(
+                var outputStr = sjcl_byteString.fromBits(
                     aes.decrypt(ciphertextBits));
             } catch (e) {
                 if (e instanceof sjcl.exception.corrupt)
@@ -889,8 +923,8 @@ var kcrypto = (function() {
                 outLength += 4 - (outLength % 4);
             var newState = ciphertextBits.slice(outLength - 8, outLength - 4);
             return [
-                sjcl.codec.byteString.fromBits(newState),
-                sjcl.codec.byteString.fromBits(output)
+                sjcl_byteString.fromBits(newState),
+                sjcl_byteString.fromBits(output)
             ];
         }
     }
