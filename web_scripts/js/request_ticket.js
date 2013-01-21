@@ -19,7 +19,7 @@ function registerTicketAPI() {
     if (!args.realm || !args.principal) {
         cb({
             status: "ERROR",
-            code: "BAD_REQUEST",
+            code: "BAD_REQUEST"
         });
         return;
     }
@@ -87,7 +87,7 @@ function registerTicketAPI() {
                     // or something.
                     cb({
                         status: 'OK',
-                        session: session.toDict(),
+                        session: session.toDict()
                     });
                 },
                 function (error) {
