@@ -20,6 +20,7 @@ web_scripts/js/webathena.js: compiler.jar $(addprefix web_scripts/js/,$(JS_SOURC
 	cd web_scripts/js && java -jar ../../compiler.jar \
 		$(addprefix --js ,$(JS_SOURCES)) \
 		--js_output_file webathena.js.tmp \
+		--language_in ECMASCRIPT5_STRICT \
 		--source_map_format=V3 \
 		--create_source_map webathena.js.map
 	echo '//@ sourceMappingURL=webathena.js.map' >> web_scripts/js/webathena.js.tmp
