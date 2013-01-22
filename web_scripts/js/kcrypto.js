@@ -16,8 +16,8 @@ var kcrypto = (function() {
         return "InvalidParameters: " + this.message;
     };
 
-    kcrypto.DECRYPT = 0;
-    kcrypto.ENCRYPT = 1;
+    /** @const */ kcrypto.DECRYPT = 0;
+    /** @const */ kcrypto.ENCRYPT = 1;
 
     // 3.  Encryption Algorithm Profile
     //
@@ -65,41 +65,41 @@ var kcrypto = (function() {
 
     // 8.  Assigned Numbers
     kcrypto.enctype = {};
-    kcrypto.enctype.des_cbc_crc                     =  1;
-    kcrypto.enctype.des_cbc_md4                     =  2;
-    kcrypto.enctype.des_cbc_md5                     =  3;
-    kcrypto.enctype.des3_cbc_md5                    =  5;
-    kcrypto.enctype.des3_cbc_sha1                   =  7;
-    kcrypto.enctype.dsaWithSHA1_CmsOID              =  9;
-    kcrypto.enctype.md5WithRSAEncryption_CmsOID     = 10;
-    kcrypto.enctype.sha1WithRSAEncryption_CmsOID    = 11;
-    kcrypto.enctype.rc2CBC_EnvOID                   = 12;
-    kcrypto.enctype.rsaEncryption_EnvOID            = 13;
-    kcrypto.enctype.rsaES_OAEP_ENV_OID              = 14;
-    kcrypto.enctype.des_ede3_cbc_Env_OID            = 15;
-    kcrypto.enctype.des3_cbc_sha1_kd                = 16;
-    kcrypto.enctype.aes128_cts_hmac_sha1_96         = 17;
-    kcrypto.enctype.aes256_cts_hmac_sha1_96         = 18;
-    kcrypto.enctype.rc4_hmac                        = 23;
-    kcrypto.enctype.rc4_hmac_exp                    = 24;
-    kcrypto.enctype.subkey_keymaterial              = 65;
+    /** @const */ kcrypto.enctype.des_cbc_crc                     =  1;
+    /** @const */ kcrypto.enctype.des_cbc_md4                     =  2;
+    /** @const */ kcrypto.enctype.des_cbc_md5                     =  3;
+    /** @const */ kcrypto.enctype.des3_cbc_md5                    =  5;
+    /** @const */ kcrypto.enctype.des3_cbc_sha1                   =  7;
+    /** @const */ kcrypto.enctype.dsaWithSHA1_CmsOID              =  9;
+    /** @const */ kcrypto.enctype.md5WithRSAEncryption_CmsOID     = 10;
+    /** @const */ kcrypto.enctype.sha1WithRSAEncryption_CmsOID    = 11;
+    /** @const */ kcrypto.enctype.rc2CBC_EnvOID                   = 12;
+    /** @const */ kcrypto.enctype.rsaEncryption_EnvOID            = 13;
+    /** @const */ kcrypto.enctype.rsaES_OAEP_ENV_OID              = 14;
+    /** @const */ kcrypto.enctype.des_ede3_cbc_Env_OID            = 15;
+    /** @const */ kcrypto.enctype.des3_cbc_sha1_kd                = 16;
+    /** @const */ kcrypto.enctype.aes128_cts_hmac_sha1_96         = 17;
+    /** @const */ kcrypto.enctype.aes256_cts_hmac_sha1_96         = 18;
+    /** @const */ kcrypto.enctype.rc4_hmac                        = 23;
+    /** @const */ kcrypto.enctype.rc4_hmac_exp                    = 24;
+    /** @const */ kcrypto.enctype.subkey_keymaterial              = 65;
 
     kcrypto.sumtype = {};
-    kcrypto.sumtype.CRC32                         =  1;
-    kcrypto.sumtype.rsa_md4                       =  2;
-    kcrypto.sumtype.rsa_md4_des                   =  3;
-    kcrypto.sumtype.des_mac                       =  4;
-    kcrypto.sumtype.des_mac_k                     =  5;
-    kcrypto.sumtype.rsa_md4_des_k                 =  6;
-    kcrypto.sumtype.rsa_md5                       =  7;
-    kcrypto.sumtype.rsa_md5_des                   =  8;
-    kcrypto.sumtype.rsa_md5_des3                  =  9;
-    kcrypto.sumtype.sha1                          = 10;
-    kcrypto.sumtype.hmac_sha1_des3_kd             = 12;
-    kcrypto.sumtype.hmac_sha1_des3                = 13;
-    kcrypto.sumtype.sha1_2                        = 14;
-    kcrypto.sumtype.hmac_sha1_96_aes128           = 15;
-    kcrypto.sumtype.hmac_sha1_96_aes256           = 16;
+    /** @const */ kcrypto.sumtype.CRC32                         =  1;
+    /** @const */ kcrypto.sumtype.rsa_md4                       =  2;
+    /** @const */ kcrypto.sumtype.rsa_md4_des                   =  3;
+    /** @const */ kcrypto.sumtype.des_mac                       =  4;
+    /** @const */ kcrypto.sumtype.des_mac_k                     =  5;
+    /** @const */ kcrypto.sumtype.rsa_md4_des_k                 =  6;
+    /** @const */ kcrypto.sumtype.rsa_md5                       =  7;
+    /** @const */ kcrypto.sumtype.rsa_md5_des                   =  8;
+    /** @const */ kcrypto.sumtype.rsa_md5_des3                  =  9;
+    /** @const */ kcrypto.sumtype.sha1                          = 10;
+    /** @const */ kcrypto.sumtype.hmac_sha1_des3_kd             = 12;
+    /** @const */ kcrypto.sumtype.hmac_sha1_des3                = 13;
+    /** @const */ kcrypto.sumtype.sha1_2                        = 14;
+    /** @const */ kcrypto.sumtype.hmac_sha1_96_aes128           = 15;
+    /** @const */ kcrypto.sumtype.hmac_sha1_96_aes256           = 16;
 
     // Why is this so hard??
     function sjclZeroArray(n) {
