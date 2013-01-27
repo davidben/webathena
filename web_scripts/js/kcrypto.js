@@ -586,14 +586,6 @@ var kcrypto = (function() {
             }
         }
 
-        function shift_bits(block) {
-            for (var i = 0; i < block.words.length; i++) {
-                var word = block.words[i];
-                word = word >> 1;
-                block.words[i] = word;
-            }
-        }
-
         function key_correction(block) {
             var hex = CryptoJS.enc.Hex.stringify(block);
             if (hex in desWeakKeys) {
