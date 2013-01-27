@@ -41,20 +41,39 @@ var gss = (function() {
     /** @const */ gss.S_UNSEQ_TOKEN = 21;
     /** @const */ gss.S_GAP_TOKEN = 22;
 
-    /** @constructor */
+    /**
+     * @constructor
+     * @param {number} major
+     * @param {number} minor
+     * @param {string} message
+     */
     gss.Error = function(major, minor, message) {
         this.major = major;
         this.minor = minor;
         this.message = message;
     };
+    /** @return {string} */
     gss.Error.prototype.toString = function() {
         return this.message;
     };
 
-    /** @constructor */
+    /**
+     * Creates a gss.Name that wraps a KDC.Principal.
+     * @constructor
+     * @param {KDC.Principal} principal
+     */
     gss.Name = function(principal) {
         this.principal = principal;
     };
+    /**
+     * GSS_Import_name. For now just returns a gss.Name. If we want to
+     * do some sort of host canonicalization, that may want a promise
+     * object from Q.
+     *
+     * @param {string} data The input bytes.
+     * @param {string} nameType An OID for the name type.
+     * @return {gss.Name} The resulting name.
+     */
     gss.Name.importName = function(data, nameType) {
         if (nameType === gss.NT_EXPORT_NAME) {
             // Strip off the header.
@@ -125,6 +144,7 @@ var gss = (function() {
     gss.Name.prototype.canonicalize = function() {
         // TODO
     };
+    /** @return {string} */
     gss.Name.prototype.exportName = function() {
         var tokId = "\x04\x01";
         var mechOid = asn1.OBJECT_IDENTIFIER.encodeDER(gss.KRB5_MECHANISM);
@@ -138,6 +158,11 @@ var gss = (function() {
             (name.length >>> 8) & 0xff,
             name.length & 0xff);
         return tokId + mechOidLen + mechOid + nameLen + name;
+    };
+
+    /** @constructor */
+    gss.Context = function() {
+        // TODO...
     };
 
     return gss;
