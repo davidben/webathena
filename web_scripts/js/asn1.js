@@ -396,6 +396,60 @@ asn1.NULL.decodeDERValue = function (data) {
 };
 
 
+/** ASN.1 OBJECT IDENTIFIER type. For sanity, just make the JS
+ * representation a string. We can do something more complex if
+ * there's a need. */
+asn1.OBJECT_IDENTIFIER = new asn1.Type(
+    asn1.tag(0x06, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object) {
+    if (typeof object !== "string")
+        throw new TypeError("Not a string");
+    var components = object.split(".");
+    if (components.length < 2) // ??
+        throw new TypeError("Too few components");
+    var ret = [];
+    // Components are encoded big-endian. Encode the whole thing in
+    // reverse and flip at the end.
+    for (var i = components.length - 1; i >= 2; i--) {
+        // Base 128, big endian. All but last octet has MSB 1.
+        var c = Number(components[i]);
+        ret.push(String.fromCharCode(c & 0x7f));
+        c >>>= 7;
+        while (c > 0) {
+            ret.push(String.fromCharCode((c & 0x7f) | 0x80));
+            c >>>= 7;
+        }
+    }
+    // First octet is 40 * value1 + value2.
+    ret.push(String.fromCharCode(
+        40 * Number(components[0]) + Number(components[1])));
+    ret.reverse();
+    return ret.join("");
+};
+
+asn1.OBJECT_IDENTIFIER.decodeDERValue = function(data) {
+    var oid = [];
+    // First two components are special.
+    var octet = data.charCodeAt(0);
+    var value1 = Math.min((octet / 40) >>> 0, 2);
+    oid.push(value1);
+    oid.push(octet - (40 * value1));
+    var c = 0;
+    for (var i = 1; i < data.length; i++) {
+        octet = data.charCodeAt(i);
+        c *= 128;
+        c += (octet & 0x7f);
+        if (!(octet & 0x80)) {
+            // MSB 0 means new component.
+            oid.push(c);
+            c = 0;
+        }
+    }
+    return oid.join(".");
+};
+
+
 /** ASN.1 GeneralString type. */
 asn1.GeneralString = new asn1.Type(
     asn1.tag(0x1b, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
