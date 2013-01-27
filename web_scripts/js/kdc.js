@@ -464,7 +464,7 @@ var KDC = (function() {
         this.ticket = asRep.ticket;
 
         function dateOrNull(d) {
-            return (d === null) ? null : new Date(d);
+            return (d == null) ? null : new Date(d);
         }
 
         this.key = KDC.Key.fromDict(encRepPart.key);
@@ -482,7 +482,7 @@ var KDC = (function() {
 
     KDC.Session.prototype.toDict = function() {
         function getTimeOrNull(d) {
-            return (d === null) ? null : d.getTime();
+            return (d == null) ? null : d.getTime();
         }
         return {
             crealm: this.client.realm,
