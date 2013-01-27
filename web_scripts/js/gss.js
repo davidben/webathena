@@ -104,8 +104,8 @@ var gss = (function() {
             if (data.length != (4 + mechOidLen + 4 + nameLen))
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad length");
             try {
-                return new gss.Name(
-                    KDC.Principal.fromString(data.substring(4 + mechOidLen + 4)));
+                return new gss.Name(KDC.Principal.fromString(
+                    data.substring(4 + mechOidLen + 4)));
             } catch (e) {
                 throw new gss.Error(gss.S_BAD_NAME, 0, e);
             }
