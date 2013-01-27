@@ -116,6 +116,10 @@ krb.KerberosFlags.makeZeroFlags = function (num) {
     }
     return bits;
 };
+/**
+ * @this {asn1.Type}
+ * @return {Array.<number>}
+ */
 krb.KerberosFlags.make = function () {
     var num = 32;
     for (var i = 0; i < arguments.length; i++) {

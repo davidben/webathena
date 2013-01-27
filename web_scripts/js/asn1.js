@@ -1,6 +1,6 @@
 /**
- * @fileOverview An implementation of the subset ASN.1 and DER
- * encoding needed for Keberos.
+ * An implementation of the subset ASN.1 and DER encoding needed for
+ * Kerberos.
  * @author davidben@mit.edu (David Benjamin)
  */
 
@@ -304,6 +304,10 @@ asn1.INTEGER.decodeDERValue = function (data) {
     return ret;
 };
 
+/**
+ * @this {asn1.Type}
+ * @return {asn1.Type}
+ */
 asn1.INTEGER.valueConstrained = function () {
     var allowed = [];
     for (var i = 0; i < arguments.length; i++) {
@@ -316,6 +320,10 @@ asn1.INTEGER.valueConstrained = function () {
     });
 };
 
+/**
+ * @this {asn1.Type}
+ * @return {asn1.Type}
+ */
 asn1.INTEGER.rangeConstrained = function (lo, hi) {
     return this.constrained(function (v) {
         if (v < lo || v > hi)
