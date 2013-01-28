@@ -41,17 +41,41 @@ test("RFC 3961 n-fold test vectors", function() {
 });
 
 test("RFC 3961 mit_des_string_to_key test vectors", function() {
-    equal(kcrypto.mit_des_string_to_key("password", "ATHENA.MIT.EDUraeburn"),
+    var mit_des_string_to_key =
+        kcrypto.DesCbcCrcProfile.stringToKey.bind(kcrypto.DesCbcCrcProfile);
+    equal(mit_des_string_to_key("password", "ATHENA.MIT.EDUraeburn"),
           hexToBytes("cbc22fae235298e3"));
-    equal(kcrypto.mit_des_string_to_key("potatoe", "WHITEHOUSE.GOVdanny"),
+    equal(mit_des_string_to_key("potatoe", "WHITEHOUSE.GOVdanny"),
           hexToBytes("df3d32a74fd92a01"));
     // U+1D11E in UTF-16.
-    equal(kcrypto.mit_des_string_to_key("\uD834\uDD1E", "EXAMPLE.COMpianist"),
+    equal(mit_des_string_to_key("\uD834\uDD1E", "EXAMPLE.COMpianist"),
           hexToBytes("4ffb26bab0cd9413"));
-    equal(kcrypto.mit_des_string_to_key("\u00DF", "ATHENA.MIT.EDUJuri\u0161i\u0107"),
+    equal(mit_des_string_to_key("\u00DF", "ATHENA.MIT.EDUJuri\u0161i\u0107"),
           hexToBytes("62c81a5232b5e69d"));
-    equal(kcrypto.mit_des_string_to_key("11119999", "AAAAAAAA"),
+    equal(mit_des_string_to_key("11119999", "AAAAAAAA"),
           hexToBytes("984054d0f1a73e31"));
-    equal(kcrypto.mit_des_string_to_key("NNNN6666", "FFFFAAAA"),
+    equal(mit_des_string_to_key("NNNN6666", "FFFFAAAA"),
           hexToBytes("c4bf6b25adf7a4f8"));
+});
+
+test("RFC 3961 mod-crc-32 test vectors", function() {
+    equal(kcrypto.Crc32Checksum.getMIC("", "foo"),
+          hexToBytes("33 bc 32 73"));
+    equal(kcrypto.Crc32Checksum.getMIC("", "test0123456789"),
+          hexToBytes("d6 88 3e b8"));
+    equal(kcrypto.Crc32Checksum.getMIC(
+        "", "MASSACHVSETTS INSTITVTE OF TECHNOLOGY"),
+          hexToBytes("f7 80 41 e3"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("8000")),
+          hexToBytes("4b 98 83 3b"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("0008")),
+          hexToBytes("32 88 db 0e"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("0080")),
+          hexToBytes("20 83 b8 ed"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("80")),
+          hexToBytes("20 83 b8 ed"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("80000000")),
+          hexToBytes("3b b6 59 ed"));
+    equal(kcrypto.Crc32Checksum.getMIC("", hexToBytes("00000001")),
+          hexToBytes("96 30 07 77"));
 });
