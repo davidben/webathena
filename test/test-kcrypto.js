@@ -131,7 +131,7 @@ test("RFC 3962 PBKDF2 test vectors", function() {
 
     testStringToKey(
         "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-        "pass phrase equals block size", 1200,
+        "pass phrase exceeds block size", 1200,
         "cb 80 05 dc 5f 90 17 9a 7f 02 10 4c 00 18 75 1d",
 
         "d7 8c 5c 9c b8 72 a8 c9 da d4 69 7f 0b b5 b2 d2" +
