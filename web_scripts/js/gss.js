@@ -183,9 +183,23 @@ var gss = (function() {
         return tokId + mechOidLen + mechOid + nameLen + name;
     };
 
-    /** @constructor */
-    gss.Context = function() {
+    /**
+     * Creates an initiator GSS context. If the need ever arises, we
+     * can arrange for acceptor contexts to be supported, but it's
+     * unlikely this'll ever run outside a client.
+     *
+     * @constructor
+     */
+    gss.Context = function(peer, mechanism, credential, lifetime, binding) {
+        if (mechanism !== gss.KRB5_MECHANISM)
+            throw new gss.Error(gss.S_BAD_MECH, 0, "Only krb5 is supported");
         // TODO...
+    };
+    gss.Context.prototype.initSecContext = function(token) {
+        // TODO
+    };
+    gss.Context.prototype.isEstablished = function() {
+        // TODO
     };
 
     return gss;
