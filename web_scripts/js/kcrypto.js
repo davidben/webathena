@@ -332,6 +332,7 @@ var kcrypto = (function() {
             throw "Bits left over!";
         return sjcl_byteString.fromBits(ret);
     }
+    kcrypto.nFold = nFold;
 
     // 5.3.  Cryptosystem Profile Based on Simple Profile
     function profilesFromSimpleProfile(simpleProfile) {

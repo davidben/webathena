@@ -45,21 +45,27 @@ def parse_htaccess():
                 continue
     return directives
 
+def create_static_app(root):
+    """
+    Serves a directory, with hack to make index.html work.
+    """
+    def with_index_html(environ, start_response):
+        environ['PATH_INFO'] = environ.get('PATH_INFO', '') + '/index.html'
+        app = SharedDataMiddleware(NotFound(), { '/': root, })
+        return app(environ, start_response)
+    return SharedDataMiddleware(with_index_html, { '/': root, })
+
 def create_app():
     """
     Serves the entire mess, including hack to make index.html work.
     """
-    kdc_app = kdc.create_app()
-
     web_scripts = os.path.join(BASEDIR, 'web_scripts')
+    test = os.path.join(BASEDIR, 'test')
 
-    def with_index_html(environ, start_response):
-        environ['PATH_INFO'] = environ.get('PATH_INFO', '') + '/index.html'
-        app = SharedDataMiddleware(NotFound(), { '/': web_scripts, })
-        return app(environ, start_response)
-    static_app = SharedDataMiddleware(with_index_html, { '/': web_scripts, })
-
-    return DispatcherMiddleware(static_app, { '/kdc': kdc_app, })
+    return DispatcherMiddleware(create_static_app(web_scripts), {
+            '/kdc': kdc.create_app(),
+            '/test': create_static_app(test),
+            })
 
 def apply_htaccess(app):
     directives = parse_htaccess()
