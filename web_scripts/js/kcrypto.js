@@ -900,6 +900,7 @@ var kcrypto = (function() {
             ];
         }
     }
+    kcrypto.aesCtsEncrypt = aesCtsEncrypt;  // Exported for tests.
     function aesCtsDecrypt(key, state, ciphertext) {
         var aes = new sjcl.cipher.aes(sjcl_byteString.toBits(key));
         var stateBits = sjcl_byteString.toBits(state);
@@ -929,7 +930,7 @@ var kcrypto = (function() {
             ];
         }
     }
-    kcrypto.aesCtsDecrypt = aesCtsDecrypt;
+    kcrypto.aesCtsDecrypt = aesCtsDecrypt;  // Exported for tests.
     function aesRandomToKey(x) { return x; }
     var aes128 = profilesFromSimpleProfile({
         enctype: kcrypto.enctype.aes128_cts_hmac_sha1_96,

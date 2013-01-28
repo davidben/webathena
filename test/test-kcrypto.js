@@ -143,3 +143,68 @@ test("RFC 3962 PBKDF2 test vectors", function() {
                     "4b 6d 98 39 f8 44 06 df 1f 09 cc 16 6d b4 b8 3c" +
                     "57 18 48 b7 84 a3 d6 bd c3 46 58 9a 3e 39 3f 9e");
 });
+
+test("RFC 3962 AES-CBC-CTS test vectors", function() {
+    function testCipher(key, iv, input, output, nextIv) {
+        // Test both directions.
+        var r = kcrypto.aesCtsEncrypt(key, iv, input);
+        equal(r[0], nextIv);
+        equal(r[1], output);
+        var r = kcrypto.aesCtsDecrypt(key, iv, output);
+        equal(r[0], nextIv);
+        equal(r[1], input);
+    }
+
+    var key = hexToBytes("63 68 69 63 6b 65 6e 20 74 65 72 69 79 61 6b 69");
+    var zeros = hexToBytes("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20"),
+               hexToBytes("c6 35 35 68 f2 bf 8c b4 d8 a5 80 36 2d a7 ff 7f" +
+                          "97"),
+               hexToBytes("c6 35 35 68 f2 bf 8c b4 d8 a5 80 36 2d a7 ff 7f"));
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20 47 65 6e 65 72 61 6c 20 47 61 75 27 73 20"),
+               hexToBytes("fc 00 78 3e 0e fd b2 c1 d4 45 d4 c8 ef f7 ed 22" +
+                          "97 68 72 68 d6 ec cc c0 c0 7b 25 e2 5e cf e5"),
+               hexToBytes("fc 00 78 3e 0e fd b2 c1 d4 45 d4 c8 ef f7 ed 22"));
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20 47 65 6e 65 72 61 6c 20 47 61 75 27 73 20 43"),
+               hexToBytes("39 31 25 23 a7 86 62 d5 be 7f cb cc 98 eb f5 a8" +
+                          "97 68 72 68 d6 ec cc c0 c0 7b 25 e2 5e cf e5 84"),
+               hexToBytes("39 31 25 23 a7 86 62 d5 be 7f cb cc 98 eb f5 a8"));
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20 47 65 6e 65 72 61 6c 20 47 61 75 27 73 20 43" +
+                          "68 69 63 6b 65 6e 2c 20 70 6c 65 61 73 65 2c"),
+               hexToBytes("97 68 72 68 d6 ec cc c0 c0 7b 25 e2 5e cf e5 84" +
+                          "b3 ff fd 94 0c 16 a1 8c 1b 55 49 d2 f8 38 02 9e" +
+                          "39 31 25 23 a7 86 62 d5 be 7f cb cc 98 eb f5"),
+               hexToBytes("b3 ff fd 94 0c 16 a1 8c 1b 55 49 d2 f8 38 02 9e"));
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20 47 65 6e 65 72 61 6c 20 47 61 75 27 73 20 43" +
+                          "68 69 63 6b 65 6e 2c 20 70 6c 65 61 73 65 2c 20"),
+               hexToBytes("97 68 72 68 d6 ec cc c0 c0 7b 25 e2 5e cf e5 84" +
+                          "9d ad 8b bb 96 c4 cd c0 3b c1 03 e1 a1 94 bb d8" +
+                          "39 31 25 23 a7 86 62 d5 be 7f cb cc 98 eb f5 a8"),
+               hexToBytes("9d ad 8b bb 96 c4 cd c0 3b c1 03 e1 a1 94 bb d8"));
+
+    testCipher(key, zeros,
+               hexToBytes("49 20 77 6f 75 6c 64 20 6c 69 6b 65 20 74 68 65" +
+                          "20 47 65 6e 65 72 61 6c 20 47 61 75 27 73 20 43" +
+                          "68 69 63 6b 65 6e 2c 20 70 6c 65 61 73 65 2c 20" +
+                          "61 6e 64 20 77 6f 6e 74 6f 6e 20 73 6f 75 70 2e"),
+               hexToBytes("97 68 72 68 d6 ec cc c0 c0 7b 25 e2 5e cf e5 84" +
+                          "39 31 25 23 a7 86 62 d5 be 7f cb cc 98 eb f5 a8" +
+                          "48 07 ef e8 36 ee 89 a5 26 73 0d bc 2f 7b c8 40" +
+                          "9d ad 8b bb 96 c4 cd c0 3b c1 03 e1 a1 94 bb d8"),
+               hexToBytes("48 07 ef e8 36 ee 89 a5 26 73 0d bc 2f 7b c8 40"));
+});
