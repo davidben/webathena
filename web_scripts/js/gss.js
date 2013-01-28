@@ -8,9 +8,12 @@ var gss = (function() {
 
     var gss = { };
 
-    /** @const */ gss.NT_EXPORT_NAME = "1.3.6.1.5.6.4";
+    /** @const */ gss.NT_USER_NAME         = "1.2.840.113554.1.2.1.1";
+    /** @const */ gss.NT_MACHINE_UID_NAME  = "1.2.840.113554.1.2.1.2";
+    /** @const */ gss.NT_STRING_UID_NAME   = "1.2.840.113554.1.2.1.3";
     /** @const */ gss.NT_HOSTBASED_SERVICE = "1.3.6.1.5.6.2";
-    /** @const */ gss.NT_USER_NAME = "1.2.840.113554.1.2.1.1";
+    /** @const */ gss.NT_ANONYMOUS         = "1.3.6.1.5.6.3";
+    /** @const */ gss.NT_EXPORT_NAME       = "1.3.6.1.5.6.4";
 
     /** @const */ gss.S_BAD_BINDINGS = 1;
     /** @const */ gss.S_BAD_MECH = 2;
@@ -38,7 +41,7 @@ var gss = (function() {
 
     /** @const */ gss.KRB5_MECHANISM = "1.2.840.113554.1.2.2";
 
-    /** @const */ gss.KRB5_NT_PRINCIPAL_NAME = "1.2.840.113554.1.2.2.1";
+    /** @const */ gss.KRB5_NT_PRINCIPAL_NAME         = "1.2.840.113554.1.2.2.1";
     /** @const */ gss.KRB5_NT_HOSTBASED_SERVICE_NAME = "1.2.840.113554.1.2.1.4";
 
     /** @const */ gss.KRB5_S_G_BAD_SERVICE_NAME = 1;
