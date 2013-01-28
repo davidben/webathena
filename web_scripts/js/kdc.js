@@ -107,10 +107,10 @@ var KDC = (function() {
 		if (i >= str.length)
                     throw "Malformed principal";
 		switch (str[i]) {
-		case "n": component += "\n";
-		case "t": component += "\t";
-		case "b": component += "\b";
-		case "0": component += "\0";
+		case "n": component += "\n"; break;
+		case "t": component += "\t"; break;
+		case "b": component += "\b"; break;
+		case "0": component += "\0"; break;
 		default: component += str[i];
 		}
             } else if (str[i] == "/") {
