@@ -183,6 +183,38 @@ var gss = (function() {
         return tokId + mechOidLen + mechOid + nameLen + name;
     };
 
+    var GSSAPI_TOKEN_TAG = 0x60;  // [APPLICATION 0]
+
+    var TOK_ID_AP_REQ = "\x01\x00";
+    var TOK_ID_AP_REP = "\x02\x00";
+    var TOK_ID_ERROR  = "\x03\x00";
+
+    function decodeGSSToken(token) {
+        try {
+            // This is weirdo pseudo-ASN.1 with a hole in it. We could
+            // hack it into our parser, but it's easy to parse manually.
+            var tvr = asn1.decodeTagLengthValueDER(token);
+            var tag = tvr[0], value = tvr[1], rest = tvr[2];
+            if (tag !== GSSAPI_TOKEN_TAG)
+                throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+            if (rest)  // Bad length.
+                throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+
+            // Pull out the mechanism.
+            var mr = asn1.OBJECT_IDENTIFIER.decodeDERPrefix(value);
+            var mech = mr[0], rest = mr[1];
+
+            return {
+                thisMech: mech,
+                innerToken: rest
+            };
+        } catch (e) {
+            if (e instanceof asn1.Error)
+                throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, e.toString());
+            throw e;
+        }
+    }
+
     /**
      * Creates an initiator GSS context. If the need ever arises, we
      * can arrange for acceptor contexts to be supported, but it's
