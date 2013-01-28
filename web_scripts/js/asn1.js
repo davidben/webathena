@@ -602,6 +602,18 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
     var ret = {};
     var nextSpec = 0;
     while (data.length) {
+        // If the next field is non-optional, just go parse it. This
+        // special-case is needed to be able to handle weirdo
+        // un-tagged types like ANY and CHOICE.
+        if (nextSpec < this.componentSpec.length &&
+            !this.componentSpec[nextSpec].optional) {
+            var r = this.componentSpec[nextSpec].type.decodeDERPrefix(data);
+            ret[this.componentSpec[nextSpec].id] = r[0];
+            data = r[1];
+            nextSpec++;
+            continue;
+        }
+
         // Peek ahead at the tag.
         var tvr = asn1.decodeTagLengthValueDER(data);
         var tag = tvr[0], value = tvr[1], rest = tvr[2];
@@ -673,4 +685,24 @@ asn1.CHOICE.prototype.decodeDERPrefix = function (data) {
 	}
     }
     throw new asn1.Error("Unexpected tag " + tag);
+};
+
+
+/**
+ * ASN.1 ANY "type". This one is also a little funny. In the case of
+ * GSS-API, the hole isn't even ASN.1. JavaScript representation is
+ * just the bytes.
+ *
+ * This is one is a little bit of a hack. It must be the last element
+ * of any sequence as the parser does not know the length. And it has
+ * no tag, so it can't be optional or part of a CHOICE.
+ */
+asn1.ANY = new asn1.Type();
+asn1.ANY.encodeDER = function(object) {
+    if (typeof object !== "string")
+        throw new TypeError("Invalid type");
+    return object;
+};
+asn1.ANY.decodeDERPrefix = function(data) {
+    return [data, ''];
 };
