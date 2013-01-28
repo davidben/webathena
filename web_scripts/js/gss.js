@@ -8,14 +8,9 @@ var gss = (function() {
 
     var gss = { };
 
-    /** @const */ gss.KRB5_MECHANISM = "1.2.840.113554.1.2.2";
-
     /** @const */ gss.NT_EXPORT_NAME = "1.3.6.1.5.6.4";
     /** @const */ gss.NT_HOSTBASED_SERVICE = "1.3.6.1.5.6.2";
     /** @const */ gss.NT_USER_NAME = "1.2.840.113554.1.2.1.1";
-
-    /** @const */ gss.KRB5_NT_PRINCIPAL_NAME = "1.2.840.113554.1.2.2.1";
-    /** @const */ gss.KRB5_NT_HOSTBASED_SERVICE_NAME = "1.2.840.113554.1.2.1.4";
 
     /** @const */ gss.S_BAD_BINDINGS = 1;
     /** @const */ gss.S_BAD_MECH = 2;
@@ -40,6 +35,30 @@ var gss = (function() {
     /** @const */ gss.S_OLD_TOKEN = 20;
     /** @const */ gss.S_UNSEQ_TOKEN = 21;
     /** @const */ gss.S_GAP_TOKEN = 22;
+
+    /** @const */ gss.KRB5_MECHANISM = "1.2.840.113554.1.2.2";
+
+    /** @const */ gss.KRB5_NT_PRINCIPAL_NAME = "1.2.840.113554.1.2.2.1";
+    /** @const */ gss.KRB5_NT_HOSTBASED_SERVICE_NAME = "1.2.840.113554.1.2.1.4";
+
+    /** @const */ gss.KRB5_S_G_BAD_SERVICE_NAME = 1;
+    /** @const */ gss.KRB5_S_G_BAD_STRING_UID = 2;
+    /** @const */ gss.KRB5_S_G_NOUSER = 3;
+    /** @const */ gss.KRB5_S_G_VALIDATE_FAILED = 4;
+    /** @const */ gss.KRB5_S_G_BUFFER_ALLOC = 5;
+    /** @const */ gss.KRB5_S_G_BAD_MSG_CTX = 6;
+    /** @const */ gss.KRB5_S_G_WRONG_SIZE = 7;
+    /** @const */ gss.KRB5_S_G_BAD_USAGE = 8;
+    /** @const */ gss.KRB5_S_G_UNKNOWN_QOP = 9;
+
+    /** @const */ gss.KRB5_S_KG_CCACHE_NOMATCH = 10;
+    /** @const */ gss.KRB5_S_KG_KEYTAB_NOMATCH = 11;
+    /** @const */ gss.KRB5_S_KG_TGT_MISSING = 12;
+    /** @const */ gss.KRB5_S_KG_NO_SUBKEY = 13;
+    /** @const */ gss.KRB5_S_KG_CONTEXT_ESTABLISHED = 14;
+    /** @const */ gss.KRB5_S_KG_BAD_SIGN_TYPE = 15;
+    /** @const */ gss.KRB5_S_KG_BAD_LENGTH = 16;
+    /** @const */ gss.KRB5_S_KG_CTX_INCOMPLETE = 17;
 
     /**
      * @constructor
@@ -117,8 +136,9 @@ var gss = (function() {
             // host" is location.host, but meh.
             var at = data.indexOf("@");
             if (at < 0)
-                throw new gss.Error(gss.S_BAD_NAME, 0,
-                                    "Default host not supported");
+                throw new gss.Error(
+                    gss.S_BAD_NAME, gss.KRB5_S_G_BAD_SERVICE_NAME,
+                    "Default host not supported");
             var service = data.substring(0, at);
             var host = data.substring(at + 1);
             // FIXME: Hostname canonicalization??
