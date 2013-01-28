@@ -39,3 +39,19 @@ test("RFC 3961 n-fold test vectors", function() {
           hexToBytes("6b657262 65726f73 7b9b5b2b 93132b93" +
                      "5c9bdcda d95c9899 c4cae4de e6d6cae4"));
 });
+
+test("RFC 3961 mit_des_string_to_key test vectors", function() {
+    equal(kcrypto.mit_des_string_to_key("password", "ATHENA.MIT.EDUraeburn"),
+          hexToBytes("cbc22fae235298e3"));
+    equal(kcrypto.mit_des_string_to_key("potatoe", "WHITEHOUSE.GOVdanny"),
+          hexToBytes("df3d32a74fd92a01"));
+    // U+1D11E in UTF-16.
+    equal(kcrypto.mit_des_string_to_key("\uD834\uDD1E", "EXAMPLE.COMpianist"),
+          hexToBytes("4ffb26bab0cd9413"));
+    equal(kcrypto.mit_des_string_to_key("\u00DF", "ATHENA.MIT.EDUJuri\u0161i\u0107"),
+          hexToBytes("62c81a5232b5e69d"));
+    equal(kcrypto.mit_des_string_to_key("11119999", "AAAAAAAA"),
+          hexToBytes("984054d0f1a73e31"));
+    equal(kcrypto.mit_des_string_to_key("NNNN6666", "FFFFAAAA"),
+          hexToBytes("c4bf6b25adf7a4f8"));
+});

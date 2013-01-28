@@ -652,6 +652,7 @@ var kcrypto = (function() {
         // little silly.
         return CryptoJS.enc.Latin1.stringify(key);
     };
+    kcrypto.mit_des_string_to_key = mit_des_string_to_key;
 
     function des_string_to_key(password, salt, params) {
         if (params === undefined) params = "";
