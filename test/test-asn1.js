@@ -15,8 +15,8 @@ function bytesToBitString(b, remainder) {
 }
 
 function isEncoding(type, input, output, msg) {
-    deepEqual(type.encodeDER(input), output, msg + " - encode");
     deepEqual(type.decodeDER(output), input, msg + " - decode");
+    deepEqual(type.encodeDER(input), output, msg + " - encode");
 }
 
 test("X.690 examples", function() {
@@ -67,5 +67,65 @@ test("X.690 examples", function() {
                "GeneralString");
 });
 
-// TODO: Transcribe X.690 Annex A example. But it uses SET. Can that
-// be a SEQUENCE OF?
+test("X.690 Annex A example (modified)", function() {
+    // This isn't quite the sample A.1. The following changes were
+    // made:
+    // - All strings changed to GeneralString
+    // - All SETs changed to SEQUENCEs
+    // - All DEFAULT fields changed to OPTIONAL.
+    var Date = asn1.GeneralString.implicitlyTagged(
+        asn1.tag(3, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
+    var EmployeeNumber = asn1.INTEGER.implicitlyTagged(
+        asn1.tag(2, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
+    var Name = new asn1.SEQUENCE([
+        {id: "givenName", type: asn1.GeneralString},
+        {id: "initial", type: asn1.GeneralString},
+        {id: "familyName", type: asn1.GeneralString}
+    ]).implicitlyTagged(asn1.tag(1, asn1.TAG_CONSTRUCTED,
+                                 asn1.TAG_APPLICATION));
+    var ChildInformation = new asn1.SEQUENCE([
+        {id: "name", type: Name},
+        {id: "dateOfBirth", type: Date.tagged(asn1.tag(0))}
+    ]);
+    var PersonnelRecord = new asn1.SEQUENCE([
+        {id: "name", type: Name},
+        {id: "title", type: asn1.GeneralString.tagged(asn1.tag(0))},
+        {id: "number", type: EmployeeNumber},
+        {id: "dateOfHire", type: Date.tagged(asn1.tag(1))},
+        {id: "nameOfSpouse", type: Name.tagged(asn1.tag(2))},
+        {id: "children",
+         type: new asn1.SEQUENCE_OF(ChildInformation).implicitlyTagged(
+             asn1.tag(3)),
+         optional: true}
+    ]).implicitlyTagged(asn1.tag(0, asn1.TAG_CONSTRUCTED,
+                                 asn1.TAG_APPLICATION));
+
+    var value = {
+        name: {givenName: "John", initial: "P", familyName: "Smith"},
+        title: "Director",
+        number: 51,
+        dateOfHire: "19710917",
+        nameOfSpouse: {givenName: "Mary", initial: "T", familyName: "Smith"},
+        children: [
+            {
+                name: {givenName: "Ralph", initial: "T", familyName: "Smith"},
+                dateOfBirth: "19571111"
+            },
+            {
+                name: {givenName: "Susan", initial: "B", familyName: "Jones"},
+                dateOfBirth: "19590717"
+            }
+        ]
+    };
+
+    isEncoding(PersonnelRecord, value,
+               "\x60\x81\x85\x61\x10\x1b\x04John\x1b\x01P\x1b\x05Smith" +
+               "\xa0\x0a\x1b\x08Director\x42\x01\x33" +
+               "\xa1\x0a\x43\x0819710917\xa2\x12\x61\x10" +
+               "\x1b\x04Mary\x1b\x01T\x1b\x05Smith" +
+               "\xa3\x42\x30\x1f\x61\x11\x1b\x05Ralph" +
+               "\x1b\x01T\x1b\x05Smith\xa0\x0a\x43\x08" +
+               "19571111\x30\x1f\x61\x11\x1b\x05Susan" +
+               "\x1b\x01B\x1b\x05Jones\xa0\x0a\x43\x0819590717",
+               "PersonnelRecord");
+});
