@@ -271,6 +271,21 @@ asn1.ImplicitlyTagged.prototype.decodeDERValue = function (data) {
 };
 
 
+/** ASN.1 BOOLEAN type. */
+asn1.BOOLEAN = new asn1.Type(
+    asn1.tag(0x01, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+
+asn1.BOOLEAN.encodeDERValue = function(object) {
+    if (typeof object != "boolean")
+        throw new TypeError("boolean");
+    return object ? "\xFF" : "\x00";
+}
+
+asn1.BOOLEAN.decodeDERValue = function(data) {
+    return data !== "\x00";
+}
+
+
 /** ASN.1 INTEGER type. */
 asn1.INTEGER = new asn1.Type(
     asn1.tag(0x02, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
