@@ -195,6 +195,17 @@ asn1.Type.prototype.tagged = function (tag) {
 };
 
 /**
+ * Creates an implicitly-tagged version of this type.
+ *
+ * @param {number} tag The value to tag with.
+ * @return {asn1.ImplicitlyTagged} An implicitly tagged version of
+ *     this.
+ */
+asn1.Type.prototype.implicitlyTagged = function (tag) {
+    return new asn1.ImplicitlyTagged(tag, this);
+};
+
+/**
  * Creates an constrained version of this type.
  *
  * @param {Function} checkValue A function which those an exception if
