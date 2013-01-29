@@ -366,9 +366,7 @@ asn1.BIT_STRING.decodeDERValue = function (data) {
         }
     }
     // Chop off the extra bits.
-    for (var i = 0; i < remainder; i++)
-        ret.pop();
-    return ret;
+    return ret.slice(0, ret.length - remainder);
 };
 
 
