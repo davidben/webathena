@@ -36,18 +36,11 @@ test("X.690 examples", function() {
                "\x30\x0a\x1b\x05Smith\x01\x01\xff");
 
     // VisibleString changed to GeneralString.
-
-    // Okay, this is kind of annoying. We shouldn't have to manually
-    // specify tags as primitive or constructed; it's a property of
-    // the type.
     var Type1 = asn1.GeneralString;
-    var Type2 = Type1.implicitlyTagged(
-        asn1.tag(3, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
+    var Type2 = Type1.implicitlyTagged(asn1.tag(3, asn1.TAG_APPLICATION));
     var Type3 = Type2.tagged(asn1.tag(2));
-    var Type4 = Type3.implicitlyTagged(
-        asn1.tag(7, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
-    var Type5 = Type2.implicitlyTagged(
-        asn1.tag(2, asn1.TAG_PRIMITIVE));
+    var Type4 = Type3.implicitlyTagged(asn1.tag(7, asn1.TAG_APPLICATION));
+    var Type5 = Type2.implicitlyTagged(asn1.tag(2));
     isEncoding(Type1, "Jones", "\x1b\x05\x4a\x6f\x6e\x65\x73",
                "Prefixed Type1");
     isEncoding(Type2, "Jones", "\x43\x05\x4a\x6f\x6e\x65\x73",

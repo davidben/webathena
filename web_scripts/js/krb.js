@@ -138,7 +138,7 @@ krb.Ticket = new asn1.SEQUENCE(
      {id: 'realm', type: krb.Realm.tagged(asn1.tag(1))},
      {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(2))},
      {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(3))}]
-).tagged(asn1.tag(1, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+).tagged(asn1.tag(1, asn1.TAG_APPLICATION));
 
 krb.TicketFlags = krb.KerberosFlags.subtype();
 /** @const */ krb.TicketFlags.reserved = 0;
@@ -175,7 +175,7 @@ krb.EncTicketPart = new asn1.SEQUENCE(
       optional: true},
      {id: 'authorizationData', type: krb.AuthorizationData.tagged(asn1.tag(10)),
       optional: true}]
-).tagged(asn1.tag(3, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+).tagged(asn1.tag(3, asn1.TAG_APPLICATION));
 
 // 5.9.1.  KRB_ERROR Definition
 krb.KRB_ERROR = new asn1.SEQUENCE(
@@ -195,7 +195,7 @@ krb.KRB_ERROR = new asn1.SEQUENCE(
       optional: true},
      {id: 'eData', type: asn1.OCTET_STRING.tagged(asn1.tag(12)),
       optional: true}]
-).tagged(asn1.tag(30, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+).tagged(asn1.tag(30, asn1.TAG_APPLICATION));
 krb.METHOD_DATA = new asn1.SEQUENCE_OF(krb.PA_DATA);
 krb.TYPED_DATA = new asn1.SEQUENCE(
     [{id: 'dataType', type: krb.Int32.tagged(asn1.tag(0))},
@@ -248,10 +248,8 @@ krb.KDC_REQ = new asn1.SEQUENCE(
       type: new asn1.SEQUENCE_OF(krb.PA_DATA).tagged(asn1.tag(3)),
       optional: true},
      {id: 'reqBody', type: krb.KDC_REQ_BODY.tagged(asn1.tag(4))}]);
-krb.AS_REQ = krb.KDC_REQ.tagged(asn1.tag(10, asn1.TAG_CONSTRUCTED,
-                                         asn1.TAG_APPLICATION));
-krb.TGS_REQ = krb.KDC_REQ.tagged(asn1.tag(12, asn1.TAG_CONSTRUCTED,
-                                         asn1.TAG_APPLICATION));
+krb.AS_REQ = krb.KDC_REQ.tagged(asn1.tag(10, asn1.TAG_APPLICATION));
+krb.TGS_REQ = krb.KDC_REQ.tagged(asn1.tag(12, asn1.TAG_APPLICATION));
 
 // 5.4.2.  KRB_KDC_REP Definition
 krb.KDC_REP = new asn1.SEQUENCE(
@@ -265,10 +263,8 @@ krb.KDC_REP = new asn1.SEQUENCE(
      {id: 'cname', type: krb.PrincipalName.tagged(asn1.tag(4))},
      {id: 'ticket', type: krb.Ticket.tagged(asn1.tag(5))},
      {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(6))}]);
-krb.AS_REP = krb.KDC_REP.tagged(asn1.tag(11, asn1.TAG_CONSTRUCTED,
-                                         asn1.TAG_APPLICATION));
-krb.TGS_REP = krb.KDC_REP.tagged(asn1.tag(13, asn1.TAG_CONSTRUCTED,
-                                          asn1.TAG_APPLICATION));
+krb.AS_REP = krb.KDC_REP.tagged(asn1.tag(11, asn1.TAG_APPLICATION));
+krb.TGS_REP = krb.KDC_REP.tagged(asn1.tag(13, asn1.TAG_APPLICATION));
 
 krb.AS_REP_OR_ERROR = new asn1.CHOICE([krb.AS_REP, krb.KRB_ERROR]);
 krb.TGS_REP_OR_ERROR = new asn1.CHOICE([krb.TGS_REP, krb.KRB_ERROR]);
@@ -293,10 +289,9 @@ krb.EncKDCRepPart = new asn1.SEQUENCE(
      {id: 'sname', type: krb.PrincipalName.tagged(asn1.tag(10))},
      {id: 'caddr', type: krb.HostAddresses.tagged(asn1.tag(11)),
       optional: true}]);
-krb.EncASRepPart = krb.EncKDCRepPart.tagged(asn1.tag(25, asn1.TAG_CONSTRUCTED,
-                                                     asn1.TAG_APPLICATION));
-krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(asn1.tag(26, asn1.TAG_CONSTRUCTED,
-                                                      asn1.TAG_APPLICATION));
+krb.EncASRepPart = krb.EncKDCRepPart.tagged(asn1.tag(25, asn1.TAG_APPLICATION));
+krb.EncTGSRepPart = krb.EncKDCRepPart.tagged(
+    asn1.tag(26, asn1.TAG_APPLICATION));
 // The MIT KDC uses the wrong tag. Sigh.
 krb.EncASorTGSRepPart = new asn1.CHOICE([krb.EncASRepPart, krb.EncTGSRepPart]);
 
@@ -311,7 +306,7 @@ krb.AP_REQ = new asn1.SEQUENCE(
      {id: 'apOptions', type: krb.APOptions.tagged(asn1.tag(2))},
      {id: 'ticket', type: krb.Ticket.tagged(asn1.tag(3))},
      {id: 'authenticator', type: krb.EncryptedData.tagged(asn1.tag(4))}]
-).tagged(asn1.tag(14, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+).tagged(asn1.tag(14, asn1.TAG_APPLICATION));
 
 krb.Authenticator = new asn1.SEQUENCE(
     [{id: 'authenticatorVno',
@@ -326,7 +321,7 @@ krb.Authenticator = new asn1.SEQUENCE(
      {id: 'seqNumber', type: krb.UInt32.tagged(asn1.tag(7)), optional: true},
      {id: 'authorizationData', type: krb.AuthorizationData.tagged(asn1.tag(8)),
       optional: true}]
-).tagged(asn1.tag(2, asn1.TAG_CONSTRUCTED, asn1.TAG_APPLICATION));
+).tagged(asn1.tag(2, asn1.TAG_APPLICATION));
 
 
 // TODO: 5.5.2.  KRB_AP_REP Definition

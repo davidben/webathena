@@ -29,21 +29,21 @@ asn1.Error.prototype.toString = function() {
  * Returns an ASN.1 tag.
  *
  * @param {number} number The number of the tag.
- * @param {number} pc TAG_PRIMITIVE or TAG_CONSTRUCTED. Defaults to
- *     TAG_CONSTRUCTED.
  * @param {number} cls The class of the tag. Defaults to
  *     TAG_CONTEXT.
+ * @param {number} pc TAG_PRIMITIVE or TAG_CONSTRUCTED. Defaults to
+ *     TAG_PRIMITIVE.
  * @return {number} A tag number representing the tag.
  */
-asn1.tag = function (number, pc, cls) {
-    if (pc === undefined)
-        pc = asn1.TAG_CONSTRUCTED;
+asn1.tag = function (number, cls, pc) {
     if (cls === undefined)
         cls = asn1.TAG_CONTEXT;
+    if (pc === undefined)
+        pc = asn1.TAG_PRIMITIVE;
     // We'll implement this if we ever have to deal with it.
     if (number >= 31)
         throw new asn1.Error("High-tag-number form not implemented!");
-    return (cls | pc | number);
+    return (number | cls | pc);
 };
 
 
@@ -96,7 +96,7 @@ asn1.decodeTagLengthValueDER = function (data) {
     var tagCls = tagOctet & (0x3 << 6);
     if (tagNumber == 0x1f)
         throw new asn1.Error("High-tag-number form not implemented!");
-    var tag = asn1.tag(tagNumber, tagPc, tagCls);
+    var tag = asn1.tag(tagNumber, tagCls, tagPc);
     off++;
 
     // Now decode the length.
@@ -130,10 +130,15 @@ asn1.decodeTagLengthValueDER = function (data) {
  * Base class for all ASN.1 types. Types are supposed to provide
  * encodeDERValue and decodeDERValue implementations.
  *
- * @param {number} tag The tag of this type.
+ * @param {number} tag The tag of this type. Primitive/constructed bit
+ *     may be omitted.
+ * @param {boolean=} primitive If the type is primitive.
  * @constructor
  */
-asn1.Type = function (tag) {
+asn1.Type = function (tag, primitive) {
+    this.primitive = primitive ? true : false;
+    if (!this.primitive)
+        tag |= asn1.TAG_CONSTRUCTED;
     this.tag = tag;
 };
 
@@ -245,7 +250,7 @@ asn1.Type.prototype.subtype = function () {
  * @constructor
  */
 asn1.ExplicitlyTagged = function (tag, baseType) {
-    this.tag = tag;
+    asn1.Type.call(this, tag, false);
     this.baseType = baseType;
 };
 asn1.ExplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
@@ -267,7 +272,7 @@ asn1.ExplicitlyTagged.prototype.decodeDERValue = function (data) {
  * @constructor
  */
 asn1.ImplicitlyTagged = function (tag, baseType) {
-    this.tag = tag;
+    asn1.Type.call(this, tag, baseType.primitive);
     this.baseType = baseType;
 };
 asn1.ImplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
@@ -282,8 +287,7 @@ asn1.ImplicitlyTagged.prototype.decodeDERValue = function (data) {
 
 
 /** ASN.1 BOOLEAN type. */
-asn1.BOOLEAN = new asn1.Type(
-    asn1.tag(0x01, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.BOOLEAN = new asn1.Type(asn1.tag(0x01, asn1.TAG_UNIVERSAL), true);
 
 asn1.BOOLEAN.encodeDERValue = function(object) {
     if (typeof object != "boolean")
@@ -297,8 +301,7 @@ asn1.BOOLEAN.decodeDERValue = function(data) {
 
 
 /** ASN.1 INTEGER type. */
-asn1.INTEGER = new asn1.Type(
-    asn1.tag(0x02, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.INTEGER = new asn1.Type(asn1.tag(0x02, asn1.TAG_UNIVERSAL), true);
 
 asn1.INTEGER.encodeDERValue = function (object) {
     var ret = [];
@@ -361,8 +364,7 @@ asn1.INTEGER.rangeConstrained = function (lo, hi) {
  * ASN.1 BIT STRING type. We'll represent it as an Array of 0s and 1s,
  * though a bitmask works fine for Kerberos.
  */
-asn1.BIT_STRING = new asn1.Type(
-    asn1.tag(0x03, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.BIT_STRING = new asn1.Type(asn1.tag(0x03, asn1.TAG_UNIVERSAL), true);
 
 asn1.BIT_STRING.encodeDERValue = function (object) {
     var remainder = 8 - (object.length % 8);
@@ -396,8 +398,7 @@ asn1.BIT_STRING.decodeDERValue = function (data) {
 
 
 /** ASN.1 OCTET STRING type. */
-asn1.OCTET_STRING = new asn1.Type(
-    asn1.tag(0x04, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.OCTET_STRING = new asn1.Type(asn1.tag(0x04, asn1.TAG_UNIVERSAL), true);
 
 asn1.OCTET_STRING.encodeDERValue = function (object) {
     if (typeof object != "string")
@@ -411,8 +412,7 @@ asn1.OCTET_STRING.decodeDERValue = function (data) {
 
 
 /** ASN.1 NULL type. */
-asn1.NULL = new asn1.Type(
-    asn1.tag(0x05, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.NULL = new asn1.Type(asn1.tag(0x05, asn1.TAG_UNIVERSAL), true);
 
 asn1.NULL.encodeDERValue = function (object) {
     if (object !== null)
@@ -430,8 +430,8 @@ asn1.NULL.decodeDERValue = function (data) {
 /** ASN.1 OBJECT IDENTIFIER type. For sanity, just make the JS
  * representation a string. We can do something more complex if
  * there's a need. */
-asn1.OBJECT_IDENTIFIER = new asn1.Type(
-    asn1.tag(0x06, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.OBJECT_IDENTIFIER = new asn1.Type(asn1.tag(0x06, asn1.TAG_UNIVERSAL),
+                                       true);
 
 asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object) {
     if (typeof object !== "string")
@@ -489,8 +489,7 @@ asn1.OBJECT_IDENTIFIER.decodeDERValue = function(data) {
 
 
 /** ASN.1 GeneralString type. */
-asn1.GeneralString = new asn1.Type(
-    asn1.tag(0x1b, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.GeneralString = new asn1.Type(asn1.tag(0x1b, asn1.TAG_UNIVERSAL), true);
 
 asn1.GeneralString.encodeDERValue = function (object) {
     // TODO: Is this correct? Do we need to check anything? Not that
@@ -507,8 +506,7 @@ asn1.GeneralString.decodeDERValue = function (data) {
 
 
 /** ASN.1 GeneralizedTime type. */
-asn1.GeneralizedTime = new asn1.Type(
-    asn1.tag(0x18, asn1.TAG_PRIMITIVE, asn1.TAG_UNIVERSAL));
+asn1.GeneralizedTime = new asn1.Type(asn1.tag(0x18, asn1.TAG_UNIVERSAL), true);
 
 asn1.GeneralizedTime.encodeDERValue = function (object) {
     function pad(number, len) {
@@ -564,7 +562,7 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
  * @constructor
  */
 asn1.SEQUENCE_OF = function (componentType) {
-    this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
+    asn1.Type.call(this, asn1.tag(0x10, asn1.TAG_UNIVERSAL), false);
     this.componentType = componentType;
 };
 asn1.SEQUENCE_OF.prototype = Object.create(asn1.Type.prototype);
@@ -610,7 +608,7 @@ asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
  * @constructor
  */
 asn1.SEQUENCE = function (componentSpec) {
-    this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
+    asn1.Type.call(this, asn1.tag(0x10, asn1.TAG_UNIVERSAL), false);
     this.componentSpec = componentSpec;
 };
 asn1.SEQUENCE.prototype = Object.create(asn1.Type.prototype);
@@ -679,6 +677,7 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
  * @constructor
  */
 asn1.CHOICE = function (choices) {
+    // This thing is a hack, so it doesn't call the ctor.
     this.choices = choices;
 };
 asn1.CHOICE.prototype = Object.create(asn1.Type.prototype);
