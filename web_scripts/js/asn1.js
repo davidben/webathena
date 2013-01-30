@@ -488,20 +488,33 @@ asn1.OBJECT_IDENTIFIER.decodeDERValue = function(data) {
 };
 
 
-/** ASN.1 GeneralString type. */
+/** ASN.1 GeneralString type.
+ *
+ * Stuffing UTF-8 in an ASN.1 GeneralString would make ITU-T sad, but
+ * apparently this is what Microsoft does, although they also do
+ * case-folding. MIT Kerberos just forwards the string it gets from
+ * the caller, which is locale-specific. Given that, the most
+ * reasonable thing for us to do is probably assume UTF-8.
+ */
 asn1.GeneralString = new asn1.Type(asn1.tag(0x1b, asn1.TAG_UNIVERSAL), true);
 
 asn1.GeneralString.encodeDERValue = function (object) {
-    // TODO: Is this correct? Do we need to check anything? Not that
-    // it matters a whole lot since KerberosString is limited to
-    // IA5String's characters for compatibility.
     if (typeof object != "string")
         throw new TypeError("Not a string");
-    return object;
+    // That this is the best way to convert UTF-16 to UTF-8 on the web
+    // platform is ridiculous. We going to get TextEncoder implemented
+    // any time soon?
+    return unescape(encodeURIComponent(object));
 };
 
 asn1.GeneralString.decodeDERValue = function (data) {
-    return String(data);
+    try {
+        return decodeURIComponent(escape(data));
+    } catch (e) {
+        if (e instanceof URIError)
+            throw new asn1.Error("Invalid UTF-8 string");
+        throw e;
+    }
 };
 
 
@@ -538,7 +551,7 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
     var re = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\.(\d{1,3}))?Z$/;
     var match = String(data).match(re);
     if (!match)
-        throw new Error("Bad date format");
+        throw new asn1.Error("Bad date format");
     var date = new Date(Date.UTC(Number(match[1]),
                                  Number(match[2]) - 1,
                                  Number(match[3]),
