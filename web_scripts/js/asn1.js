@@ -134,8 +134,7 @@ asn1.decodeTagLengthValueDER = function (data) {
  * @constructor
  */
 asn1.Type = function (tag) {
-    if (tag !== undefined)
-        this.tag = tag;
+    this.tag = tag;
 };
 
 /**
@@ -249,7 +248,7 @@ asn1.ExplicitlyTagged = function (tag, baseType) {
     this.tag = tag;
     this.baseType = baseType;
 };
-asn1.ExplicitlyTagged.prototype = new asn1.Type();
+asn1.ExplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
 
 asn1.ExplicitlyTagged.prototype.encodeDERValue = function (object) {
     return this.baseType.encodeDER(object);
@@ -271,7 +270,7 @@ asn1.ImplicitlyTagged = function (tag, baseType) {
     this.tag = tag;
     this.baseType = baseType;
 };
-asn1.ImplicitlyTagged.prototype = new asn1.Type();
+asn1.ImplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
 
 asn1.ImplicitlyTagged.prototype.encodeDERValue = function (object) {
     return this.baseType.encodeDERValue(object);
@@ -568,7 +567,7 @@ asn1.SEQUENCE_OF = function (componentType) {
     this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
     this.componentType = componentType;
 };
-asn1.SEQUENCE_OF.prototype = new asn1.Type();
+asn1.SEQUENCE_OF.prototype = Object.create(asn1.Type.prototype);
 
 asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
     var out = [];
@@ -614,7 +613,7 @@ asn1.SEQUENCE = function (componentSpec) {
     this.tag = asn1.tag(0x10, asn1.TAG_CONSTRUCTED, asn1.TAG_UNIVERSAL);
     this.componentSpec = componentSpec;
 };
-asn1.SEQUENCE.prototype = new asn1.Type();
+asn1.SEQUENCE.prototype = Object.create(asn1.Type.prototype);
 
 asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
     var out = [];
@@ -682,7 +681,7 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
 asn1.CHOICE = function (choices) {
     this.choices = choices;
 };
-asn1.CHOICE.prototype = new asn1.Type();
+asn1.CHOICE.prototype = Object.create(asn1.Type.prototype);
 
 asn1.CHOICE.prototype.encodeDER = function (object) {
     var type = object[0], realObj = object[1];
