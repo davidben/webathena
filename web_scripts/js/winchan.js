@@ -1,3 +1,5 @@
+/** @preserve WinChan is Copyright (c) 2012 Lloyd Hilaiel
+ https://github.com/lloyd/winchan */
 ;var WinChan = (function() {
   var RELAY_FRAME_NAME = "__winchan_relay_frame";
   var CLOSE_CMD = "die";
