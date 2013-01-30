@@ -1,5 +1,7 @@
 "use strict";
 
+sjcl.random.startCollectors();
+
 function showLoginPrompt() {
     var deferred = Q.defer();
     var login = $('#login-template').children().clone();

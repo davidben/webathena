@@ -1,5 +1,3 @@
-sjcl.random.startCollectors();
-
 function log(arg) {
     if (typeof console != "undefined" && console.log)
         console.log(arg);
