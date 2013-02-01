@@ -101,18 +101,6 @@ var kcrypto = (function() {
     /** @const */ kcrypto.sumtype.hmac_sha1_96_aes128           = 15;
     /** @const */ kcrypto.sumtype.hmac_sha1_96_aes256           = 16;
 
-    // Why is this so hard??
-    function sjclZeroArray(n) {
-        var ret = [];
-        while (n >= 32) {
-            ret.push(0);
-            n -= 32;
-        }
-        if (n > 0)
-            ret.push(sjcl.bitArray.partial(n, 0));
-        return ret;
-    }
-
     // This is silly. Just put it in here.
     var CryptoJS_NoPadding = {
         pad: function () {
@@ -273,7 +261,7 @@ var kcrypto = (function() {
         var numCopies = n / gcd(n, inLength);
         var shift = 13 % inLength;
 
-        var ret = sjclZeroArray(n);
+        var ret = arrayutils.toSJCL(new Uint8Array(n / 8));
         var chunk = []; var chunkLength = 0;
         var lastCopy = inBits;
         for (var i = 0; i < numCopies; i++) {
