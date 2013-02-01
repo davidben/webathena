@@ -231,7 +231,7 @@ var KDC = (function() {
                                             'KDC connection timed out'));
                     break;
 		case 'OK':
-                    var der = atob(data.reply);
+                    var der = arrayutils.fromByteString(atob(data.reply));
                     var reply = outputType.decodeDER(der)[1];
                     deferred.resolve(reply);
                     break;
@@ -240,7 +240,7 @@ var KDC = (function() {
 		deferred.reject(new Err(Err.Context.NET, 'error', xhr.status));
             }
 	};
-	xhr.send(btoa(data));
+	xhr.send(btoa(arrayutils.toByteString(data)));
 	return deferred.promise;
     };
 
@@ -292,8 +292,16 @@ var KDC = (function() {
 	// KDC MUST NOT send ETYPE-INFO or PW-SALT when the client's
 	// AS-REQ includes at least one "newer" etype.
 	for (var i = 0; i < methodData.length; i++) {
-            if (methodData[i].padataType == krb.PA_ETYPE_INFO2)
-		return krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
+            // The type of the salt changed from OCTET STRING to
+            // GeneralString between PA-ETYPE-INFO and
+            // PA-ETYPE-INFO2. Arbitrarily declare that typed array is
+            // the representation.
+            if (methodData[i].padataType == krb.PA_ETYPE_INFO2) {
+		var info = krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
+                if (info.salt !== undefined)
+                    info.salt = arrayutils.fromUTF16(info.salt);
+                return info;
+            }
 	}
 	for (var i = 0; i < methodData.length; i++) {
             if (methodData[i].padataType == krb.PA_ETYPE_INFO)
@@ -310,7 +318,8 @@ var KDC = (function() {
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with no
         // separators.
-	return principal.realm + principal.principalName.nameString.join("");
+	return arrayutils.fromUTF16(
+            principal.realm + principal.principalName.nameString.join(""));
     }
     function keyFromPassword(etypeInfo, principal, password) {
 	var salt;

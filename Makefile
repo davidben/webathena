@@ -6,6 +6,7 @@ compiler.jar: download-compiler.sh
 CORE_JS_SOURCES := \
 	crc32.js \
 	util.js \
+	arrayutils.js \
 	asn1.js \
 	krb.js \
 	kcrypto.js \

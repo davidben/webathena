@@ -15,13 +15,20 @@ function bytesToBitString(b, remainder) {
 }
 
 function isEncoding(type, input, output, msg) {
+    output = arrayutils.fromByteString(output);
     deepEqual(type.decodeDER(output), input, msg + " - decode");
-    deepEqual(type.encodeDER(input), output, msg + " - encode");
+    arraysEqual(type.encodeDER(input), output, msg + " - encode");
 }
 
 test("X.690 examples", function() {
-    equal(asn1.encodeLengthDER(38), "\x26", "Length - short form");
-    equal(asn1.encodeLengthDER(201), "\x81\xc9", "Length - long form");
+    var b = new asn1.Buffer();
+    asn1.encodeLengthDER(38, b);
+    arraysEqual(b.contents(), new Uint8Array([0x26]),
+                "Length - short form");
+    var b = new asn1.Buffer();
+    asn1.encodeLengthDER(201, b);
+    arraysEqual(b.contents(), new Uint8Array([0x81, 0xc9]),
+                "Length - long form");
 
     isEncoding(asn1.BOOLEAN, true, "\x01\x01\xff", "BOOLEAN");
     isEncoding(asn1.BIT_STRING,

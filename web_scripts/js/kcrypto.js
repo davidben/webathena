@@ -268,7 +268,7 @@ var kcrypto = (function() {
         return ret;
     }
     function nFold(n, input) {
-        var inBits = sjcl_byteString.toBits(input);
+        var inBits = arrayutils.toSJCL(input);
         var inLength = sjcl.bitArray.bitLength(inBits);
         var numCopies = n / gcd(n, inLength);
         var shift = 13 % inLength;
@@ -294,7 +294,7 @@ var kcrypto = (function() {
         }
         if (sjcl.bitArray.bitLength(chunk) != 0)
             throw "Bits left over!";
-        return sjcl_byteString.fromBits(ret);
+        return arrayutils.fromSJCL(ret);
     }
     kcrypto.nFold = nFold;
 
@@ -304,20 +304,17 @@ var kcrypto = (function() {
             throw "Bad simple profile";
 
         function truncatedHmac(hmac, msg) {
-            // FIXME: Round-tripping between String and sjcl.bitArray
-            // is a pain.
-            var h1 = hmac.encrypt(sjcl_byteString.toBits(msg));
+            // Round-tripping between Uint8Array and sjcl.bitArray is
+            // a pain.
+            var h1 = hmac.encrypt(arrayutils.toSJCL(msg));
             h1 = sjcl.bitArray.bitSlice(
                 h1, 0, 8 * simpleProfile.hmacOutputSize);
-            return sjcl_byteString.fromBits(h1);
+            return arrayutils.fromSJCL(h1);
         }
 
         var enc = { };
         enc.enctype = simpleProfile.enctype;
-        var initialCipherState = ""
-        for (var i = 0; i < simpleProfile.cipherBlockSize; i++) {
-            initialCipherState += "\0";
-        }
+        var initialCipherState = new Uint8Array(simpleProfile.cipherBlockSize);
         enc.initialCipherState = function() {
             return initialCipherState;
         };
@@ -328,11 +325,13 @@ var kcrypto = (function() {
             return simpleProfile.stringToKey(pass, salt, param, this);
         };
         enc.encrypt = function(derivedKey, iv, plaintext) {
+            plaintext = arrayutils.asUint8Array(plaintext);
             // conf = Random string of length c
-            var conf = sjcl.bitArray.clamp(
-                sjcl.random.randomWords(
-                    Math.ceil(simpleProfile.cipherBlockSize / 4)),
-                simpleProfile.cipherBlockSize * 8);
+            var conf = arrayutils.fromSJCL(
+                sjcl.bitArray.clamp(
+                    sjcl.random.randomWords(
+                        Math.ceil(simpleProfile.cipherBlockSize / 4)),
+                    simpleProfile.cipherBlockSize * 8));
             // pad = Shortest string to bring confounder and plaintext
             // to a length that's a multiple of m.
             var padLength = (simpleProfile.cipherBlockSize + plaintext.length) %
@@ -340,10 +339,12 @@ var kcrypto = (function() {
             padLength = simpleProfile.messageBlockSize - padLength;
             if (padLength == simpleProfile.messageBlockSize)
                 padLength = 0;
-            var pad = sjclZeroArray(padLength * 8);
             // (C1, newIV) = E(Ke, conf | plaintext | pad, oldstate.ivec)
-            var data = sjcl_byteString.fromBits(conf) +
-                plaintext + sjcl_byteString.fromBits(pad);
+            var data = new Uint8Array(
+                conf.length + plaintext.length + padLength);
+            data.set(conf);
+            data.set(plaintext, conf.length);
+            // pad is already zero'd
             var t = simpleProfile.encrypt(derivedKey.E, iv, data, this);
             var newIV = t[0], c1 = t[1];
             // H1 = HMAC(Ki, conf | plaintext | pad)
@@ -353,10 +354,11 @@ var kcrypto = (function() {
             return [newIV, c1 + h1];
         };
         enc.decrypt = function(derivedKey, iv, ciphertext) {
+            ciphertext = arrayutils.asUint8Array(ciphertext);
             // (C1,H1) = ciphertext
-            var c1 = ciphertext.substr(
+            var c1 = ciphertext.subarray(
                 0, ciphertext.length - simpleProfile.hmacOutputSize);
-            var h1 = ciphertext.substr(
+            var h1 = ciphertext.subarray(
                 ciphertext.length - simpleProfile.hmacOutputSize);
             // (P1, newIV) = D(Ke, C1, oldstate.ivec)
             var t = simpleProfile.decrypt(derivedKey.E, iv, c1, this);
@@ -365,7 +367,7 @@ var kcrypto = (function() {
             if (h1 != truncatedHmac(derivedKey.I, p1))
                 throw new kcrypto.DecryptionError('Checksum mismatch!');
             // Strip off confounder.
-            p1 = p1.substr(simpleProfile.cipherBlockSize);
+            p1 = p1.subarray(simpleProfile.cipherBlockSize);
             return [newIV, p1];
         };
         enc.DK = function(key, constant) {
@@ -376,17 +378,20 @@ var kcrypto = (function() {
             if (constant.length < simpleProfile.cipherBlockSize) {
                 constant = nFold(simpleProfile.cipherBlockSize * 8, constant);
             }
-            var DR = "";
             var truncateLength = simpleProfile.keyGenerationSeedLength / 8;
+            var DR = new Uint8Array(truncateLength);
+            var len = 0;
             var state = constant;
             // If the output of E is shorter than k bits, it is fed
             // back into the encryption as many times as necessary.
-            while (DR.length < truncateLength) {
+            while (len < truncateLength) {
                 state = simpleProfile.encrypt(
                     key, initialCipherState, state)[1];
-                DR += state;
+                DR.set(state.subarray(0, Math.min(state.byteLength,
+                                                  truncateLength - len)),
+                       len);
+                len += state.byteLength;
             }
-            DR = DR.substr(0, truncateLength);
             return this.randomToKey(DR);
         };
         enc.deriveKey = function(key, usage) {
@@ -394,26 +399,26 @@ var kcrypto = (function() {
             // the key usage number, expressed as four octets in
             // big-endian order, followed by one octet indicated
             // below.
-            var usageBytes = String.fromCharCode(
-                usage >>> 24,
-                (usage >>> 16) & 0xff,
-                (usage >>> 8) & 0xff,
-                usage & 0xff);
+            var constant = new Uint8Array(5);
+            new DataView(constant.buffer).setUint32(0, usage);
             // Kc = DK(base-key, usage | 0x99);
-            var Kc = this.DK(key, usageBytes + '\x99');
+            constant[4] = 0x99;
+            var Kc = this.DK(key, constant);
             // Ke = DK(base-key, usage | 0xAA);
-            var Ke = this.DK(key, usageBytes + '\xAA');
+            constant[4] = 0xAA;
+            var Ke = this.DK(key, constant);
             // Ki = DK(base-key, usage | 0x55);
-            var Ki = this.DK(key, usageBytes + '\x55');
+            constant[4] = 0x55;
+            var Ki = this.DK(key, constant);
             return {
-                C: new sjcl.misc.hmac(sjcl_byteString.toBits(Kc),
+                C: new sjcl.misc.hmac(arrayutils.toSJCL(Kc),
                                       simpleProfile.unkeyedHash),
                 // FIXME: Cache the profile-specific key object
                 // here. AES does a fair amount of precomputation. Not
                 // quite as easy as putting it in randomToKey as
                 // that's called to make an HMAC key too.
                 E: Ke,
-                I: new sjcl.misc.hmac(sjcl_byteString.toBits(Ki),
+                I: new sjcl.misc.hmac(arrayutils.toSJCL(Ki),
                                       simpleProfile.unkeyedHash)
             };
         };
@@ -425,7 +430,7 @@ var kcrypto = (function() {
             return truncatedHmac(key.C, msg);
         };
         checksum.verifyMIC = function(key, msg, token) {
-            return token == this.getMIC(key, msg);
+            return arrayutils.equals(token, this.getMIC(key, msg));
         };
 
         enc.checksum = checksum;
@@ -438,12 +443,11 @@ var kcrypto = (function() {
         sumtype: kcrypto.sumtype.rsa_md5,
         checksumBytes: 16,
         getMIC: function (key, msg) {
-            msg = CryptoJS.enc.Latin1.parse(msg);
-            var hash = CryptoJS.MD5(msg);
-            return CryptoJS.enc.Latin1.stringify(hash);
+            return arrayutils.fromCryptoJS(
+                CryptoJS.MD5(arrayutils.toCryptoJS(msg)));
         },
         verifyMIC: function (key, msg, token) {
-            return token == this.getMIC(key, msg);
+            return arrayutils.equals(token, this.getMIC(key, msg));
         }
     };
 
@@ -459,14 +463,15 @@ var kcrypto = (function() {
             // remainder is not ones-complemented.
 
             // This seems to be correct. (It's also what pykrb5 does.)
-            var checksum = crc32(msg, 0xffffffff) ^ 0xffffffff;
-            // Get it into a string, little-endian.
-            return String.fromCharCode(checksum & 0xff,
-                                       (checksum >>> 8) & 0xff,
-                                       (checksum >>> 16) & 0xff,
-                                       (checksum >>> 24) & 0xff);
+            var checksum = crc32(arrayutils.toByteString(msg),
+                                 0xffffffff) ^ 0xffffffff;
+            // Get it into an array, little-endian.
+            var ret = new Uint8Array(4);
+            new DataView(ret.buffer).setUint32(0, checksum, true);
+            return ret;
         },
         verifyMIC: function (key, msg, token) {
+            // FIXME
             return token == this.getMIC(key, msg);
         }
     };
@@ -561,7 +566,7 @@ var kcrypto = (function() {
         // "parse" is a funny name. Apparently the input here is
         // JavaScript (UTF-16) string interpreted as UTF-8.
         var passwordUtf8 = CryptoJS.enc.Utf8.parse(password);
-        var saltUtf8 = CryptoJS.enc.Utf8.parse(salt);
+        var saltUtf8 = arrayutils.toCryptoJS(salt);
 
         var s = passwordUtf8.clone();
         s.concat(saltUtf8);
@@ -614,17 +619,15 @@ var kcrypto = (function() {
         // TODO: Add functions to the encryption profile to convert
         // between a key's OCTET STRING form and the native one. This is a
         // little silly.
-        return CryptoJS.enc.Latin1.stringify(key);
+        return arrayutils.fromCryptoJS(key);
     };
 
     function des_string_to_key(password, salt, params) {
-        if (params === undefined) params = "";
-
         var type;
-        if (params.length == 0) {
+        if (params === undefined || params.length == 0) {
             type = 0;
         } else if (params.length == 1) {
-            type = params.charCodeAt(0);
+            type = params[0];
         } else {
             throw new kcrypto.InvalidParameters("Bad string-to-key parameter");
         }
@@ -650,11 +653,9 @@ var kcrypto = (function() {
         };
         // profile.initialCipherState varies.
         profile.decrypt = function (key, state, data) {
-            key = CryptoJS.enc.Latin1.parse(key);
-            state = CryptoJS.enc.Latin1.parse(state);
-
-            // data is a String where only the last byte matters.
-            data = CryptoJS.enc.Latin1.parse(data);
+            key = arrayutils.toCryptoJS(key);
+            state = arrayutils.toCryptoJS(state);
+            data = arrayutils.toCryptoJS(data);
             var cipherParams = CryptoJS.lib.CipherParams.create({
                 ciphertext: data
             });
@@ -681,8 +682,9 @@ var kcrypto = (function() {
                 checksumData.words[2 + i] = 0;
             }
             if (!checksumProfile.verifyMIC(
-                key, CryptoJS.enc.Latin1.stringify(checksumData),
-                CryptoJS.enc.Latin1.stringify(checksum)))
+                key,
+                arrayutils.fromCryptoJS(checksumData),
+                arrayutils.fromCryptoJS(checksum)))
                 throw new kcrypto.DecryptionError('Checksum mismatch!');
 
             // New cipher state is the last block of the ciphertext.
@@ -690,13 +692,13 @@ var kcrypto = (function() {
                 [data.words[data.words.length - 2],
                  data.words[data.words.length - 1]]);
             return [
-                CryptoJS.enc.Latin1.stringify(state),
-                CryptoJS.enc.Latin1.stringify(message)
+                arrayutils.fromCryptoJS(state),
+                arrayutils.fromCryptoJS(message)
             ];
         };
         profile.encrypt = function (key, state, data) {
-            key = CryptoJS.enc.Latin1.parse(key);
-            state = CryptoJS.enc.Latin1.parse(state);
+            key = arrayutils.toCryptoJS(key);
+            state = arrayutils.toCryptoJS(state);
 
             // First, add a confounder and space for the checksum.
             var words = sjcl.random.randomWords(2);
@@ -706,7 +708,7 @@ var kcrypto = (function() {
 
             var plaintext = CryptoJS.lib.WordArray.create(words);
             // Now the message. It's our usual String-as-byte-array.
-            plaintext.concat(CryptoJS.enc.Latin1.parse(data));
+            plaintext.concat(arrayutils.toCryptoJS(data));
 
             // Pad with random gunk to 8 octets.
             var remainder = 8 - (plaintext.sigBytes % 8);
@@ -724,9 +726,9 @@ var kcrypto = (function() {
             // FIXME: This converts between string and WordArray a
             // lot. Perhaps we should just standardize on the latter, much
             // of a pain as it is to use sometimes.
-            var cksum = CryptoJS.enc.Latin1.parse(
+            var cksum = arrayutils.toCryptoJS(
                 checksumProfile.getMIC(
-                    key, CryptoJS.enc.Latin1.stringify(plaintext)));
+                    key, arrayutils.fromCryptoJS(plaintext)));
             for (var i = 0; i < checksumWords; i++) {
                 plaintext.words[2 + i] = cksum.words[i];
             }
@@ -740,8 +742,8 @@ var kcrypto = (function() {
                 [encrypted.ciphertext[encrypted.ciphertext.words.length - 2],
                  encrypted.ciphertext[encrypted.ciphertext.words.length - 1]]);
             return [
-                CryptoJS.enc.Latin1.stringify(state),
-                CryptoJS.enc.Latin1.stringify(encrypted.ciphertext)
+                arrayutils.fromCryptoJS(state),
+                arrayutils.fromCryptoJS(encrypted.ciphertext)
             ];
         };
         return profile;
@@ -753,31 +755,32 @@ var kcrypto = (function() {
         checksumBytes: 24,
         getMIC: function (key, msg) {
             // XOR key with 0xf0f0f0f0f0f0f0f0
-            key = CryptoJS.enc.Latin1.parse(key);
+            key = arrayutils.toCryptoJS(key);
             for (var i = 0; i < key.words.length; i++) {
                 key.words[i] = key.words[i] ^ 0xf0f0f0f0;
             }
             // 8 octet confounder
-            var conf = CryptoJS.lib.WordArray.create(sjcl.random.randomWords(2));
+            var conf = CryptoJS.lib.WordArray.create(
+                sjcl.random.randomWords(2));
 
             // rsa-md5(conf | msg)
             var hashInput = conf.clone();
-            hashInput.concat(CryptoJS.enc.Latin1.parse(msg));
+            hashInput.concat(arrayutils.toCryptoJS(msg));
             var hash = CryptoJS.MD5(hashInput);
 
             // And encrypt conf|hash with DES, IV of zero.
             conf.concat(hash);
             var iv = CryptoJS.lib.WordArray.create([0, 0]);
 
-            return CryptoJS.enc.Latin1.stringify(
+            return arrayutils.fromCryptoJS(
                 CryptoJS.DES.encrypt(
                     conf, key, { iv: iv, padding: CryptoJS_NoPadding }
                 ).ciphertext);
         },
         verifyMIC: function (key, msg, token) {
             // XOR key with 0xf0f0f0f0f0f0f0f0
-            key = CryptoJS.enc.Latin1.parse(key);
-            token = CryptoJS.enc.Latin1.parse(token);
+            key = arrayutils.toCryptoJS(key);
+            token = arrayutils.toCryptoJS(token);
             for (var i = 0; i < key.words.length; i++) {
                 key.words[i] = key.words[i] ^ 0xf0f0f0f0;
             }
@@ -789,8 +792,9 @@ var kcrypto = (function() {
                 key, { iv: iv, padding: CryptoJS_NoPadding });
 
             // Check the checksum.
-            var hashIn = CryptoJS.lib.WordArray.create(decrypted.words.slice(0, 2));
-            hashIn.concat(CryptoJS.enc.Latin1.parse(msg));
+            var hashIn = CryptoJS.lib.WordArray.create(
+                decrypted.words.slice(0, 2));
+            hashIn.concat(arrayutils.toCryptoJS(msg));
             var hash = CryptoJS.lib.WordArray.create(decrypted.slice(2));
             return hash.toString() == CryptoJS.MD5(hashIn).toString();
         }
@@ -814,17 +818,13 @@ var kcrypto = (function() {
 
     // RFC 3962  Advanced Encryption Standard (AES) Encryption for Kerberos 5
     function aesStringToKey(pass, salt, param, profile) {
-        if (param == undefined) param = "\x00\x00\x10\x00";
+        if (param == undefined) param = new Uint8Array([0x00,0x00,0x10,0x00]);
         if (param.length != 4)
             throw new kcrypto.InvalidParameters("Bad string-to-key parameter");
         // Parameter is iteration count.
-        var iterCount = param.charCodeAt(0);
-        iterCount *= 256;
-        iterCount += param.charCodeAt(1);
-        iterCount *= 256;
-        iterCount += param.charCodeAt(2);
-        iterCount *= 256;
-        iterCount += param.charCodeAt(3);
+        var iterCount = new DataView(param.buffer,
+                                     param.byteOffset,
+                                     param.byteLength).getUint32(0);
         if (iterCount == 0)
             iterCount = 4294967296;
         // Pass SHA-1 instead of SHA-256 into hmac constructor.
@@ -833,54 +833,54 @@ var kcrypto = (function() {
         }
         sha1Hmac.prototype = sjcl.misc.hmac.prototype;
         var tkey = this.randomToKey(
-            sjcl_byteString.fromBits(
+            arrayutils.fromSJCL(
                 sjcl.misc.pbkdf2(
                     sjcl.codec.utf8String.toBits(pass),
-                    sjcl.codec.utf8String.toBits(salt),
+                    arrayutils.toSJCL(salt),
                     iterCount, this.keyGenerationSeedLength, sha1Hmac)));
-        return profile.DK(tkey, "kerberos");
+        return profile.DK(tkey, arrayutils.fromByteString("kerberos"));
     }
     function aesCtsEncrypt(key, state, plaintext) {
-        var aes = new sjcl.cipher.aes(sjcl_byteString.toBits(key));
-        var stateBits = sjcl_byteString.toBits(state);
-        var plaintextBits = sjcl_byteString.toBits(plaintext);
+        var aes = new sjcl.cipher.aes(arrayutils.toSJCL(key));
+        var stateBits = arrayutils.toSJCL(state);
+        var plaintextBits = arrayutils.toSJCL(plaintext);
         if (plaintextBits.length <= 4) {
             // Can't do CBC-CTS. Just pad arbitrarily and encrypt
             // plain. Apparently you don't even xor the iv.
             pad128(plaintextBits);
-            var outputStr = sjcl_byteString.fromBits(
-                aes.encrypt(plaintextBits));
-            return [outputStr, outputStr];
+            var output = arrayutils.fromSJCL(aes.encrypt(plaintextBits));
+            return [output, output];
         } else {
-            var output = cbcCtsMode.encrypt(aes, plaintextBits, stateBits);
+            var outputBits = cbcCtsMode.encrypt(aes, plaintextBits, stateBits);
             // State is second-to-last chunk.
-            var outLength = output.length;
+            var outLength = outputBits.length;
             if (outLength % 4 != 0)
                 outLength += 4 - (outLength % 4);
-            var newState = output.slice(outLength - 8, outLength - 4);
+            var newState = outputBits.slice(outLength - 8, outLength - 4);
             return [
-                sjcl_byteString.fromBits(newState),
-                sjcl_byteString.fromBits(output)
+                arrayutils.fromSJCL(newState),
+                arrayutils.fromSJCL(outputBits)
             ];
         }
     }
     kcrypto.aesCtsEncrypt = aesCtsEncrypt;  // Exported for tests.
     function aesCtsDecrypt(key, state, ciphertext) {
-        var aes = new sjcl.cipher.aes(sjcl_byteString.toBits(key));
-        var stateBits = sjcl_byteString.toBits(state);
-        var ciphertextBits = sjcl_byteString.toBits(ciphertext);
+        var aes = new sjcl.cipher.aes(arrayutils.toSJCL(key));
+        var stateBits = arrayutils.toSJCL(state);
+        var ciphertextBits = arrayutils.toSJCL(ciphertext);
         if (ciphertextBits.length <= 4) {
             if (sjcl.bitArray.bitLength(ciphertextBits) != 128)
                 throw new kcrypto.DecryptionError("Bad length");
             try {
-                var outputStr = sjcl_byteString.fromBits(
-                    aes.decrypt(ciphertextBits));
+                return [
+                    ciphertext,
+                    arrayutils.fromSJCL(aes.decrypt(ciphertextBits))
+                ];
             } catch (e) {
                 if (e instanceof sjcl.exception.corrupt)
                     throw new kcrypto.DecryptionError(e.message);
                 throw e;
             }
-            return [ciphertext, outputStr];
         } else {
             var output = cbcCtsMode.decrypt(aes, ciphertextBits, stateBits);
             // State is second-to-last chunk.
@@ -889,8 +889,8 @@ var kcrypto = (function() {
                 outLength += 4 - (outLength % 4);
             var newState = ciphertextBits.slice(outLength - 8, outLength - 4);
             return [
-                sjcl_byteString.fromBits(newState),
-                sjcl_byteString.fromBits(output)
+                arrayutils.fromSJCL(newState),
+                arrayutils.fromSJCL(output)
             ];
         }
     }

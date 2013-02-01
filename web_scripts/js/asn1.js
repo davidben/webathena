@@ -35,7 +35,7 @@ asn1.Error.prototype.toString = function() {
  *     TAG_PRIMITIVE.
  * @return {number} A tag number representing the tag.
  */
-asn1.tag = function (number, cls, pc) {
+asn1.tag = function(number, cls, pc) {
     if (cls === undefined)
         cls = asn1.TAG_CONTEXT;
     if (pc === undefined)
@@ -46,51 +46,95 @@ asn1.tag = function (number, cls, pc) {
     return (number | cls | pc);
 };
 
+/**
+ * A growable array, like std::vector. But you prepend to the array
+ * instead of append because DER is most naturally encoded in reverse.
+ *
+ * @constructor
+ */
+asn1.Buffer = function() {
+    this.buffer = new Uint8Array(10);
+    this.start = 10;
+};
+asn1.Buffer.prototype.reserve = function(size) {
+    if (this.start >= size)
+        return;
+    // Double the size until there's room.
+    var targetSize = size - this.start + this.buffer.byteLength;
+    var newSize = this.buffer.byteLength;
+    while (newSize < targetSize) {
+        newSize *= 2;
+    }
+    // Allocate a new buffer and copy the old contents.
+    var newBuffer = new Uint8Array(newSize);
+    newBuffer.set(this.buffer, newSize - this.buffer.byteLength);
+    this.start += newSize - this.buffer.byteLength;
+    this.buffer = newBuffer;
+};
+asn1.Buffer.prototype.prepend = function(octet) {
+    this.reserve(1);
+    this.start -= 1;
+    this.buffer[this.start] = octet;
+    return 1;
+};
+asn1.Buffer.prototype.prependBytes = function(buffer) {
+    buffer = arrayutils.asUint8Array(buffer);
+    this.reserve(buffer.length);
+    this.start -= buffer.length;
+    this.buffer.set(buffer, this.start);
+    return buffer.length;
+};
+asn1.Buffer.prototype.contents = function() {
+    return this.buffer.subarray(this.start);
+};
 
 /**
  * DER-encodes an ASN.1 tag.
  *
  * @param {number} tag The tag to encode.
- * @return {string} The DER-encoded tag.
+ * @param {asn1.Buffer} buffer The buffer to prepend into.
+ * @return {number} The bytes prepended.
  */
-asn1.encodeTagDER = function (tag) {
-    return String.fromCharCode(tag);
+asn1.encodeTagDER = function(tag, buffer) {
+    return buffer.prepend(tag);
 };
 
 /**
  * Encodes a length in a DER TLV tuple.
  *
  * @param {number} length The length to encode.
- * @return {string} The DER-encoded length.
+ * @param {asn1.Buffer} buffer The buffer to prepend into.
+ * @return {number} The bytes prepended.
  */
-asn1.encodeLengthDER = function (length) {
+asn1.encodeLengthDER = function(length, buffer) {
     if (length <= 127) {
         // Short form must be used when possible.
-        return String.fromCharCode(length);
+        return buffer.prepend(length);
     }
-    // First, encode in base 256.
-    var ret = "";
+    // First, encode in base 256, big-endian.
+    var bytes = 0;
     while (length > 0) {
-        ret = String.fromCharCode(length & 0xff) + ret;
+        buffer.prepend(length & 0xff);
         length = length >> 8;
+        bytes++;
     }
     // Prepend the number of bytes used.
-    ret = String.fromCharCode(ret.length | 0x80) + ret;
-    return ret;
+    buffer.prepend(bytes | 0x80);
+    return bytes + 1;
 };
 
 /**
  * Decodes an ASN.1 TLV tuple.
  *
- * @param {string} data The data to decode.
+ * @param {ArrayBufferView} data The data to decode.
  * @return {Array} A tuple [tag, value, rest] containing the tag as a
  *    Number, the value as a String, and the unread data as a String.
  */
-asn1.decodeTagLengthValueDER = function (data) {
+asn1.decodeTagLengthValueDER = function(data) {
     var off = 0;
 
     // First octet describes the tag.
-    var tagOctet = data.charCodeAt(off);
+    var tagOctet = data[off];
     var tagNumber = tagOctet & 0x1f;
     var tagPc = tagOctet & (0x1 << 5);
     var tagCls = tagOctet & (0x3 << 6);
@@ -100,7 +144,7 @@ asn1.decodeTagLengthValueDER = function (data) {
     off++;
 
     // Now decode the length.
-    var lengthOctet = data.charCodeAt(off);
+    var lengthOctet = data[off];
     var length = 0;
     off++;
     if ((lengthOctet & 0x80) == 0) {
@@ -115,14 +159,15 @@ asn1.decodeTagLengthValueDER = function (data) {
         var numOctets = lengthOctet & 0x7f;
         for (var i = 0; i < numOctets; i++, off++) {
             length *= 256;
-            length += data.charCodeAt(off);
+            length += data[off];
         }
     }
 
     // And return everything.
     if (off + length > data.length)
         throw new asn1.Error("Length too large!");
-    return [tag, data.substr(off, length), data.substr(off + length)];
+    return [tag, data.subarray(off, off + length),
+            data.subarray(off + length)];
 }
 
 
@@ -135,7 +180,7 @@ asn1.decodeTagLengthValueDER = function (data) {
  * @param {boolean=} primitive If the type is primitive.
  * @constructor
  */
-asn1.Type = function (tag, primitive) {
+asn1.Type = function(tag, primitive) {
     this.primitive = primitive ? true : false;
     if (!this.primitive)
         tag |= asn1.TAG_CONSTRUCTED;
@@ -145,17 +190,27 @@ asn1.Type = function (tag, primitive) {
 /**
  * DER-encodes an object according to this type.
  *
- * @param {Object} object The object to encode.
+ * @param {*} object The object to encode.
  * @return {string} The encoding of the object.
  */
-asn1.Type.prototype.encodeDER = function (object) {
-    var value = this.encodeDERValue(object);
+asn1.Type.prototype.encodeDER = function(object) {
+    var buffer = new asn1.Buffer();
+    this.encodeDERTriple(object, buffer);
+    return buffer.contents();
+};
 
-    var out = []
-    out.push(asn1.encodeTagDER(this.tag));
-    out.push(asn1.encodeLengthDER(value.length));
-    out.push(value);
-    return out.join("");
+/**
+ * DER-encodes an object according to this type.
+ *
+ * @param {*} object The object to encode.
+ * @param {asn1.Buffer} buffer The buffer to prepend into.
+ * @return {number} The bytes prepended.
+ */
+asn1.Type.prototype.encodeDERTriple = function(object, buffer) {
+    var bytes = this.encodeDERValue(object, buffer);
+    bytes += asn1.encodeLengthDER(bytes, buffer);
+    bytes += asn1.encodeTagDER(this.tag, buffer);
+    return bytes;
 };
 
 /**
@@ -163,12 +218,12 @@ asn1.Type.prototype.encodeDER = function (object) {
  * exception if the entire data isn't read.
  *
  * @param {string} data The data to decode.
- * @return {Object} The decoded object.
+ * @return {*} The decoded object.
  */
-asn1.Type.prototype.decodeDER = function (data) {
+asn1.Type.prototype.decodeDER = function(data) {
     var objRest = this.decodeDERPrefix(data);
     var obj = objRest[0], rest = objRest[1];
-    if (rest.length != 0)
+    if (rest.byteLength != 0)
         throw new asn1.Error("Excess data!");
     return obj;
 };
@@ -176,10 +231,13 @@ asn1.Type.prototype.decodeDER = function (data) {
 /**
  * Decodes DER-encoded data according to this type.
  *
- * @param {string} data The data to decode.
+ * @param {ArrayBufferView} data The data to decode.
  * @return {Array} A tuple of the decoded object and the unread data.
  */
-asn1.Type.prototype.decodeDERPrefix = function (data) {
+asn1.Type.prototype.decodeDERPrefix = function(data) {
+    // Only cast to Uint8Array here. The other entry points aren't
+    // really public, so they'll assume Uint8Array.
+    data = new Uint8Array(data);
     var tvr = asn1.decodeTagLengthValueDER(data);
     var tag = tvr[0], value = tvr[1], rest = tvr[2];
     if (tag != this.tag)
@@ -194,7 +252,7 @@ asn1.Type.prototype.decodeDERPrefix = function (data) {
  * @return {asn1.ExplicitlyTagged} An explicitly tagged version of
  *     this.
  */
-asn1.Type.prototype.tagged = function (tag) {
+asn1.Type.prototype.tagged = function(tag) {
     return new asn1.ExplicitlyTagged(tag, this);
 };
 
@@ -205,7 +263,7 @@ asn1.Type.prototype.tagged = function (tag) {
  * @return {asn1.ImplicitlyTagged} An implicitly tagged version of
  *     this.
  */
-asn1.Type.prototype.implicitlyTagged = function (tag) {
+asn1.Type.prototype.implicitlyTagged = function(tag) {
     return new asn1.ImplicitlyTagged(tag, this);
 };
 
@@ -216,15 +274,15 @@ asn1.Type.prototype.implicitlyTagged = function (tag) {
  *     a value is invalid.
  * @return {asn1.Type} An constrained version of this.
  */
-asn1.Type.prototype.constrained = function (checkValue) {
+asn1.Type.prototype.constrained = function(checkValue) {
     var newType = this.subtype();
     var self = this;
 
-    newType.encodeDERValue = function (object) {
+    newType.encodeDERValue = function(object, buffer) {
         checkValue.call(this, object);
-        return self.encodeDERValue(object);
+        return self.encodeDERValue(object, buffer);
     }
-    newType.decodeDERValue = function (data) {
+    newType.decodeDERValue = function(data) {
         var object = self.decodeDERValue(data);
         checkValue.call(this, object);
         return object;
@@ -237,7 +295,7 @@ asn1.Type.prototype.constrained = function (checkValue) {
  *
  * @return {asn1.Type} A subtype of this type.
  */
-asn1.Type.prototype.subtype = function () {
+asn1.Type.prototype.subtype = function() {
     return Object.create(this);
 };
 
@@ -249,17 +307,17 @@ asn1.Type.prototype.subtype = function () {
  * @param {asn1.Type} baseType The type to tag.
  * @constructor
  */
-asn1.ExplicitlyTagged = function (tag, baseType) {
+asn1.ExplicitlyTagged = function(tag, baseType) {
     asn1.Type.call(this, tag, false);
     this.baseType = baseType;
 };
 asn1.ExplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
 
-asn1.ExplicitlyTagged.prototype.encodeDERValue = function (object) {
-    return this.baseType.encodeDER(object);
+asn1.ExplicitlyTagged.prototype.encodeDERValue = function(object, buffer) {
+    return this.baseType.encodeDERTriple(object, buffer);
 };
 
-asn1.ExplicitlyTagged.prototype.decodeDERValue = function (data) {
+asn1.ExplicitlyTagged.prototype.decodeDERValue = function(data) {
     return this.baseType.decodeDER(data);
 };
 
@@ -271,17 +329,17 @@ asn1.ExplicitlyTagged.prototype.decodeDERValue = function (data) {
  * @param {asn1.Type} baseType The type to tag.
  * @constructor
  */
-asn1.ImplicitlyTagged = function (tag, baseType) {
+asn1.ImplicitlyTagged = function(tag, baseType) {
     asn1.Type.call(this, tag, baseType.primitive);
     this.baseType = baseType;
 };
 asn1.ImplicitlyTagged.prototype = Object.create(asn1.Type.prototype);
 
-asn1.ImplicitlyTagged.prototype.encodeDERValue = function (object) {
-    return this.baseType.encodeDERValue(object);
+asn1.ImplicitlyTagged.prototype.encodeDERValue = function(object, buffer) {
+    return this.baseType.encodeDERValue(object, buffer);
 };
 
-asn1.ImplicitlyTagged.prototype.decodeDERValue = function (data) {
+asn1.ImplicitlyTagged.prototype.decodeDERValue = function(data) {
     return this.baseType.decodeDERValue(data);
 };
 
@@ -289,22 +347,22 @@ asn1.ImplicitlyTagged.prototype.decodeDERValue = function (data) {
 /** ASN.1 BOOLEAN type. */
 asn1.BOOLEAN = new asn1.Type(asn1.tag(0x01, asn1.TAG_UNIVERSAL), true);
 
-asn1.BOOLEAN.encodeDERValue = function(object) {
+asn1.BOOLEAN.encodeDERValue = function(object, buffer) {
     if (typeof object != "boolean")
         throw new TypeError("boolean");
-    return object ? "\xFF" : "\x00";
-}
+    return buffer.prepend(object ? 0xff : 0x00);
+};
 
 asn1.BOOLEAN.decodeDERValue = function(data) {
-    return data !== "\x00";
-}
+    return data[0] !== 0x00;
+};
 
 
 /** ASN.1 INTEGER type. */
 asn1.INTEGER = new asn1.Type(asn1.tag(0x02, asn1.TAG_UNIVERSAL), true);
 
-asn1.INTEGER.encodeDERValue = function (object) {
-    var ret = [];
+asn1.INTEGER.encodeDERValue = function(object, buffer) {
+    var bytes = 0;
     var sign = 0;
     if (typeof object != "number")
         throw new TypeError("Not a number");
@@ -313,21 +371,20 @@ asn1.INTEGER.encodeDERValue = function (object) {
     while ((object >= 0 && (sign != 1 || object > 0)) ||
            (object <= -1 && (sign != -1 || object < -1))) {
         var digit = object & 0xff;
-        ret.push(String.fromCharCode(digit));
+        bytes += buffer.prepend(digit);
         sign = (digit & 0x80) ? -1 : 1;
         object = object >> 8;
     }
-    ret.reverse();
-    return ret.join('');
+    return bytes;
 };
 
-asn1.INTEGER.decodeDERValue = function (data) {
-    var ret = data.charCodeAt(0);
+asn1.INTEGER.decodeDERValue = function(data) {
+    var ret = data[0];
     if (ret > 127)
         ret = ret - 256;
     for (var i = 1; i < data.length; i++) {
         ret *= 256;
-        ret += data.charCodeAt(i);
+        ret += data[i];
     }
     return ret;
 };
@@ -336,13 +393,13 @@ asn1.INTEGER.decodeDERValue = function (data) {
  * @this {asn1.Type}
  * @return {asn1.Type}
  */
-asn1.INTEGER.valueConstrained = function () {
+asn1.INTEGER.valueConstrained = function() {
     var allowed = [];
     for (var i = 0; i < arguments.length; i++) {
         allowed.push(arguments[i]);
     }
 
-    return this.constrained(function (v) {
+    return this.constrained(function(v) {
         if (allowed.indexOf(v) == -1)
             throw new RangeError("Invalid value: " + v);
     });
@@ -352,8 +409,8 @@ asn1.INTEGER.valueConstrained = function () {
  * @this {asn1.Type}
  * @return {asn1.Type}
  */
-asn1.INTEGER.rangeConstrained = function (lo, hi) {
-    return this.constrained(function (v) {
+asn1.INTEGER.rangeConstrained = function(lo, hi) {
+    return this.constrained(function(v) {
         if (v < lo || v > hi)
             throw new RangeError("Invalid value: " + v);
     });
@@ -366,28 +423,28 @@ asn1.INTEGER.rangeConstrained = function (lo, hi) {
  */
 asn1.BIT_STRING = new asn1.Type(asn1.tag(0x03, asn1.TAG_UNIVERSAL), true);
 
-asn1.BIT_STRING.encodeDERValue = function (object) {
+asn1.BIT_STRING.encodeDERValue = function(object, buffer) {
     var remainder = 8 - (object.length % 8);
     if (remainder == 8) remainder = 0;
 
-    var ret = [];
-    ret.push(String.fromCharCode(remainder));
-    for (var i = 0; i < object.length; i += 8) {
+    var bytes = 0;
+    for (var i = object.length + remainder - 8; i >= 0; i -= 8) {
         var octet = 0;
         // Bit zero ends up in the high-order bit of the first octet.
         for (var j = 0; j < 8; j++) {
             octet |= (object[i + j] || 0) << (7-j);
         }
-        ret.push(String.fromCharCode(octet));
+        bytes += buffer.prepend(octet);
     }
-    return ret.join("");
+    bytes += buffer.prepend(remainder);
+    return bytes;
 };
 
-asn1.BIT_STRING.decodeDERValue = function (data) {
-    var remainder = data.charCodeAt(0);
+asn1.BIT_STRING.decodeDERValue = function(data) {
+    var remainder = data[0];
     var ret = [];
     for (var i = 1; i < data.length; i++) {
-        var octet = data.charCodeAt(i);
+        var octet = data[i];
         for (var j = 7; j >= 0; j--) {
             ret.push((octet & (1 << j)) ? 1 : 0);
         }
@@ -400,27 +457,28 @@ asn1.BIT_STRING.decodeDERValue = function (data) {
 /** ASN.1 OCTET STRING type. */
 asn1.OCTET_STRING = new asn1.Type(asn1.tag(0x04, asn1.TAG_UNIVERSAL), true);
 
-asn1.OCTET_STRING.encodeDERValue = function (object) {
-    if (typeof object != "string")
-        throw new TypeError("Not a string");
-    return object;
+asn1.OCTET_STRING.encodeDERValue = function(object, buffer) {
+    // Apparently this isn't exposed everywhere. Sigh.
+    if (window.ArrayBufferView && !object instanceof ArrayBufferView)
+        throw new TypeError("Not an array buffer");
+    return buffer.prepend(object);
 };
 
-asn1.OCTET_STRING.decodeDERValue = function (data) {
-    return String(data);
+asn1.OCTET_STRING.decodeDERValue = function(data) {
+    return new Uint8Array(data);
 };
 
 
 /** ASN.1 NULL type. */
 asn1.NULL = new asn1.Type(asn1.tag(0x05, asn1.TAG_UNIVERSAL), true);
 
-asn1.NULL.encodeDERValue = function (object) {
+asn1.NULL.encodeDERValue = function(object, buffer) {
     if (object !== null)
         throw new TypeError("Bad value");
-    return "";
+    return 0;
 };
 
-asn1.NULL.decodeDERValue = function (data) {
+asn1.NULL.decodeDERValue = function(data) {
     if (data.length > 0)
         throw new asn1.Error("Bad encoding");
     return null;
@@ -433,7 +491,7 @@ asn1.NULL.decodeDERValue = function (data) {
 asn1.OBJECT_IDENTIFIER = new asn1.Type(asn1.tag(0x06, asn1.TAG_UNIVERSAL),
                                        true);
 
-asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object) {
+asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object, buffer) {
     if (typeof object !== "string")
         throw new TypeError("Not a string");
     var components = object.split(".");
@@ -444,28 +502,27 @@ asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object) {
     for (var i = 2; i < components.length; i++) {
         subidentifiers.push(Number(components[i]));
     }
-    var ret = [];
-    // Subidentifiers are encoded big-endian. Encode the whole thing
-    // in reverse and flip at the end.
+    // Subidentifiers are encoded big-endian, but we encode in
+    // reverse.
+    var bytes = 0;
     for (var i = subidentifiers.length - 1; i >= 0; i--) {
         // Base 128, big endian. All but last octet has MSB 1.
         var c = subidentifiers[i];
-        ret.push(String.fromCharCode(c & 0x7f));
+        bytes += buffer.prepend(c & 0x7f);
         c >>>= 7;
         while (c > 0) {
-            ret.push(String.fromCharCode((c & 0x7f) | 0x80));
+            bytes += buffer.prepend((c & 0x7f) | 0x80);
             c >>>= 7;
         }
     }
-    ret.reverse();
-    return ret.join("");
+    return bytes;
 };
 
 asn1.OBJECT_IDENTIFIER.decodeDERValue = function(data) {
     var c = 0;
     var subidentifiers = [];
     for (var i = 0; i < data.length; i++) {
-        var octet = data.charCodeAt(i);
+        var octet = data[i];
         c *= 128;
         c += (octet & 0x7f);
         if (!(octet & 0x80)) {
@@ -498,18 +555,15 @@ asn1.OBJECT_IDENTIFIER.decodeDERValue = function(data) {
  */
 asn1.GeneralString = new asn1.Type(asn1.tag(0x1b, asn1.TAG_UNIVERSAL), true);
 
-asn1.GeneralString.encodeDERValue = function (object) {
+asn1.GeneralString.encodeDERValue = function(object, buffer) {
     if (typeof object != "string")
         throw new TypeError("Not a string");
-    // That this is the best way to convert UTF-16 to UTF-8 on the web
-    // platform is ridiculous. We going to get TextEncoder implemented
-    // any time soon?
-    return unescape(encodeURIComponent(object));
+    return buffer.prependBytes(arrayutils.fromUTF16(object));
 };
 
-asn1.GeneralString.decodeDERValue = function (data) {
+asn1.GeneralString.decodeDERValue = function(data) {
     try {
-        return decodeURIComponent(escape(data));
+        return arrayutils.toUTF16(data);
     } catch (e) {
         if (e instanceof URIError)
             throw new asn1.Error("Invalid UTF-8 string");
@@ -521,7 +575,7 @@ asn1.GeneralString.decodeDERValue = function (data) {
 /** ASN.1 GeneralizedTime type. */
 asn1.GeneralizedTime = new asn1.Type(asn1.tag(0x18, asn1.TAG_UNIVERSAL), true);
 
-asn1.GeneralizedTime.encodeDERValue = function (object) {
+asn1.GeneralizedTime.encodeDERValue = function(object, buffer) {
     function pad(number, len) {
         if (len == undefined) len = 2;
         var r = String(number);
@@ -544,12 +598,12 @@ asn1.GeneralizedTime.encodeDERValue = function (object) {
         ret += "." + ms;
     }
     ret += "Z";
-    return ret;
+    return buffer.prependBytes(arrayutils.fromByteString(ret));
 };
 
-asn1.GeneralizedTime.decodeDERValue = function (data) {
+asn1.GeneralizedTime.decodeDERValue = function(data) {
     var re = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\.(\d{1,3}))?Z$/;
-    var match = String(data).match(re);
+    var match = arrayutils.toByteString(data).match(re);
     if (!match)
         throw new asn1.Error("Bad date format");
     var date = new Date(Date.UTC(Number(match[1]),
@@ -574,21 +628,21 @@ asn1.GeneralizedTime.decodeDERValue = function (data) {
  * @param {asn1.Type} componentType The type we are sequencing.
  * @constructor
  */
-asn1.SEQUENCE_OF = function (componentType) {
+asn1.SEQUENCE_OF = function(componentType) {
     asn1.Type.call(this, asn1.tag(0x10, asn1.TAG_UNIVERSAL), false);
     this.componentType = componentType;
 };
 asn1.SEQUENCE_OF.prototype = Object.create(asn1.Type.prototype);
 
-asn1.SEQUENCE_OF.prototype.encodeDERValue = function (object) {
-    var out = [];
-    for (var i = 0; i < object.length; i++) {
-        out.push(this.componentType.encodeDER(object[i]));
+asn1.SEQUENCE_OF.prototype.encodeDERValue = function(object, buffer) {
+    var bytes = 0;
+    for (var i = object.length - 1; i >= 0; i--) {
+        bytes += this.componentType.encodeDERTriple(object[i], buffer);
     }
-    return out.join("");
+    return bytes;
 };
 
-asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
+asn1.SEQUENCE_OF.prototype.decodeDERValue = function(data) {
     var ret = [];
     while (data.length) {
         var objRest = this.componentType.decodeDERPrefix(data);
@@ -616,30 +670,31 @@ asn1.SEQUENCE_OF.prototype.decodeDERValue = function (data) {
  *
  * Optional types are supported. Defaults are not for now.
  *
- * @param {Object} componentSpec A specification of the sequence's
+ * @param {Array.<Object>} componentSpec A specification of the sequence's
  *     components, as described above.
  * @constructor
  */
-asn1.SEQUENCE = function (componentSpec) {
+asn1.SEQUENCE = function(componentSpec) {
     asn1.Type.call(this, asn1.tag(0x10, asn1.TAG_UNIVERSAL), false);
     this.componentSpec = componentSpec;
 };
 asn1.SEQUENCE.prototype = Object.create(asn1.Type.prototype);
 
-asn1.SEQUENCE.prototype.encodeDERValue = function (object) {
-    var out = [];
-    for (var i = 0; i < this.componentSpec.length; i++) {
+asn1.SEQUENCE.prototype.encodeDERValue = function(object, buffer) {
+    var bytes = 0;
+    for (var i = this.componentSpec.length - 1; i >= 0; i--) {
         var id = this.componentSpec[i].id;
         if (id in object) {
-            out.push(this.componentSpec[i].type.encodeDER(object[id]));
+            bytes += this.componentSpec[i].type.encodeDERTriple(object[id],
+                                                                buffer);
         } else if (!this.componentSpec[i].optional) {
             throw new TypeError("Field " + id + " missing!");
         }
     }
-    return out.join("");
+    return bytes;
 };
 
-asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
+asn1.SEQUENCE.prototype.decodeDERValue = function(data) {
     var ret = {};
     var nextSpec = 0;
     while (data.length) {
@@ -689,20 +744,20 @@ asn1.SEQUENCE.prototype.decodeDERValue = function (data) {
  * @param {Array.<asn1.Type>} choices A list of possible types.
  * @constructor
  */
-asn1.CHOICE = function (choices) {
+asn1.CHOICE = function(choices) {
     // This thing is a hack, so it doesn't call the ctor.
     this.choices = choices;
 };
 asn1.CHOICE.prototype = Object.create(asn1.Type.prototype);
 
-asn1.CHOICE.prototype.encodeDER = function (object) {
+asn1.CHOICE.prototype.encodeDERTriple = function(object, buffer) {
     var type = object[0], realObj = object[1];
     if (this.choices.indexOf(type) == -1)
 	throw new TypeError("Invalid type");
-    return type.encodeDER(realObj);
+    return type.encodeDERTriple(realObj, buffer);
 };
 
-asn1.CHOICE.prototype.decodeDERPrefix = function (data) {
+asn1.CHOICE.prototype.decodeDERPrefix = function(data) {
     // Peek ahead at the tag.
     var tvr = asn1.decodeTagLengthValueDER(data);
     var tag = tvr[0], value = tvr[1], rest = tvr[2];
