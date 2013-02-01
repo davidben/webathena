@@ -8,7 +8,7 @@ TMPFILE=$(mktemp /tmp/compiler.tgz.XXXX)
 
 echo "Downloading closure-compiler $VERSION"
 curl "$URL" > "$TMPFILE"
-tar -tzf "$TMPFILE" compiler.jar
+tar -xzf "$TMPFILE" compiler.jar
 # Bleh.
 touch compiler.jar
 
