@@ -92,23 +92,30 @@ var gss = (function() {
      * do some sort of host canonicalization, that may want a promise
      * object from Q.
      *
-     * @param {string} data The input bytes.
+     * @param {ArrayBufferView|string} data The input bytes.
      * @param {string} nameType An OID for the name type.
      * @return {gss.Name} The resulting name.
      */
     gss.Name.importName = function(data, nameType) {
         if (nameType === gss.NT_EXPORT_NAME) {
+            // TODO: For sanity, importName should take a string for
+            // all the sane name types. Should we avoid type confusion
+            // and just force everything into a string?
+            data = arrayutils.asUint8Array(data);
+            var dataview = new DataView(data.buffer,
+                                        data.byteOffset,
+                                        data.byteLength);
             // Strip off the header.
             if (data.length < 4)
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad format");
-            if (data.substring(0, 2) != '\x04\x01')
+            if (dataview.getUint16(0) != 0x0401)
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad TOK_ID");
-            var mechOidLen = (data.charCodeAt(2) << 8) | data.charCodeAt(3);
+            var mechOidLen = dataview.getUint16(2);
             if (data.length < 4 + mechOidLen + 4)
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad format");
             try {
                 var mechOid = asn1.OBJECT_IDENTIFIER.decodeDER(
-                    data.substring(4, 4 + mechOidLen));
+                    data.subarray(4, 4 + mechOidLen));
             } catch (e) {
                 if (e instanceof asn1.Error)
                     throw new gss.Error(gss.S_BAD_NAME, 0, e.toString());
@@ -118,16 +125,12 @@ var gss = (function() {
             if (mechOid !== gss.KRB5_MECHANISM)
                 throw new gss.Error(gss.S_BAD_MECH, 0,
                                     "Only krb5 names supported");
-            var nameLen =
-                (data.charCodeAt(4 + mechOidLen) << 24) |
-                (data.charCodeAt(4 + mechOidLen + 1) << 16) |
-                (data.charCodeAt(4 + mechOidLen + 2) << 8) |
-                data.charCodeAt(4 + mechOidLen + 3);
+            var nameLen = dataview.getUint32(4 + mechOidLen);
             if (data.length != (4 + mechOidLen + 4 + nameLen))
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad length");
             try {
                 return new gss.Name(KDC.Principal.fromString(
-                    data.substring(4 + mechOidLen + 4)));
+                    arrayutils.toUTF16(data.subarray(4 + mechOidLen + 4))));
             } catch (e) {
                 throw new gss.Error(gss.S_BAD_NAME, 0, e);
             }
@@ -167,20 +170,23 @@ var gss = (function() {
     gss.Name.prototype.canonicalize = function() {
         // TODO
     };
-    /** @return {string} */
+    /** @return {Uint8Array} */
     gss.Name.prototype.exportName = function() {
-        var tokId = "\x04\x01";
-        var mechOid = asn1.OBJECT_IDENTIFIER.encodeDER(gss.KRB5_MECHANISM);
-        var mechOidLen = String.fromCharCode(
-            mechOid.length >>> 8,
-            mechOid.length & 0xff);
-        var name = this.principal.toString();
-        var nameLen = String.fromCharCode(
-            name.length >>> 24,
-            (name.length >>> 16) & 0xff,
-            (name.length >>> 8) & 0xff,
-            name.length & 0xff);
-        return tokId + mechOidLen + mechOid + nameLen + name;
+        // Build it backwards.
+        var b = new asn1.Buffer();
+        var nameLen =
+            b.prependBytes(arrayutils.fromUTF16(this.principal.toString()));
+        b.prepend(name.length & 0xff);
+        b.prepend((name.length >>> 16) & 0xff);
+        b.prepend((name.length >>> 8) & 0xff);
+        b.prepend(name.length >>> 24);
+        var mechOidLen =
+            asn1.OBJECT_IDENTIFIER.encodeDERTriple(gss.KRB5_MECHANISM, b);
+        b.prepend(mechOid.length >>> 8);
+        b.prepend(mechOid.length & 0xff);
+        // tokId is 0x04 0x01
+        b.prepend(0x01); b.prepend(0x04);
+        return b.contents();
     };
 
     var GSSAPI_TOKEN_TAG = 0x60;  // [APPLICATION 0]
