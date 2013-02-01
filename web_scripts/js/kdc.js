@@ -192,14 +192,18 @@ var KDC = (function() {
 	};
     };
     KDC.Key.prototype.toDict = function() {
+        // You can postMessage a typed array, but so that we can
+        // persist as JSON or not require polyfills, all IPCs transfer
+        // buffers as byte strings.
         return {
             keytype: this.keytype,
-            keyvalue: this.keyvalue
+            keyvalue: arrayutils.toByteString(this.keyvalue)
         };
     };
 
-    KDC.Key.fromDict = function (key) {
-	return new KDC.Key(key.keytype, key.keyvalue);
+    KDC.Key.fromDict = function(key) {
+	return new KDC.Key(key.keytype,
+                           arrayutils.fromByteString(key.keyvalue));
     };
     KDC.Key.fromPassword = function (keytype, password, salt, params) {
 	var encProfile = kcrypto.encProfiles[keytype];
@@ -472,36 +476,75 @@ var KDC = (function() {
         this.client = new KDC.Principal(asRep.cname, asRep.crealm);
         this.ticket = asRep.ticket;
 
-        function dateOrNull(d) {
-            return (d == null) ? null : new Date(d);
-        }
-
-        this.key = KDC.Key.fromDict(encRepPart.key);
+        this.key = new KDC.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
         this.flags = encRepPart.flags;
-        this.starttime = dateOrNull(encRepPart.starttime),
-        this.endtime = new Date(encRepPart.endtime);
-        this.renewTill = dateOrNull(encRepPart.renewTill);
+        this.starttime = encRepPart.starttime;
+        this.endtime = encRepPart.endtime;
+        this.renewTill = encRepPart.renewTill;
         this.service = new KDC.Principal(encRepPart.sname, encRepPart.srealm);
         this.caddr = encRepPart.caddr;
     };
 
     KDC.Session.fromDict = function (dict) {
-	return new KDC.Session(dict, dict);
+        function dateOrUndef(d) {
+            return (d == null) ? undefined : new Date(d);
+        }
+	return new KDC.Session({
+            crealm: dict.crealm,
+            cname: dict.cname,
+            ticket: {
+                tktVno: dict.ticket.tktVno,
+                realm: dict.ticket.realm,
+                sname: dict.ticket.sname,
+                encPart: {
+                    kvno: dict.ticket.encPart.kvno,
+                    etype: dict.ticket.encPart.etype,
+                    cipher: arrayutils.fromByteString(
+                        dict.ticket.encPart.cipher)
+                }
+            }
+        }, {
+            // Ugh. This really should use Key.fromDict. Need a
+            // different ctor for KDC.Session to avoid type confusion.
+            key: {
+                keytype: dict.key.keytype,
+                keyvalue: arrayutils.fromByteString(dict.key.keyvalue)
+            },
+            lastReq: dict.lastReq,
+            nonce: dict.nonce,
+            keyExpiration: dict.keyExpiration,
+            flags: dict.flags,
+            starttime: dateOrUndef(dict.starttime),
+            endtime: new Date(dict.endtime),
+            renewTill: dateOrUndef(dict.renewTill),
+            srealm: dict.srealm,
+            sname: dict.sname,
+            caddr: dict.caddr
+        });
     };
 
     KDC.Session.prototype.toDict = function() {
-        function getTimeOrNull(d) {
-            return (d == null) ? null : d.getTime();
+        function getTimeOrUndef(d) {
+            return (d == null) ? undefined : d.getTime();
         }
         return {
             crealm: this.client.realm,
             cname: this.client.principalName,
-            ticket: this.ticket,
+            ticket: {
+                tktVno: this.ticket.tktVno,
+                realm: this.ticket.realm,
+                sname: this.ticket.sname,
+                encPart: {
+                    kvno: this.ticket.encPart.kvno,
+                    etype: this.ticket.encPart.etype,
+                    cipher: arrayutils.toByteString(this.ticket.encPart.cipher)
+                }
+            },
             key: this.key.toDict(),
             flags: this.flags,
-            starttime: getTimeOrNull(this.starttime),
+            starttime: getTimeOrUndef(this.starttime),
             endtime: this.endtime.getTime(),
-            renewTill: getTimeOrNull(this.renewTill),
+            renewTill: getTimeOrUndef(this.renewTill),
             srealm: this.service.realm,
             sname: this.service.principalName,
             caddr: this.caddr
