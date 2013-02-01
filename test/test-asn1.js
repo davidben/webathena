@@ -14,9 +14,10 @@ function bytesToBitString(b, remainder) {
     return bits.slice(0, bits.length - remainder);
 }
 
-function isEncoding(type, input, output, msg) {
+function isEncoding(type, input, output, msg, equalityTest) {
+    equalityTest = equalityTest || deepEqual;
     output = arrayutils.fromByteString(output);
-    deepEqual(type.decodeDER(output), input, msg + " - decode");
+    equalityTest(type.decodeDER(output), input, msg + " - decode");
     arraysEqual(type.encodeDER(input), output, msg + " - encode");
 }
 
@@ -128,4 +129,21 @@ test("X.690 Annex A example (modified)", function() {
                "19571111\x30\x1f\x61\x11\x1b\x05Susan" +
                "\x1b\x01B\x1b\x05Jones\xa0\x0a\x43\x0819590717",
                "PersonnelRecord");
+});
+
+test("Extra tests", function() {
+    isEncoding(asn1.OCTET_STRING,
+               new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05]),
+               "\x04\x05\x01\x02\x03\x04\x05",
+               "OCTET STRING", arraysEqual);
+
+    isEncoding(asn1.GeneralizedTime,
+               new Date(Date.UTC(1990, 7, 3, 3, 14, 15)),
+               "\x18\x0f19900803031415Z",
+               "GeneralizedTime");
+
+    isEncoding(asn1.GeneralizedTime,
+               new Date(Date.UTC(1990, 7, 3, 3, 14, 15, 920)),
+               "\x18\x1219900803031415.92Z",
+               "GeneralizedTime with milliseconds");
 });
