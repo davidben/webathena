@@ -338,8 +338,10 @@ var kcrypto = (function() {
             // H1 = HMAC(Ki, conf | plaintext | pad)
             var h1 = truncatedHmac(derivedKey.I, data);
             // ciphertext =  C1 | H1[1..h]
+            var ciphertext = new Uint8Array(c1.length + h1.length);
+            ciphertext.set(c1); ciphertext.set(h1, c1.length);
             // newstate.ivec = newIV
-            return [newIV, c1 + h1];
+            return [newIV, ciphertext];
         };
         enc.decrypt = function(derivedKey, iv, ciphertext) {
             ciphertext = arrayutils.asUint8Array(ciphertext);
@@ -792,7 +794,7 @@ var kcrypto = (function() {
     kcrypto.DesCbcMd5Profile = makeDesEncryptionProfile(kcrypto.RsaMd5Checksum);
     kcrypto.DesCbcMd5Profile.enctype = kcrypto.enctype.des_cbc_md5;
     kcrypto.DesCbcMd5Profile.initialCipherState = function(key, dir) {
-        return "\0\0\0\0\0\0\0\0";
+        return new Uint8Array(8);
     };
     kcrypto.DesCbcMd5Profile.checksum = kcrypto.RsaMd5DesChecksum;
 
