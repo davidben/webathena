@@ -195,6 +195,9 @@ var gss = (function() {
     var TOK_ID_AP_REP = "\x02\x00";
     var TOK_ID_ERROR  = "\x03\x00";
 
+    /** @param {ArrayBufferView}
+     *  @returns {{thisMech:string, innerToken:Uint8Array}}
+     */
     function decodeGSSToken(token) {
         try {
             // This is weirdo pseudo-ASN.1 with a hole in it. We could
