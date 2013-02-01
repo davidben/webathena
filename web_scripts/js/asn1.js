@@ -461,7 +461,7 @@ asn1.OCTET_STRING.encodeDERValue = function(object, buffer) {
     // Apparently this isn't exposed everywhere. Sigh.
     if (window.ArrayBufferView && !object instanceof ArrayBufferView)
         throw new TypeError("Not an array buffer");
-    return buffer.prepend(object);
+    return buffer.prependBytes(object);
 };
 
 asn1.OCTET_STRING.decodeDERValue = function(data) {
