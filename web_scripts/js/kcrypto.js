@@ -354,7 +354,7 @@ var kcrypto = (function() {
             var t = simpleProfile.decrypt(derivedKey.E, iv, c1, this);
             var newIV = t[0], p1 = t[1];
             // if (H1 != HMAC(Ki, P1)[1..h]) report error
-            if (h1 != truncatedHmac(derivedKey.I, p1))
+            if (!arrayutils.equals(h1, truncatedHmac(derivedKey.I, p1)))
                 throw new kcrypto.DecryptionError('Checksum mismatch!');
             // Strip off confounder.
             p1 = p1.subarray(simpleProfile.cipherBlockSize);
