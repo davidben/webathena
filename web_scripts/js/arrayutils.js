@@ -137,7 +137,7 @@ var arrayutils = (function() {
      * @param {ArrayBufferView}
      * @returns {boolean}
      */
-    arrayutils.equal = function(a, b) {
+    arrayutils.equals = function(a, b) {
         a = arrayutils.asUint8Array(a);
         b = arrayutils.asUint8Array(b);
         if (a.length !== b.length)

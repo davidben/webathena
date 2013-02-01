@@ -461,8 +461,7 @@ var kcrypto = (function() {
             return ret;
         },
         verifyMIC: function (key, msg, token) {
-            // FIXME
-            return token == this.getMIC(key, msg);
+            return arrayutils.equals(token, this.getMIC(key, msg));
         }
     };
 
@@ -642,8 +641,8 @@ var kcrypto = (function() {
             return key;
         };
         // profile.initialCipherState varies.
-        profile.decrypt = function (key, state, data) {
-            key = arrayutils.toCryptoJS(key);
+        profile.decrypt = function (keyBytes, state, data) {
+            var key = arrayutils.toCryptoJS(keyBytes);
             state = arrayutils.toCryptoJS(state);
             data = arrayutils.toCryptoJS(data);
             var cipherParams = CryptoJS.lib.CipherParams.create({
@@ -672,7 +671,7 @@ var kcrypto = (function() {
                 checksumData.words[2 + i] = 0;
             }
             if (!checksumProfile.verifyMIC(
-                key,
+                keyBytes,
                 arrayutils.fromCryptoJS(checksumData),
                 arrayutils.fromCryptoJS(checksum)))
                 throw new kcrypto.DecryptionError('Checksum mismatch!');
@@ -686,8 +685,8 @@ var kcrypto = (function() {
                 arrayutils.fromCryptoJS(message)
             ];
         };
-        profile.encrypt = function (key, state, data) {
-            key = arrayutils.toCryptoJS(key);
+        profile.encrypt = function (keyBytes, state, data) {
+            var key = arrayutils.toCryptoJS(keyBytes);
             state = arrayutils.toCryptoJS(state);
 
             // First, add a confounder and space for the checksum.
@@ -718,7 +717,7 @@ var kcrypto = (function() {
             // of a pain as it is to use sometimes.
             var cksum = arrayutils.toCryptoJS(
                 checksumProfile.getMIC(
-                    key, arrayutils.fromCryptoJS(plaintext)));
+                    keyBytes, arrayutils.fromCryptoJS(plaintext)));
             for (var i = 0; i < checksumWords; i++) {
                 plaintext.words[2 + i] = cksum.words[i];
             }
