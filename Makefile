@@ -5,6 +5,7 @@ compiler.jar: download-compiler.sh
 
 CORE_JS_SOURCES := \
 	crc32.js \
+	typedarray.js \
 	util.js \
 	arrayutils.js \
 	asn1.js \
