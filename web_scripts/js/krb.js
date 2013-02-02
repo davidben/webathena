@@ -323,8 +323,22 @@ krb.Authenticator = new asn1.SEQUENCE(
       optional: true}]
 ).tagged(asn1.tag(2, asn1.TAG_APPLICATION));
 
+// 5.5.2.  KRB_AP_REP Definition
+krb.AP_REP = new asn1.SEQUENCE(
+    [{id: 'pvno', type: asn1.INTEGER.valueConstrained(5).tagged(asn1.tag(0))},
+     {id: 'msgType',
+      type: asn1.INTEGER.valueConstrained(15).tagged(asn1.tag(1))},
+     {id: 'encPart', type: krb.EncryptedData.tagged(asn1.tag(2))}]
+).tagged(asn1.tag(15, asn1.TAG_APPLICATION));
 
-// TODO: 5.5.2.  KRB_AP_REP Definition
+krb.EncAPRepPart = new asn1.SEQUENCE(
+    [{id: 'ctime', type: krb.KerberosTime.tagged(asn1.tag(0))},
+     {id: 'cusec', type: krb.Microseconds.tagged(asn1.tag(1))},
+     {id: 'subkey', type: krb.EncryptionKey.tagged(asn1.tag(2)),
+      optional: true},
+     {id: 'seqNumber', type: krb.UInt32.tagged(asn1.tag(3)),
+      optional: true}]
+).tagged(asn1.tag(27, asn1.TAG_APPLICATION));
 
 // TODO: 5.6.1.  KRB_SAFE Definition
 
