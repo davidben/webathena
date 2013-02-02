@@ -9,7 +9,7 @@ CORE_JS_SOURCES := \
 	util.js \
 	arrayutils.js \
 	asn1.js \
-	krb.js \
+	krb_proto.js \
 	kcrypto.js \
 	kdc.js
 
