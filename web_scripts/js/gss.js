@@ -80,9 +80,9 @@ var gss = (function() {
     };
 
     /**
-     * Creates a gss.Name that wraps a KDC.Principal.
+     * Creates a gss.Name that wraps a krb.Principal.
      * @constructor
-     * @param {KDC.Principal} principal
+     * @param {krb.Principal} principal
      */
     gss.Name = function(principal) {
         this.principal = principal;
@@ -129,7 +129,7 @@ var gss = (function() {
             if (data.length != (4 + mechOidLen + 4 + nameLen))
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad length");
             try {
-                return new gss.Name(KDC.Principal.fromString(
+                return new gss.Name(krb.Principal.fromString(
                     arrayutils.toUTF16(data.subarray(4 + mechOidLen + 4))));
             } catch (e) {
                 throw new gss.Error(gss.S_BAD_NAME, 0, e);
@@ -148,21 +148,21 @@ var gss = (function() {
             var service = data.substring(0, at);
             var host = data.substring(at + 1);
             // FIXME: Hostname canonicalization??
-            return new gss.Name(new KDC.Principal({
+            return new gss.Name(new krb.Principal({
                 nameType: krb.KRB_NT_SRV_HST,
                 nameString: [service, host]
-            }, KDC.realm));
+            }, krb.realm));
         } else if (nameType === gss.KRB5_NT_PRINCIPAL_NAME) {
             try {
-                return new gss.Name(KDC.Principal.fromString(data));
+                return new gss.Name(krb.Principal.fromString(data));
             } catch (e) {
                 throw new gss.Error(gss.S_BAD_NAME, 0, e);
             }
         } else if (nameType === gss.NT_USER_NAME) {
-            return new gss.Name(new KDC.Principal({
+            return new gss.Name(new krb.Principal({
                 nameType: krb.KRB_NT_PRINCIPAL,
                 nameString: [data]
-            }, KDC.realm));
+            }, krb.realm));
         } else {
             throw new gss.Error(gss.S_BAD_NAMETYPE, 0, "Bad nametype");
         }
