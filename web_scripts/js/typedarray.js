@@ -28,8 +28,6 @@
 //  * Allow no arguments to DataView constructor
 //  * Work cross-frame with native arrays/shimmed DataView
 //  * Corrected Object.defineProperty shim for IE8
-// Modifications by David Benjamin davidben@mit.edu
-//  * Fix *Array.prototype.subarray to take byteOffset into account.
 
 // ES3/ES5 implementation of the Krhonos TypedArray Working Draft (work in progress):
 //   Ref: https://cvs.khronos.org/svn/repos/registry/trunk/public/webgl/doc/spec/TypedArray-spec.html
@@ -500,7 +498,7 @@
         }
 
         return new this.constructor(
-            this.buffer, this.byteOffset + start * this.BYTES_PER_ELEMENT, len);
+          this.buffer, this.byteOffset + start * this.BYTES_PER_ELEMENT, len);
       };
 
       return ctor;
