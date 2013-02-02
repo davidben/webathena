@@ -76,18 +76,18 @@
     }
 
     /** @constructor */
-    krb.Key = function (keytype, keyvalue) {
+    krb.Key = function(keytype, keyvalue) {
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
     };
-    krb.Key.prototype.getEncProfile = function () {
+    krb.Key.prototype.getEncProfile = function() {
 	var encProfile = kcrypto.encProfiles[this.keytype];
 	if (encProfile === undefined)
             throw new Err(Err.Context.KEY, 0x00,
 			  'Unsupported enctype ' + this.keytype);
 	return encProfile;
     };
-    krb.Key.prototype.decrypt = function (usage, data) {
+    krb.Key.prototype.decrypt = function(usage, data) {
 	if (data.etype != this.keytype)
             throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
 	var encProfile = this.getEncProfile();
@@ -99,12 +99,12 @@
             encProfile.initialCipherState(derivedKey, kcrypto.DECRYPT),
             data.cipher)[1];
     };
-    krb.Key.prototype.decryptAs = function (asn1Type, usage, data) {
+    krb.Key.prototype.decryptAs = function(asn1Type, usage, data) {
 	// Some ciphers add padding, so we can't abort if there is data
 	// left over.
 	return asn1Type.decodeDERPrefix(this.decrypt(usage, data))[0];
     };
-    krb.Key.prototype.encrypt = function (usage, data) {
+    krb.Key.prototype.encrypt = function(usage, data) {
 	var encProfile = this.getEncProfile();
 	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
 	return {
@@ -116,10 +116,10 @@
 		data)[1]
 	};
     };
-    krb.Key.prototype.encryptAs = function (asn1Type, usage, obj) {
+    krb.Key.prototype.encryptAs = function(asn1Type, usage, obj) {
 	return this.encrypt(usage, asn1Type.encodeDER(obj));
     }
-    krb.Key.prototype.checksum = function (usage, data) {
+    krb.Key.prototype.checksum = function(usage, data) {
 	var encProfile = this.getEncProfile();
 	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
 	return {
@@ -141,13 +141,125 @@
 	return new krb.Key(key.keytype,
                            arrayutils.fromByteString(key.keyvalue));
     };
-    krb.Key.fromPassword = function (keytype, password, salt, params) {
+    krb.Key.fromPassword = function(keytype, password, salt, params) {
 	var encProfile = kcrypto.encProfiles[keytype];
 	if (encProfile === undefined)
             throw new Err(Err.Context.KEY, 0x02,
 			  'Unsupported enctype ' + keytype);
 	return new krb.Key(keytype,
 			   encProfile.stringToKey(password, salt, params));
+    };
+
+    /** @constructor */
+    krb.Session = function(asRep, encRepPart) {
+        // Just store everything. Whatever.
+        this.client = new krb.Principal(asRep.cname, asRep.crealm);
+        this.ticket = asRep.ticket;
+
+        this.key = new krb.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
+        this.flags = encRepPart.flags;
+        this.starttime = encRepPart.starttime;
+        this.endtime = encRepPart.endtime;
+        this.renewTill = encRepPart.renewTill;
+        this.service = new krb.Principal(encRepPart.sname, encRepPart.srealm);
+        this.caddr = encRepPart.caddr;
+    };
+
+    krb.Session.fromDict = function(dict) {
+        function dateOrUndef(d) {
+            return (d == null) ? undefined : new Date(d);
+        }
+	return new krb.Session({
+            crealm: dict.crealm,
+            cname: dict.cname,
+            ticket: {
+                tktVno: dict.ticket.tktVno,
+                realm: dict.ticket.realm,
+                sname: dict.ticket.sname,
+                encPart: {
+                    kvno: dict.ticket.encPart.kvno,
+                    etype: dict.ticket.encPart.etype,
+                    cipher: arrayutils.fromByteString(
+                        dict.ticket.encPart.cipher)
+                }
+            }
+        }, {
+            // Ugh. This really should use Key.fromDict. Need a
+            // different ctor for krb.Session to avoid type confusion.
+            key: {
+                keytype: dict.key.keytype,
+                keyvalue: arrayutils.fromByteString(dict.key.keyvalue)
+            },
+            lastReq: dict.lastReq,
+            nonce: dict.nonce,
+            keyExpiration: dict.keyExpiration,
+            flags: dict.flags,
+            starttime: dateOrUndef(dict.starttime),
+            endtime: new Date(dict.endtime),
+            renewTill: dateOrUndef(dict.renewTill),
+            srealm: dict.srealm,
+            sname: dict.sname,
+            caddr: dict.caddr
+        });
+    };
+
+    krb.Session.prototype.toDict = function() {
+        function getTimeOrUndef(d) {
+            return (d == null) ? undefined : d.getTime();
+        }
+        return {
+            crealm: this.client.realm,
+            cname: this.client.principalName,
+            ticket: {
+                tktVno: this.ticket.tktVno,
+                realm: this.ticket.realm,
+                sname: this.ticket.sname,
+                encPart: {
+                    kvno: this.ticket.encPart.kvno,
+                    etype: this.ticket.encPart.etype,
+                    cipher: arrayutils.toByteString(this.ticket.encPart.cipher)
+                }
+            },
+            key: this.key.toDict(),
+            flags: this.flags,
+            starttime: getTimeOrUndef(this.starttime),
+            endtime: this.endtime.getTime(),
+            renewTill: getTimeOrUndef(this.renewTill),
+            srealm: this.service.realm,
+            sname: this.service.principalName,
+            caddr: this.caddr
+        };
+    };
+
+    krb.Session.prototype.isExpired = function() {
+	return this.endtime <= new Date();
+    };
+
+    krb.Session.prototype.makeAPReq = function(keyUsage,
+					       cksum,
+					       subkey,
+					       seqNumber) {
+	var apReq = { };
+	apReq.pvno = krb.pvno;
+	apReq.msgType = krb.KRB_MT_AP_REQ;
+	apReq.apOptions = krb.APOptions.make();
+	apReq.ticket = this.ticket;
+
+	var auth = { };
+	auth.authenticatorVno = krb.pvno;
+	auth.crealm = this.client.realm;
+	auth.cname = this.client.principalName;
+	if (cksum !== undefined) auth.cksum = cksum;
+	auth.ctime = new Date();
+	auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
+	auth.ctime.setUTCMilliseconds(0);
+	if (subkey !== undefined) auth.subkey = subkey;
+	if (seqNumber !== undefined) auth.seqNumber = seqNumber;
+
+	// Encode the authenticator.
+	apReq.authenticator = this.key.encryptAs(krb.Authenticator,
+						 keyUsage, auth);
+	return apReq;
     };
 
 })();

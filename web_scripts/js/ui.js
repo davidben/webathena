@@ -140,7 +140,7 @@ function getTGTSession() {
     // Check if we're already logged in.
     var sessionJson = localStorage.getItem('tgtSession');
     if (sessionJson) {
-        var tgtSession = KDC.Session.fromDict(JSON.parse(sessionJson));
+        var tgtSession = krb.Session.fromDict(JSON.parse(sessionJson));
         if (tgtSession.isExpired())
             return showRenewPrompt(tgtSession).then(function(tgtSession) {
                 // Save in local storage.

@@ -85,7 +85,7 @@ function registerTicketAPI() {
             }
 
             // User gave us permission and we have a legit TGT. Let's go!
-            tgtSession.getServiceSession(principal).then(
+            KDC.getServiceSession(tgtSession, principal).then(
                 function (session) {
                     // TODO: Do we want to store this in the ccache
                     // too, so a service which doesn't cache its own

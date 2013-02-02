@@ -315,121 +315,13 @@ var KDC = (function() {
 
 	// It then stores the ticket, session key, start and
 	// expiration times, and other information for later use.
-	return new KDC.Session(kdcRep, encRepPart);
+	return new krb.Session(kdcRep, encRepPart);
 
 	// TODO: Do we want to do anything with last-req and
 	// authtime?
     };
 
-    /** @constructor */
-    KDC.Session = function (asRep, encRepPart) {
-        // Just store everything. Whatever.
-        this.client = new krb.Principal(asRep.cname, asRep.crealm);
-        this.ticket = asRep.ticket;
-
-        this.key = new krb.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
-        this.flags = encRepPart.flags;
-        this.starttime = encRepPart.starttime;
-        this.endtime = encRepPart.endtime;
-        this.renewTill = encRepPart.renewTill;
-        this.service = new krb.Principal(encRepPart.sname, encRepPart.srealm);
-        this.caddr = encRepPart.caddr;
-    };
-
-    KDC.Session.fromDict = function (dict) {
-        function dateOrUndef(d) {
-            return (d == null) ? undefined : new Date(d);
-        }
-	return new KDC.Session({
-            crealm: dict.crealm,
-            cname: dict.cname,
-            ticket: {
-                tktVno: dict.ticket.tktVno,
-                realm: dict.ticket.realm,
-                sname: dict.ticket.sname,
-                encPart: {
-                    kvno: dict.ticket.encPart.kvno,
-                    etype: dict.ticket.encPart.etype,
-                    cipher: arrayutils.fromByteString(
-                        dict.ticket.encPart.cipher)
-                }
-            }
-        }, {
-            // Ugh. This really should use Key.fromDict. Need a
-            // different ctor for KDC.Session to avoid type confusion.
-            key: {
-                keytype: dict.key.keytype,
-                keyvalue: arrayutils.fromByteString(dict.key.keyvalue)
-            },
-            lastReq: dict.lastReq,
-            nonce: dict.nonce,
-            keyExpiration: dict.keyExpiration,
-            flags: dict.flags,
-            starttime: dateOrUndef(dict.starttime),
-            endtime: new Date(dict.endtime),
-            renewTill: dateOrUndef(dict.renewTill),
-            srealm: dict.srealm,
-            sname: dict.sname,
-            caddr: dict.caddr
-        });
-    };
-
-    KDC.Session.prototype.toDict = function() {
-        function getTimeOrUndef(d) {
-            return (d == null) ? undefined : d.getTime();
-        }
-        return {
-            crealm: this.client.realm,
-            cname: this.client.principalName,
-            ticket: {
-                tktVno: this.ticket.tktVno,
-                realm: this.ticket.realm,
-                sname: this.ticket.sname,
-                encPart: {
-                    kvno: this.ticket.encPart.kvno,
-                    etype: this.ticket.encPart.etype,
-                    cipher: arrayutils.toByteString(this.ticket.encPart.cipher)
-                }
-            },
-            key: this.key.toDict(),
-            flags: this.flags,
-            starttime: getTimeOrUndef(this.starttime),
-            endtime: this.endtime.getTime(),
-            renewTill: getTimeOrUndef(this.renewTill),
-            srealm: this.service.realm,
-            sname: this.service.principalName,
-            caddr: this.caddr
-        };
-    };
-
-    KDC.Session.prototype.makeAPReq = function (keyUsage,
-						cksum,
-						subkey,
-						seqNumber) {
-	var apReq = { };
-	apReq.pvno = krb.pvno;
-	apReq.msgType = krb.KRB_MT_AP_REQ;
-	apReq.apOptions = krb.APOptions.make();
-	apReq.ticket = this.ticket;
-
-	var auth = { };
-	auth.authenticatorVno = krb.pvno;
-	auth.crealm = this.client.realm;
-	auth.cname = this.client.principalName;
-	if (cksum !== undefined) auth.cksum = cksum;
-	auth.ctime = new Date();
-	auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
-	auth.ctime.setUTCMilliseconds(0);
-	if (subkey !== undefined) auth.subkey = subkey;
-	if (seqNumber !== undefined) auth.seqNumber = seqNumber;
-
-	// Encode the authenticator.
-	apReq.authenticator = this.key.encryptAs(krb.Authenticator,
-						 keyUsage, auth);
-	return apReq;
-    };
-
-    KDC.Session.prototype.getServiceSession = function(service) {
+    KDC.getServiceSession = function(session, service) {
 	return Crypto.retryForEntropy(function() {
             var tgsReq = { };
             tgsReq.pvno = krb.pvno;
@@ -450,13 +342,13 @@ var KDC = (function() {
             // Checksum the reqBody. Note: if our DER encoder isn't completely
             // correct, the proxy will re-encode it and possibly mess up the
             // checksum. This is probably a little poor.
-            var checksum = this.key.checksum(
+            var checksum = session.key.checksum(
 		krb.KU_TGS_REQ_PA_TGS_REQ_CKSUM,
 		krb.KDC_REQ_BODY.encodeDER(tgsReq.reqBody));
 
             // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
             // padata of PA-TGS-REQ.
-            var apReq = this.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
+            var apReq = session.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
             tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                                padataValue: krb.AP_REQ.encodeDER(apReq) }];
 
@@ -477,13 +369,9 @@ var KDC = (function() {
                     //
                     // If we use a subkey, the usage might change I think.
                     return KDC.sessionFromKDCRep(
-			this.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
-		}.bind(this));
-	}.bind(this));
-    };
-
-    KDC.Session.prototype.isExpired = function () {
-	return this.endtime <= new Date();
+			session.key, krb.KU_TGS_REQ_ENC_PART, tgsReq, tgsRep);
+		});
+	});
     };
 
     return KDC;
