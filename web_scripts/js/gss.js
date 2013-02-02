@@ -224,14 +224,36 @@ var gss = (function() {
         }
     }
 
+    var DELEG_FLAG    = 1;
+    var MUTUAL_FLAG   = 2;
+    var REPLAY_FLAG   = 4;
+    var SEQUENCE_FLAG = 8;
+    var CONF_FLAG     = 16;
+    var INTEG_FLAG    = 32;
+
     /**
      * Creates an initiator GSS context. If the need ever arises, we
      * can arrange for acceptor contexts to be supported, but it's
      * unlikely this'll ever run outside a client.
      *
+     * The constructor takes an options dictionary with various
+     * optional keys. The keys are:
+     *   delegation : boolean
+     *   mutualAuthentication : boolean
+     *   replayDetection : boolean
+     *   sequence : boolean
+     *   anonymous : boolean
+     *   confidentiality : boolean
+     *   integrity : boolean
+     *   lifetime : number (default: 0)
+     *   bindings : ?ArrayBufferView (default: null)
+     *
+     * Not all flags can be provided, so the corresponding attributes
+     * should be checked on the returned gss.Context object.
+     *
      * @constructor
      */
-    gss.Context = function(peer, mechanism, credential, lifetime, binding) {
+    gss.Context = function(peer, mechanism, credential, opts) {
         if (mechanism !== gss.KRB5_MECHANISM)
             throw new gss.Error(gss.S_BAD_MECH, 0, "Only krb5 is supported");
         // TODO...
