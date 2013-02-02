@@ -189,7 +189,8 @@ var KDC = (function() {
     var padataHandlers = { };
     // TODO: Implement other types of PA-DATA.
     padataHandlers[krb.PA_ENC_TIMESTAMP] = function(asReq, asRep, methodData,
-                                                    paData, principal, password) {
+                                                    paData, principal,
+                                                    password) {
         var etypeInfos = extractPreAuthHint(methodData);
 	var etypeInfo = null;
 	// Find an enctype we support.
