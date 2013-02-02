@@ -11,6 +11,7 @@ CORE_JS_SOURCES := \
 	asn1.js \
 	krb_proto.js \
 	kcrypto.js \
+	krb.js \
 	kdc.js
 
 UI_JS_SOURCES := \

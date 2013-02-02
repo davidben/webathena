@@ -3,7 +3,7 @@
 module("kdc");
 
 test("Basic principal serialization/deserialization", function() {
-    var principal = KDC.Principal.fromString("davidben/extra@ATHENA.MIT.EDU");
+    var principal = krb.Principal.fromString("davidben/extra@ATHENA.MIT.EDU");
 
     equal(principal.realm, "ATHENA.MIT.EDU");
     equal(principal.principalName.nameType, krb.KRB_NT_PRINCIPAL);
@@ -17,7 +17,7 @@ test("Basic principal serialization/deserialization", function() {
 });
 
 test("Escaping characters in principals", function() {
-    var principal = KDC.Principal.fromString("davidben\\/extra\\@\\z@ATHENA.MI\\t.EDU");
+    var principal = krb.Principal.fromString("davidben\\/extra\\@\\z@ATHENA.MI\\t.EDU");
 
     equal(principal.realm, "ATHENA.MI\t.EDU");
     equal(principal.principalName.nameType, krb.KRB_NT_PRINCIPAL);
@@ -30,7 +30,7 @@ test("Escaping characters in principals", function() {
 });
 
 test("Principal parsing, default realm", function() {
-    var principal = KDC.Principal.fromString("davidben");
+    var principal = krb.Principal.fromString("davidben");
 
     equal(principal.realm, "ATHENA.MIT.EDU");
     equal(principal.principalName.nameType, krb.KRB_NT_PRINCIPAL);
@@ -41,13 +41,13 @@ test("Principal parsing, default realm", function() {
     equal(principal.toStringShort(), "davidben");
     equal(principal.nameToString(), "davidben");
 
-    principal = KDC.Principal.fromString("davidben@EXAMPLE.COM");
+    principal = krb.Principal.fromString("davidben@EXAMPLE.COM");
     equal(principal.toString(), "davidben@EXAMPLE.COM");
     equal(principal.toStringShort(), "davidben@EXAMPLE.COM");
-    equal(principal.nameToString(), "davidben");    
+    equal(principal.nameToString(), "davidben");
 });
 
 test("Principal parsing, malformed principals", function() {
-    throws(function() { KDC.Principal.fromString("davidben\\"); });
-    throws(function() { KDC.Principal.fromString("davidben@FOO@BAR"); });
+    throws(function() { krb.Principal.fromString("davidben\\"); });
+    throws(function() { krb.Principal.fromString("davidben@FOO@BAR"); });
 });

@@ -47,7 +47,7 @@ function registerTicketAPI() {
         return;
     }
 
-    var principal = new KDC.Principal({
+    var principal = new krb.Principal({
         nameType: krb.KRB_NT_UNKNOWN,
         nameString: args.principal
     }, args.realm);

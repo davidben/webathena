@@ -1,5 +1,8 @@
 "use strict";
 
+// TODO: Rename this to krb_proto or krb_asn1? Kind of awkward that I
+// have names like krb.PrincipalName as an ASN.1 type and
+// krb.Principal as a JS constructor.
 var krb = { };
 
 // 5.2.1.  KerberosString

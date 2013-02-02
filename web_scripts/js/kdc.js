@@ -49,7 +49,6 @@ var KDC = (function() {
     var KDC = {};
 
     KDC.urlBase = '/kdc/v1/';
-    KDC.realm = 'ATHENA.MIT.EDU'; // XXX
     KDC.supportedEnctypes = [
 	kcrypto.enctype.aes256_cts_hmac_sha1_96,
 	kcrypto.enctype.aes128_cts_hmac_sha1_96,
@@ -64,154 +63,6 @@ var KDC = (function() {
     };
     KDC.Error.prototype.toString = function() {
 	return "KDC Error " + this.code + ": " + this.message;
-    };
-
-    /** @constructor */
-    KDC.Principal = function(principalName, realm) {
-	this.principalName = principalName;
-	this.realm = realm;
-    };
-    function krbEscape(str) {
-	// From src/lib/krb5/krb/unparse.c. Escape \0, \n, \t, \b, \\, \/,
-	// and \@.  Other characters as-is.
-	return str.replace("\\", "\\\\")
-            .replace("\0", "\\0")
-            .replace("\n", "\\n")
-            .replace("\t", "\\t")
-            .replace("\b", "\\b")
-            .replace("/", "\\/")
-            .replace("@", "\\@");
-    };
-    KDC.Principal.prototype.nameToString = function() {
-	var escaped = [];
-	for (var i = 0; i < this.principalName.nameString.length; i++) {
-            escaped.push(krbEscape(this.principalName.nameString[i]));
-	}
-	return escaped.join("/");
-    };
-    KDC.Principal.prototype.toString = function() {
-	return this.nameToString() + "@" + krbEscape(this.realm);
-    };
-    KDC.Principal.prototype.toStringShort = function() {
-	if (this.realm == KDC.realm)
-            return this.nameToString();
-	return this.toString();
-    }
-    KDC.Principal.fromString = function(str) {
-	var components = [];
-	var component = "";
-	var seenAt = false;
-	for (var i = 0; i < str.length; i++) {
-            if (str[i] == "\\") {
-		i++;
-		if (i >= str.length)
-                    throw "Malformed principal";
-		switch (str[i]) {
-		case "n": component += "\n"; break;
-		case "t": component += "\t"; break;
-		case "b": component += "\b"; break;
-		case "0": component += "\0"; break;
-		default: component += str[i];
-		}
-            } else if (str[i] == "/") {
-		if (seenAt)
-                    throw "Malformed principal";
-		components.push(component);
-		component = "";
-            } else if (str[i] == "@") {
-		if (seenAt)
-                    throw "Malformed principal";
-		components.push(component);
-		component = "";
-		seenAt = true;
-            } else {
-		component += str[i];
-            }
-	}
-	if (!seenAt) {
-            components.push(component);
-            // If no realm, use the default.
-            component = KDC.realm;
-	}
-	return new KDC.Principal({
-            nameType: krb.KRB_NT_PRINCIPAL,
-            nameString: components
-	}, component);
-    }
-
-    /** @constructor */
-    KDC.Key = function (keytype, keyvalue) {
-	this.keytype = keytype;
-	this.keyvalue = keyvalue;
-    };
-    KDC.Key.prototype.getEncProfile = function () {
-	var encProfile = kcrypto.encProfiles[this.keytype];
-	if (encProfile === undefined)
-            throw new Err(Err.Context.KEY, 0x00,
-			  'Unsupported enctype ' + this.keytype);
-	return encProfile;
-    };
-    KDC.Key.prototype.decrypt = function (usage, data) {
-	if (data.etype != this.keytype)
-            throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
-	var encProfile = this.getEncProfile();
-	// TODO: cache the derived key? This'll let us also cache things
-	// computed from the derived key.
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
-	return encProfile.decrypt(
-            derivedKey,
-            encProfile.initialCipherState(derivedKey, kcrypto.DECRYPT),
-            data.cipher)[1];
-    };
-    KDC.Key.prototype.decryptAs = function (asn1Type, usage, data) {
-	// Some ciphers add padding, so we can't abort if there is data
-	// left over.
-	return asn1Type.decodeDERPrefix(this.decrypt(usage, data))[0];
-    };
-    KDC.Key.prototype.encrypt = function (usage, data) {
-	var encProfile = this.getEncProfile();
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
-	return {
-            etype: this.keytype,
-            // kvno??
-            cipher: encProfile.encrypt(
-		derivedKey,
-		encProfile.initialCipherState(derivedKey, kcrypto.ENCRYPT),
-		data)[1]
-	};
-    };
-    KDC.Key.prototype.encryptAs = function (asn1Type, usage, obj) {
-	return this.encrypt(usage, asn1Type.encodeDER(obj));
-    }
-    KDC.Key.prototype.checksum = function (usage, data) {
-	var encProfile = this.getEncProfile();
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
-	return {
-            cksumtype: encProfile.checksum.sumtype,
-            checksum: encProfile.checksum.getMIC(derivedKey, data)
-	};
-    };
-    KDC.Key.prototype.toDict = function() {
-        // You can postMessage a typed array, but so that we can
-        // persist as JSON or not require polyfills, all IPCs transfer
-        // buffers as byte strings.
-        return {
-            keytype: this.keytype,
-            keyvalue: arrayutils.toByteString(this.keyvalue)
-        };
-    };
-
-    KDC.Key.fromDict = function(key) {
-	return new KDC.Key(key.keytype,
-                           arrayutils.fromByteString(key.keyvalue));
-    };
-    KDC.Key.fromPassword = function (keytype, password, salt, params) {
-	var encProfile = kcrypto.encProfiles[keytype];
-	if (encProfile === undefined)
-            throw new Err(Err.Context.KEY, 0x02,
-			  'Unsupported enctype ' + keytype);
-	return new KDC.Key(keytype,
-			   encProfile.stringToKey(password, salt, params));
     };
 
     KDC.kdcProxyRequest = function (data, target, outputType) {
@@ -267,15 +118,15 @@ var KDC = (function() {
 		krb.KDCOptions.proxiable,
 		krb.KDCOptions.renewable_ok);
 
-            if (principal.realm != KDC.realm)
+            if (principal.realm != krb.realm)
 		throw "Cross-realm not supported!";
             asReq.reqBody.principalName = principal.principalName;
 
-            asReq.reqBody.realm = KDC.realm;
+            asReq.reqBody.realm = krb.realm;
 
             asReq.reqBody.sname = {};
             asReq.reqBody.sname.nameType = krb.KRB_NT_SRV_INST;
-            asReq.reqBody.sname.nameString = [ 'krbtgt', KDC.realm ];
+            asReq.reqBody.sname.nameString = [ 'krbtgt', krb.realm ];
 
             asReq.reqBody.till = new Date(0);
             asReq.reqBody.nonce = Crypto.randomNonce();
@@ -331,7 +182,7 @@ var KDC = (function() {
 	    salt = etypeInfo.salt;
 	else
 	    salt = defaultSaltForPrincipal(principal);
-	return KDC.Key.fromPassword(etypeInfo.etype,
+	return krb.Key.fromPassword(etypeInfo.etype,
 				    password, salt, etypeInfo.s2kparams);
     }
 
@@ -473,15 +324,15 @@ var KDC = (function() {
     /** @constructor */
     KDC.Session = function (asRep, encRepPart) {
         // Just store everything. Whatever.
-        this.client = new KDC.Principal(asRep.cname, asRep.crealm);
+        this.client = new krb.Principal(asRep.cname, asRep.crealm);
         this.ticket = asRep.ticket;
 
-        this.key = new KDC.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
+        this.key = new krb.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
         this.flags = encRepPart.flags;
         this.starttime = encRepPart.starttime;
         this.endtime = encRepPart.endtime;
         this.renewTill = encRepPart.renewTill;
-        this.service = new KDC.Principal(encRepPart.sname, encRepPart.srealm);
+        this.service = new krb.Principal(encRepPart.sname, encRepPart.srealm);
         this.caddr = encRepPart.caddr;
     };
 

@@ -43,7 +43,7 @@ function showLoginPrompt() {
             clearInterval(interval);
             submit.attr('disabled', null).text(text);
         };
-        var principal = KDC.Principal.fromString(username);
+        var principal = krb.Principal.fromString(username);
         KDC.getTGTSession(principal, password).then(function(tgtSession) {
             resetForm();
             login.fadeOut(function() { $(this).remove(); });
