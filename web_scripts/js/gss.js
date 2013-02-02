@@ -231,6 +231,11 @@ var gss = (function() {
     var CONF_FLAG     = 16;
     var INTEG_FLAG    = 32;
 
+    // Context states.
+    var INITIAL_STATE = 1;
+    var PENDING_AP_REP = 2;
+    var ESTABLISHED_STATE = 3;
+
     /**
      * Creates an initiator GSS context. If the need ever arises, we
      * can arrange for acceptor contexts to be supported, but it's
@@ -256,6 +261,7 @@ var gss = (function() {
     gss.Context = function(peer, mechanism, credential, opts) {
         if (mechanism !== gss.KRB5_MECHANISM)
             throw new gss.Error(gss.S_BAD_MECH, 0, "Only krb5 is supported");
+        this.state = INITIAL_STATE;
         // TODO...
     };
     gss.Context.prototype.initSecContext = function(token) {
