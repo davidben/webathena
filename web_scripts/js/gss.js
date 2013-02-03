@@ -319,7 +319,7 @@ var gss = (function() {
             //                     hex value 10 00 00 00 (16).
             cksumBuf.prependUint32(bndLen, true);
             var apReq = this.credential.makeAPReq(
-                ???,
+                krb.KU_AP_REQ_AUTHENTICATOR,
                 { cksumtype: 0x8003,
                   checksum: cksumBuf.contents() },
                 ???,
