@@ -176,16 +176,12 @@ var gss = (function() {
         var b = new asn1.Buffer();
         var nameLen =
             b.prependBytes(arrayutils.fromUTF16(this.principal.toString()));
-        b.prepend(name.length & 0xff);
-        b.prepend((name.length >>> 16) & 0xff);
-        b.prepend((name.length >>> 8) & 0xff);
-        b.prepend(name.length >>> 24);
+        b.prependUint32(name.length);
         var mechOidLen =
             asn1.OBJECT_IDENTIFIER.encodeDERTriple(gss.KRB5_MECHANISM, b);
-        b.prepend(mechOid.length >>> 8);
-        b.prepend(mechOid.length & 0xff);
+        b.prependUint16(mechOidLen);
         // tokId is 0x04 0x01
-        b.prepend(0x01); b.prepend(0x04);
+        b.prependUint16(0x0401);
         return b.contents();
     };
 
@@ -262,9 +258,71 @@ var gss = (function() {
         if (mechanism !== gss.KRB5_MECHANISM)
             throw new gss.Error(gss.S_BAD_MECH, 0, "Only krb5 is supported");
         this.state = INITIAL_STATE;
+        this.credential = credential;
+        this.peer = peer;
+
+        // this.delegation = opts.delegation || false;
+        this.mutualAuthentication = opts.mutualAuthentication || false;
+        this.replayDetection = opts.replayDetection || false;
+        this.sequence = opts.sequence || false;
+        // this.anonymous = opts.anonymous || false;
+        this.confidentiality = opts.confidentiality || false;
+        this.integrity = opts.integrity || false;
+
+        // TODO: This is actually the MD5 sum of something...
+        this.bindings = opts.bindings || new Uint8Array(16);
+
         // TODO...
     };
     gss.Context.prototype.initSecContext = function(token) {
+        if (this.state === INITIAL_STATE) {
+            var cksumBuf = new asn1.Buffer();
+            //  Octet      Name      Description
+            // ---------------------------------------------------------------
+            //  n..last    Exts    Extensions [optional].
+            if (this.delegation) {
+                //  28..(n-1)  Deleg   A KRB_CRED message (n = Dlgth + 28)
+                //                     [optional].
+                //  26..27     Dlgth   The length of the Deleg field in
+                //                     little-endian order [optional].
+                //  24..25     DlgOpt  The delegation option identifier (=1) in
+                //                     little-endian order [optional].  This
+                //                     field and the next two fields are present
+                //                     if and only if GSS_C_DELEG_FLAG is set as
+                //                     described in section 4.1.1.1.
+                throw "Delegation not implemented.";
+            }
+            //  20..23     Flags   Four-octet context-establishment flags in
+            //                     little-endian order as described in section
+            //                     4.1.1.1.
+            var flags = 0;
+            if (this.delegation)
+                flags |= DELEG_FLAG;
+            if (this.mutualAuthentication)
+                flags |= MUTUAL_FLAG;
+            if (this.replayDetection)
+                flags |= REPLAY_FLAG;
+            if (this.sequence)
+                flags |= SEQUENCE_FLAG;
+            if (this.confidentiality)
+                flags |= CONF_FLAG;
+            if (this.integrity)
+                flags |= INTEG_FLAG;
+            cksumBuf.prependUint32(flags, true);
+            //  4..19      Bnd     Channel binding information, as described in
+            //                     section 4.1.1.2.
+            var bndLen = cksumBuf.prependBytes(this.bindings);
+            //  0..3       Lgth    Number of octets in Bnd field;  Represented
+            //                     in little-endian order;  Currently contains
+            //                     hex value 10 00 00 00 (16).
+            cksumBuf.prependUint32(bndLen, true);
+            var apReq = this.credential.makeAPReq(
+                ???,
+                { cksumtype: 0x8003,
+                  checksum: cksumBuf.contents() },
+                ???,
+                ???);
+        }
         // TODO
     };
     gss.Context.prototype.isEstablished = function() {
