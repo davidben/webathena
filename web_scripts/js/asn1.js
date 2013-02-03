@@ -71,14 +71,35 @@ asn1.Buffer.prototype.reserve = function(size) {
     this.start += newSize - this.buffer.byteLength;
     this.buffer = newBuffer;
 };
-asn1.Buffer.prototype.prepend = function(octet) {
+asn1.Buffer.prototype.prependUint8 = function(octet) {
     this.reserve(1);
     this.start -= 1;
     this.buffer[this.start] = octet;
     return 1;
 };
+asn1.Buffer.prototype.prependUint32 = function(value, littleEndian) {
+    if (littleEndian) {
+        return this.prependBytes([value & 0xff,
+                                  (value >>> 8) & 0xff,
+                                  (value >>> 16) & 0xff,
+                                  value >>> 24]);
+    } else {
+        return this.prependBytes([value >>> 24,
+                                  (value >>> 16) & 0xff,
+                                  (value >>> 8) & 0xff,
+                                  value & 0xff]);
+    }
+};
+asn1.Buffer.prototype.prependUint16 = function(value, littleEndian) {
+    if (littleEndian) {
+        return this.prependBytes([value & 0xff, value >>> 8]);
+    } else {
+        return this.prependBytes([value >>> 8, value & 0xff]);
+    }
+};
 asn1.Buffer.prototype.prependBytes = function(buffer) {
-    buffer = arrayutils.asUint8Array(buffer);
+    if (!(buffer instanceof Array))
+        buffer = arrayutils.asUint8Array(buffer);
     this.reserve(buffer.length);
     this.start -= buffer.length;
     this.buffer.set(buffer, this.start);
@@ -96,7 +117,7 @@ asn1.Buffer.prototype.contents = function() {
  * @return {number} The bytes prepended.
  */
 asn1.encodeTagDER = function(tag, buffer) {
-    return buffer.prepend(tag);
+    return buffer.prependUint8(tag);
 };
 
 /**
@@ -109,17 +130,17 @@ asn1.encodeTagDER = function(tag, buffer) {
 asn1.encodeLengthDER = function(length, buffer) {
     if (length <= 127) {
         // Short form must be used when possible.
-        return buffer.prepend(length);
+        return buffer.prependUint8(length);
     }
     // First, encode in base 256, big-endian.
     var bytes = 0;
     while (length > 0) {
-        buffer.prepend(length & 0xff);
+        buffer.prependUint8(length & 0xff);
         length = length >> 8;
         bytes++;
     }
     // Prepend the number of bytes used.
-    buffer.prepend(bytes | 0x80);
+    buffer.prependUint8(bytes | 0x80);
     return bytes + 1;
 };
 
@@ -350,7 +371,7 @@ asn1.BOOLEAN = new asn1.Type(asn1.tag(0x01, asn1.TAG_UNIVERSAL), true);
 asn1.BOOLEAN.encodeDERValue = function(object, buffer) {
     if (typeof object != "boolean")
         throw new TypeError("boolean");
-    return buffer.prepend(object ? 0xff : 0x00);
+    return buffer.prependUint8(object ? 0xff : 0x00);
 };
 
 asn1.BOOLEAN.decodeDERValue = function(data) {
@@ -371,7 +392,7 @@ asn1.INTEGER.encodeDERValue = function(object, buffer) {
     while ((object >= 0 && (sign != 1 || object > 0)) ||
            (object <= -1 && (sign != -1 || object < -1))) {
         var digit = object & 0xff;
-        bytes += buffer.prepend(digit);
+        bytes += buffer.prependUint8(digit);
         sign = (digit & 0x80) ? -1 : 1;
         object = object >> 8;
     }
@@ -434,9 +455,9 @@ asn1.BIT_STRING.encodeDERValue = function(object, buffer) {
         for (var j = 0; j < 8; j++) {
             octet |= (object[i + j] || 0) << (7-j);
         }
-        bytes += buffer.prepend(octet);
+        bytes += buffer.prependUint8(octet);
     }
-    bytes += buffer.prepend(remainder);
+    bytes += buffer.prependUint8(remainder);
     return bytes;
 };
 
@@ -508,10 +529,10 @@ asn1.OBJECT_IDENTIFIER.encodeDERValue = function(object, buffer) {
     for (var i = subidentifiers.length - 1; i >= 0; i--) {
         // Base 128, big endian. All but last octet has MSB 1.
         var c = subidentifiers[i];
-        bytes += buffer.prepend(c & 0x7f);
+        bytes += buffer.prependUint8(c & 0x7f);
         c >>>= 7;
         while (c > 0) {
-            bytes += buffer.prepend((c & 0x7f) | 0x80);
+            bytes += buffer.prependUint8((c & 0x7f) | 0x80);
             c >>>= 7;
         }
     }
