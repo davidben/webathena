@@ -63,6 +63,11 @@ var gss = (function() {
     /** @const */ gss.KRB5_S_KG_BAD_LENGTH = 16;
     /** @const */ gss.KRB5_S_KG_CTX_INCOMPLETE = 17;
 
+    var TOK_ID_AP_REQ = 0x0100;
+    var TOK_ID_AP_REP = 0x0200;
+    var TOK_ID_ERROR  = 0x0300;
+    var TOK_ID_EXPORT_NAME = 0x0401;
+
     /**
      * @constructor
      * @param {number} major
@@ -108,7 +113,7 @@ var gss = (function() {
             // Strip off the header.
             if (data.length < 4)
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad format");
-            if (dataview.getUint16(0) != 0x0401)
+            if (dataview.getUint16(0) != TOK_ID_EXPORT_NAME)
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad TOK_ID");
             var mechOidLen = dataview.getUint16(2);
             if (data.length < 4 + mechOidLen + 4)
@@ -181,15 +186,11 @@ var gss = (function() {
             asn1.OBJECT_IDENTIFIER.encodeDERTriple(gss.KRB5_MECHANISM, b);
         b.prependUint16(mechOidLen);
         // tokId is 0x04 0x01
-        b.prependUint16(0x0401);
+        b.prependUint16(TOK_ID_EXPORT_NAME);
         return b.contents();
     };
 
     var GSSAPI_TOKEN_TAG = 0x60;  // [APPLICATION 0]
-
-    var TOK_ID_AP_REQ = "\x01\x00";
-    var TOK_ID_AP_REP = "\x02\x00";
-    var TOK_ID_ERROR  = "\x03\x00";
 
     /** @param {ArrayBufferView}
      *  @returns {{thisMech:string, innerToken:Uint8Array}}
@@ -262,6 +263,7 @@ var gss = (function() {
         this.peer = peer;
 
         // this.delegation = opts.delegation || false;
+        this.delegation = false;
         this.mutualAuthentication = opts.mutualAuthentication || false;
         this.replayDetection = opts.replayDetection || false;
         this.sequence = opts.sequence || false;
