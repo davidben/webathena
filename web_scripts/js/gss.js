@@ -318,12 +318,20 @@ var gss = (function() {
             //                     in little-endian order;  Currently contains
             //                     hex value 10 00 00 00 (16).
             cksumBuf.prependUint32(bndLen, true);
+
+            var apOptions = krb.APOptions.make();
+            if (this.mutualAuthentication) {
+                apOptions[krb.APOptions.mutual_required] = 1;
+            }
+
             var apReq = this.credential.makeAPReq(
                 krb.KU_AP_REQ_AUTHENTICATOR,
                 { cksumtype: 0x8003,
                   checksum: cksumBuf.contents() },
-                ???,
-                ???);
+                { apOptions: apOptions,
+                  useSeqNumber: true,
+                  useSubkey: true
+                });
         }
         // TODO
     };

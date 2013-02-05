@@ -236,13 +236,14 @@
     };
 
     krb.Session.prototype.makeAPReq = function(keyUsage,
-					       cksum,
-					       subkey,
-					       seqNumber) {
+                                               cksum,
+                                               opts) {
+        opts = opts || { };
+
 	var apReq = { };
 	apReq.pvno = krb.pvno;
 	apReq.msgType = krb.KRB_MT_AP_REQ;
-	apReq.apOptions = krb.APOptions.make();
+	apReq.apOptions = opts.apOptions || krb.APOptions.make();
 	apReq.ticket = this.ticket;
 
 	var auth = { };
@@ -253,8 +254,10 @@
 	auth.ctime = new Date();
 	auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
 	auth.ctime.setUTCMilliseconds(0);
-	if (subkey !== undefined) auth.subkey = subkey;
-	if (seqNumber !== undefined) auth.seqNumber = seqNumber;
+	// if (opts.useSubkey) auth.subkey = subkey;
+	// if (opts.useSeqNumber) auth.seqNumber = seqNumber;
+
+        // TODO: RFC 4537, Kerberos Cryptosystem Negotiation Extension
 
 	// Encode the authenticator.
 	apReq.authenticator = this.key.encryptAs(krb.Authenticator,
