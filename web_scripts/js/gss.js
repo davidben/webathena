@@ -44,6 +44,9 @@ var gss = (function() {
     /** @const */ gss.KRB5_NT_PRINCIPAL_NAME         = "1.2.840.113554.1.2.2.1";
     /** @const */ gss.KRB5_NT_HOSTBASED_SERVICE_NAME = "1.2.840.113554.1.2.1.4";
 
+    // FIXME: These numbers are no good. They conflict with the
+    // kerberos protocol error codes.
+
     /** @const */ gss.KRB5_S_G_BAD_SERVICE_NAME = 1;
     /** @const */ gss.KRB5_S_G_BAD_STRING_UID = 2;
     /** @const */ gss.KRB5_S_G_NOUSER = 3;
@@ -281,6 +284,11 @@ var gss = (function() {
         // TODO: This is actually the MD5 sum of something...
         this.bindings = opts.bindings || new Uint8Array(16);
 
+        // Fields to be initialized later.
+        this.subkey = null;
+        this.sendSeqno = -1;
+        this.recvSeqno = -1;
+
         // TODO...
     };
     gss.Context.prototype.initSecContext = function(token) {
@@ -345,12 +353,49 @@ var gss = (function() {
             krb.AP_REQ.encodeDERTriple(apReq, buf);
             buf.prependUint16(TOK_ID_AP_REQ);
             prependTokenWrapping(gss.KRB5_MECHANISM, buf);
+
+            this.state = this.mutualAuthentication ?
+                PENDING_AP_REP : ESTABLISHED_STATE;
             return buf.contents();
+        } else if (this.state === PENDING_AP_REP) {
+            try {
+                var decoded = decodeGSSToken(token);
+                if (decoded.thisMech !== gss.KRB5_MECHANISM)
+                    throw new gss.Error(gss.S_BAD_MECH, 0,
+                                        "Mechanism mismatch");
+                var tokId = new DataView(
+                    decoded.innerToken.buffer,
+                    decoded.innerToken.byteOffset,
+                    decoded.innerToken.byteLength
+                ).getUint16(0);
+                var data = decoded.innerToken.subarray(2);
+
+                if (tokId === TOK_ID_ERROR) {
+                    var error = krb.KRB_ERROR.decodeDER(data);
+                    // FIXME: Reusing protocol error codes here is a
+                    // nuisance. The numbers conflict. MIT kerberos
+                    // uses this kooky set of offsets and stuff. Maybe
+                    // we should just reuse them.
+                    throw new gss.Error(gss.S_FAILURE,
+                                        krb.errorCode, krb.eText);
+                }
+
+                if (tokID !== TOK_ID_AP_REQ)
+                    throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+
+                var apRep = krb.AP_REP.decodeDER(data);
+                // TODO: Save the key from earlier, decrypt the
+                // EncAPRepPart, check stuff, etc.
+            } catch (e) {
+                if (e instanceof asn1.Error)
+                    throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, e.toString());
+                throw e;
+            }
         }
         // TODO
     };
     gss.Context.prototype.isEstablished = function() {
-        // TODO
+        return this.state === ESTABLISHED_STATE;
     };
 
     return gss;
