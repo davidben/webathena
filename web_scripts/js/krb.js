@@ -254,8 +254,17 @@
 	auth.ctime = new Date();
 	auth.cusec = auth.ctime.getUTCMilliseconds() * 1000;
 	auth.ctime.setUTCMilliseconds(0);
-	// if (opts.useSubkey) auth.subkey = subkey;
-	// if (opts.useSeqNumber) auth.seqNumber = seqNumber;
+
+        // Stuff the key into the entropy pool; it comes from a
+        // trusted third party (the KDC). This matches the MIT
+        // Kerberos code. Just randomly picked a low value for entropy
+        // estimate.
+        sjcl.random.addEntropy(
+            arrayutils.toSJCL(this.key.keyvalue), 10, "key");
+
+	// if (opts.useSubkey) auth.subkey = ???;
+	if (opts.useSeqNumber)
+            auth.seqNumber = sjcl.random.randomWords(1)[0] & 0x3ffffff;
 
         // TODO: RFC 4537, Kerberos Cryptosystem Negotiation Extension
 
