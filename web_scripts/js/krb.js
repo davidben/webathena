@@ -90,7 +90,7 @@
             (encProfile.keyGenerationSeedLength + 31) >>> 5);
         var arr = arrayutils.fromSJCL(words).subarray(
             0, (encProfile.keyGenerationSeedLength + 7) >>> 3);
-        return encProfile.randomToKey(arr);
+        return new krb.Key(keytype, encProfile.randomToKey(arr));
     };
     krb.Key.prototype.getEncProfile = function() {
 	var encProfile = kcrypto.encProfiles[this.keytype];
@@ -274,8 +274,13 @@
         sjcl.random.addEntropy(
             arrayutils.toSJCL(this.key.keyvalue), 10, "key");
 
-        if (opts.useSubkey)
-            auth.subkey = krb.Key.makeRandomKey(this.key.keytype);
+        if (opts.useSubkey) {
+            var subkey = krb.Key.makeRandomKey(this.key.keytype);
+            auth.subkey = {
+                keytype: subkey.keytype,
+                keyvalue: subkey.keyvalue
+            };
+        }
 	if (opts.useSeqNumber)
             auth.seqNumber = sjcl.random.randomWords(1)[0] & 0x3ffffff;
 
