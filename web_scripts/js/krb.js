@@ -80,6 +80,18 @@
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
     };
+    krb.Key.makeRandomKey = function(keytype) {
+	var encProfile = kcrypto.encProfiles[keytype];
+	if (encProfile === undefined)
+            throw new Err(Err.Context.KEY, 0x00,
+			  'Unsupported enctype ' + keytype);
+        // Generate the appropriate number of random bytes.
+        var words = sjcl.random.randomWords(
+            (encProfile.keyGenerationSeedLength + 31) >>> 5);
+        var arr = arrayutils.fromSJCL(words).subarray(
+            0, (encProfile.keyGenerationSeedLength + 7) >>> 3);
+        return encProfile.randomToKey(arr);
+    };
     krb.Key.prototype.getEncProfile = function() {
 	var encProfile = kcrypto.encProfiles[this.keytype];
 	if (encProfile === undefined)

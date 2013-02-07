@@ -306,6 +306,7 @@ var kcrypto = (function() {
         enc.initialCipherState = function() {
             return initialCipherState;
         };
+        enc.keyGenerationSeedLength = simpleProfile.keyGenerationSeedLength;
         enc.randomToKey = function(random) {
             return simpleProfile.randomToKey(random);
         };
@@ -890,7 +891,10 @@ var kcrypto = (function() {
         }
     }
     kcrypto.aesCtsDecrypt = aesCtsDecrypt;  // Exported for tests.
-    function aesRandomToKey(x) { return x; }
+    function aesRandomToKey(x) {
+        // Just copy.
+        return new Uint8Array(arrayutils.asUint8Array(x));
+    }
     var aes128 = profilesFromSimpleProfile({
         enctype: kcrypto.enctype.aes128_cts_hmac_sha1_96,
         sumtype: kcrypto.sumtype.hmac_sha1_96_aes128,
