@@ -123,7 +123,10 @@ function showRenewPrompt(oldSession) {
                     string = 'Incorrect password!';
                 else
                     string = error.message;
+            } else if (error instanceof KDC.NetworkError) {
+                string = error.message;
             } else {
+                // TODO: Just throw this or something?
                 string = String(error);
             }
             $('#alert-title').text('Error logging in:');

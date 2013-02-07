@@ -71,6 +71,13 @@ var KDC = (function() {
     KDC.Error.prototype.toString = function() {
 	return "KDC Error " + this.code + ": " + this.message;
     };
+    /** @constructor */
+    KDC.NetworkError = function(message) {
+        this.message = message;
+    };
+    KDC.NetworkError.prototype.toString = function() {
+        return this.message;
+    };
 
     KDC.kdcProxyRequest = function (data, target, outputType) {
 	var deferred = Q.defer();
@@ -85,12 +92,11 @@ var KDC = (function() {
 		var data = JSON.parse(this.responseText);
 		switch(data.status) {
 		case 'ERROR':
-                    deferred.reject(new Err(Err.Context.NET, 'proxy',
-					    data.msg));
+                    deferred.reject(new KDC.NetworkError(data.msg));
                     break;
 		case 'TIMEOUT':
-                    deferred.reject(new Err(Err.Context.NET, 'timeout',
-                                            'KDC connection timed out'));
+                    deferred.reject(new KDC.NetworkError(
+                        'KDC connection timed out'));
                     break;
 		case 'OK':
                     var der = arrayutils.fromByteString(atob(data.reply));
@@ -98,8 +104,11 @@ var KDC = (function() {
                     deferred.resolve(reply);
                     break;
 		}
+            } else if (this.status) {
+                deferred.reject(new KDC.NetworkError(
+                    'HTTP error ' + this.status + ': ' + this.statusText));
             } else {
-		deferred.reject(new Err(Err.Context.NET, 'error', xhr.status));
+                deferred.reject(new KDC.NetworkError('Network error'));
             }
 	};
 	xhr.send(btoa(arrayutils.toByteString(data)));
