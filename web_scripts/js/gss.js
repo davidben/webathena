@@ -269,6 +269,14 @@ var gss = (function() {
         if (mechanism !== gss.KRB5_MECHANISM)
             throw new gss.Error(gss.S_BAD_MECH, 0, "Only krb5 is supported");
         this.state = INITIAL_STATE;
+        // FIXME: get a session for peer from the TGT session??
+        // Somewhat awkward in that requiring you to both specify the
+        // peer and get the service ticket yourself is weird and I'm
+        // pretty sure contrary to how GSS-API is supposed to
+        // work. But having this get the ticket puts a dependency on
+        // the KDC proxy so it can't be used by other people. Also if
+        // we want to support anonymity (RFC 6112) that requires
+        // getting the ticket funny.
         this.credential = credential;
         this.peer = peer;
 
