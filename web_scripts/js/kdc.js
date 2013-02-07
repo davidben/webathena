@@ -365,7 +365,8 @@ var KDC = (function() {
 
             // Requests for additional tickets (KRB_TGS_REQ) MUST contain a
             // padata of PA-TGS-REQ.
-            var apReq = session.makeAPReq(krb.KU_TGS_REQ_PA_TGS_REQ, checksum);
+            var apReq = session.makeAPReq(
+                krb.KU_TGS_REQ_PA_TGS_REQ, checksum).apReq;
             tgsReq.padata = [{ padataType: krb.PA_TGS_REQ,
                                padataValue: krb.AP_REQ.encodeDER(apReq) }];
 

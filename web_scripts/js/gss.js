@@ -355,7 +355,7 @@ var gss = (function() {
                 { apOptions: apOptions,
                   useSeqNumber: true,
                   useSubkey: true
-                });
+                }).apReq;
 
             var buf = new asn1.Buffer();
             krb.AP_REQ.encodeDERTriple(apReq, buf);

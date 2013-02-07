@@ -274,22 +274,31 @@
         sjcl.random.addEntropy(
             arrayutils.toSJCL(this.key.keyvalue), 10, "key");
 
+        var subkey;
         if (opts.useSubkey) {
-            var subkey = krb.Key.makeRandomKey(this.key.keytype);
+            subkey = krb.Key.makeRandomKey(this.key.keytype);
             auth.subkey = {
                 keytype: subkey.keytype,
                 keyvalue: subkey.keyvalue
             };
         }
-	if (opts.useSeqNumber)
-            auth.seqNumber = sjcl.random.randomWords(1)[0] & 0x3ffffff;
+        var seqNumber;
+	if (opts.useSeqNumber) {
+            seqNumber = sjcl.random.randomWords(1)[0] & 0x3ffffff;
+            auth.seqNumber = seqNumber;
+        }
 
         // TODO: RFC 4537, Kerberos Cryptosystem Negotiation Extension
 
 	// Encode the authenticator.
-	apReq.authenticator = this.key.encryptAs(krb.Authenticator,
-						 keyUsage, auth);
-	return apReq;
+        apReq.authenticator = this.key.encryptAs(krb.Authenticator,
+                                                 keyUsage, auth);
+        return {
+            apReq: apReq,
+            subkey: subkey,
+            seqNumber: seqNumber,
+            authenticator: auth
+        };
     };
 
 })();
