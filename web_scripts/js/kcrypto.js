@@ -534,17 +534,6 @@ var kcrypto = (function() {
             }
         }
 
-        function add_parity_bits(block) {
-            for (var i = 0; i < block.words.length; i++) {
-                var word = block.words[i];
-                word = ((desParityBitTable[word & 0xff]) |
-                        (desParityBitTable[(word >>> 8) & 0xff] << 8) |
-                        (desParityBitTable[(word >>> 16) & 0xff] << 16) |
-                        (desParityBitTable[(word >>> 24) & 0xff] << 24));
-                block.words[i] = word;
-            }
-        }
-
         function key_correction(block) {
             var hex = CryptoJS.enc.Hex.stringify(block);
             if (hex in desWeakKeys) {
@@ -588,7 +577,7 @@ var kcrypto = (function() {
                 tempString.words[j] = tempString.words[j] ^ block.words[j];
             }
         }
-        add_parity_bits(tempString);
+        des_fix_parity_bits(tempString);
         key_correction(tempString);
         var enc = CryptoJS.DES.encrypt(s, tempString,
                                        { iv: tempString,
@@ -600,7 +589,7 @@ var kcrypto = (function() {
         // Remove the last bit and align for parity bits.
         var key = CryptoJS.lib.WordArray.create(
             [(keyWord1 & 0xfefefefe) >>> 1, (keyWord2 & 0xfefefefe) >>> 1]);
-        add_parity_bits(key);
+        des_fix_parity_bits(key);
         key_correction(key);
         // These guys get serialized to/from ASN.1, so we need to end with
         // strings.
@@ -610,6 +599,17 @@ var kcrypto = (function() {
         // little silly.
         return arrayutils.fromCryptoJS(key);
     };
+
+    function des_fix_parity_bits(block) {
+        for (var i = 0; i < block.words.length; i++) {
+            var word = block.words[i];
+            word = ((desParityBitTable[word & 0x7f]) |
+                    (desParityBitTable[(word >>> 8) & 0x7f] << 8) |
+                    (desParityBitTable[(word >>> 16) & 0x7f] << 16) |
+                    (desParityBitTable[(word >>> 24) & 0x7f] << 24));
+            block.words[i] = word;
+        }
+    }
 
     function des_string_to_key(password, salt, params) {
         var type;
@@ -636,6 +636,12 @@ var kcrypto = (function() {
         var checksumWords = checksumProfile.checksumBytes / 4;
 
         var profile = {};
+        profile.keyGenerationSeedLength = 64;
+        profile.randomToKey = function(arr) {
+            var arrCryptoJS = arrayutils.toCryptoJS(arr);
+            des_fix_parity_bits(arrCryptoJS);
+            return arrayutils.fromCryptoJS(arrCryptoJS);
+        };
         profile.stringToKey = des_string_to_key;
         profile.deriveKey = function (key, usage) {
             return key;
