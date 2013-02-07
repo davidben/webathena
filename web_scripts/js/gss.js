@@ -221,6 +221,13 @@ var gss = (function() {
         }
     }
 
+    function prependTokenWrapping(mech, buf) {
+        var length = buf.contents().byteLength;
+        length += asn1.OBJECT_IDENTIFIER.encodeDERTriple(mech, buf);
+        asn1.encodeLengthDER(length, buf);
+        asn1.encodeTagDER(GSSAPI_TOKEN_TAG, buf);
+    }
+
     var DELEG_FLAG    = 1;
     var MUTUAL_FLAG   = 2;
     var REPLAY_FLAG   = 4;
@@ -324,6 +331,7 @@ var gss = (function() {
                 apOptions[krb.APOptions.mutual_required] = 1;
             }
 
+            // FIXME: retry for random or something.
             var apReq = this.credential.makeAPReq(
                 krb.KU_AP_REQ_AUTHENTICATOR,
                 { cksumtype: 0x8003,
@@ -332,6 +340,12 @@ var gss = (function() {
                   useSeqNumber: true,
                   useSubkey: true
                 });
+
+            var buf = new asn1.Buffer();
+            krb.AP_REQ.encodeDERTriple(apReq, buf);
+            buf.prependUint16(TOK_ID_AP_REQ);
+            prependTokenWrapping(gss.KRB5_MECHANISM, buf);
+            return buf.contents();
         }
         // TODO
     };
