@@ -274,7 +274,8 @@
         sjcl.random.addEntropy(
             arrayutils.toSJCL(this.key.keyvalue), 10, "key");
 
-	// if (opts.useSubkey) auth.subkey = ???;
+        if (opts.useSubkey)
+            auth.subkey = krb.Key.makeRandomKey(this.key.keytype);
 	if (opts.useSeqNumber)
             auth.seqNumber = sjcl.random.randomWords(1)[0] & 0x3ffffff;
 
