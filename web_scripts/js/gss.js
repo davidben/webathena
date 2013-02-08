@@ -206,7 +206,7 @@ var gss = (function() {
             var tag = tvr[0], value = tvr[1], rest = tvr[2];
             if (tag !== GSSAPI_TOKEN_TAG)
                 throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
-            if (rest)  // Bad length.
+            if (rest.length > 0)  // Bad length.
                 throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
 
             // Pull out the mechanism.
@@ -294,6 +294,8 @@ var gss = (function() {
 
         // Fields to be initialized later.
         this.subkey = null;
+        this.ctime = -1;
+        this.cusec = -1;
         this.sendSeqno = -1;
         this.recvSeqno = -1;
 
@@ -348,19 +350,27 @@ var gss = (function() {
             }
 
             // FIXME: retry for random or something.
-            var apReq = this.credential.makeAPReq(
+            var context = this.credential.makeAPReq(
                 krb.KU_AP_REQ_AUTHENTICATOR,
                 { cksumtype: 0x8003,
                   checksum: cksumBuf.contents() },
                 { apOptions: apOptions,
                   useSeqNumber: true,
                   useSubkey: true
-                }).apReq;
+                });
 
             var buf = new asn1.Buffer();
-            krb.AP_REQ.encodeDERTriple(apReq, buf);
+            krb.AP_REQ.encodeDERTriple(context.apReq, buf);
             buf.prependUint16(TOK_ID_AP_REQ);
             prependTokenWrapping(gss.KRB5_MECHANISM, buf);
+
+            // Save the key, seqno, and date.
+            this.subkey = context.subkey;
+            this.sendSeqno = context.seqNumber;
+            this.ctime = context.authenticator.ctime.getTime();
+            this.cusec = context.authenticator.cusec;
+            // Do we also set recvSeqno here? We're going to get one
+            // back, but not if mutual auth is off...
 
             this.state = this.mutualAuthentication ?
                 PENDING_AP_REP : ESTABLISHED_STATE;
@@ -388,15 +398,39 @@ var gss = (function() {
                                         krb.errorCode, krb.eText);
                 }
 
-                if (tokID !== TOK_ID_AP_REQ)
+                if (tokId !== TOK_ID_AP_REP)
                     throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
 
                 var apRep = krb.AP_REP.decodeDER(data);
-                // TODO: Save the key from earlier, decrypt the
-                // EncAPRepPart, check stuff, etc.
+                // If a KRB_AP_REP message is returned, the client
+                // uses the session key from the credentials obtained
+                // for the server to decrypt the message and verifies
+                // that the timestamp and microsecond fields match
+                // those in the Authenticator it sent to the server.
+                // If they match, then the client is assured that the
+                // server is genuine.  The sequence number and subkey
+                // (if present) are retained for later use.  (Note
+                // that for encrypting the KRB_AP_REP message, the
+                // sub-session key is not used, even if it is present
+                // in the Authentication.)
+                var encApRepPart = this.credential.key.decryptAs(
+                    krb.EncAPRepPart, krb.KU_AP_REP_ENC_PART, apRep.encPart);
+                if (encApRepPart.ctime.getTime() !== this.ctime ||
+                    encApRepPart.cusec !== this.cusec)
+                    throw new gss.Error(gss.S_DEFECTIVE_TOKEN,
+                                        gss.KRB5_S_G_VALIDATE_FAILED,
+                                        "Mutual authentication failed");
+
+                // TODO: Save subkey and stuff.
+                this.state = ESTABLISHED_STATE;
+                return null;
             } catch (e) {
                 if (e instanceof asn1.Error)
                     throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, e.toString());
+                if (e instanceof kcrypto.DecryptionError)
+                    throw new gss.Error(gss.S_DEFECTIVE_TOKEN,
+                                        gss.KRB5_S_G_VALIDATE_FAILED,
+                                        "Mutual authentication failed");
                 throw e;
             }
         }
