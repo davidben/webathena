@@ -367,10 +367,11 @@ var gss = (function() {
             // Save the key, seqno, and date.
             this.subkey = context.subkey;
             this.sendSeqno = context.seqNumber;
+            // Can't find it in the spec, but source-diving says this
+            // is the default.
+            this.recvSeqno = this.sendSeqno;
             this.ctime = context.authenticator.ctime.getTime();
             this.cusec = context.authenticator.cusec;
-            // Do we also set recvSeqno here? We're going to get one
-            // back, but not if mutual auth is off...
 
             this.state = this.mutualAuthentication ?
                 PENDING_AP_REP : ESTABLISHED_STATE;
@@ -422,6 +423,9 @@ var gss = (function() {
                                         "Mutual authentication failed");
 
                 // TODO: Save subkey and stuff.
+                if (encApRepPart.seqNumber !== undefined)
+                    this.recvSeqno = encApRepPart.seqNumber;
+
                 this.state = ESTABLISHED_STATE;
                 return null;
             } catch (e) {
