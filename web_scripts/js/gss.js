@@ -349,7 +349,10 @@ var gss = (function() {
                 apOptions[krb.APOptions.mutual_required] = 1;
             }
 
-            // FIXME: retry for random or something.
+            // FIXME: retry for random or something. This'll require
+            // all of these to return a promise instead (probably a
+            // good idea). Also will require a PENDING state so you
+            // don't call things twice.
             var context = this.credential.makeAPReq(
                 krb.KU_AP_REQ_AUTHENTICATOR,
                 { cksumtype: 0x8003,
