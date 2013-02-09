@@ -437,8 +437,14 @@ var gss = (function() {
                                         "Mutual authentication failed");
                 throw e;
             }
+        } else if (this.state === ESTABLISHED_STATE) {
+            throw new gss.Error(gss.S_FAILURE,
+                                gss.KRB5_S_KG_CONTEXT_ESTABLISHED,
+                                "Context already established");
+        } else {
+            // This shouldn't happen.
+            throw "Unknown state: " + this.state;
         }
-        // TODO
     };
     gss.Context.prototype.isEstablished = function() {
         return this.state === ESTABLISHED_STATE;
