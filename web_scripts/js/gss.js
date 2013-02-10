@@ -70,6 +70,8 @@ var gss = (function() {
     var TOK_ID_AP_REP = 0x0200;
     var TOK_ID_ERROR  = 0x0300;
     var TOK_ID_EXPORT_NAME = 0x0401;
+    var TOK_ID_MIC = 0x0404;
+    var TOK_ID_WRAP = 0x0504;
 
     /**
      * @constructor
@@ -451,6 +453,9 @@ var gss = (function() {
     };
     gss.Context.prototype.isEstablished = function() {
         return this.state === ESTABLISHED_STATE;
+    };
+    gss.Context.prototype.wrap = function(message, confidential, qop) {
+        // QOP is ignored, per RFC 4121, section 3.
     };
 
     return gss;
