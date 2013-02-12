@@ -487,10 +487,7 @@ var gss = (function() {
             var usage = (this.isInitiator ?
                          KG_USAGE_INITIATOR_SEAL :
                          KG_USAGE_ACCEPTOR_SEAL);
-            // FIXME: This is supposed to pad enough that we don't
-            // cryptosystem residue. But it seems that MIT Kerberos
-            // doesn't get this right?
-            var ec = 0;
+            var ec = key.profile.paddingBytes(message.length + 16);
             var plaintext = new Uint8Array(message.length + ec + 16);
             plaintext.set(message, 0);
             var header = plaintext.subarray(message.length + ec);
