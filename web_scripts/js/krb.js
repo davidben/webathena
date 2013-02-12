@@ -79,6 +79,10 @@
     krb.Key = function(keytype, keyvalue) {
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
+        this.profile = kcrypto.encProfiles[keytype];
+        if (this.profile === undefined)
+            throw new Err(Err.Context.KEY, 0x00,
+                          'Unsupported enctype ' + this.keytype);
     };
     krb.Key.makeRandomKey = function(keytype) {
 	var encProfile = kcrypto.encProfiles[keytype];
@@ -92,23 +96,15 @@
             0, (encProfile.keyGenerationSeedLength + 7) >>> 3);
         return new krb.Key(keytype, encProfile.randomToKey(arr));
     };
-    krb.Key.prototype.getEncProfile = function() {
-	var encProfile = kcrypto.encProfiles[this.keytype];
-	if (encProfile === undefined)
-            throw new Err(Err.Context.KEY, 0x00,
-			  'Unsupported enctype ' + this.keytype);
-	return encProfile;
-    };
     krb.Key.prototype.decrypt = function(usage, data) {
 	if (data.etype != this.keytype)
             throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
-	var encProfile = this.getEncProfile();
 	// TODO: cache the derived key? This'll let us also cache things
 	// computed from the derived key.
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
-	return encProfile.decrypt(
+	var derivedKey = this.profile.deriveKey(this.keyvalue, usage);
+	return this.profile.decrypt(
             derivedKey,
-            encProfile.initialCipherState(derivedKey, kcrypto.DECRYPT),
+            this.profile.initialCipherState(derivedKey, kcrypto.DECRYPT),
             data.cipher)[1];
     };
     krb.Key.prototype.decryptAs = function(asn1Type, usage, data) {
@@ -117,14 +113,13 @@
 	return asn1Type.decodeDERPrefix(this.decrypt(usage, data))[0];
     };
     krb.Key.prototype.encrypt = function(usage, data) {
-	var encProfile = this.getEncProfile();
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
+	var derivedKey = this.profile.deriveKey(this.keyvalue, usage);
 	return {
             etype: this.keytype,
             // kvno??
-            cipher: encProfile.encrypt(
+            cipher: this.profile.encrypt(
 		derivedKey,
-		encProfile.initialCipherState(derivedKey, kcrypto.ENCRYPT),
+		this.profile.initialCipherState(derivedKey, kcrypto.ENCRYPT),
 		data)[1]
 	};
     };
@@ -132,11 +127,10 @@
 	return this.encrypt(usage, asn1Type.encodeDER(obj));
     }
     krb.Key.prototype.checksum = function(usage, data) {
-	var encProfile = this.getEncProfile();
-	var derivedKey = encProfile.deriveKey(this.keyvalue, usage);
+	var derivedKey = this.profile.deriveKey(this.keyvalue, usage);
 	return {
-            cksumtype: encProfile.checksum.sumtype,
-            checksum: encProfile.checksum.getMIC(derivedKey, data)
+            cksumtype: this.profile.checksum.sumtype,
+            checksum: this.profile.checksum.getMIC(derivedKey, data)
 	};
     };
     krb.Key.prototype.toDict = function() {
