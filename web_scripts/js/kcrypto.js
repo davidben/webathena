@@ -33,7 +33,8 @@ var kcrypto = (function() {
     //    initialCipherState: function (specificKey, direction) -> state,
     //    encrypt: function (specificKey, state, string) -> [state, string],
     //    decrypt: function (specificKey, state, string) -> [state, string],
-    //    pseudoRandom: function (protocolKey, string) -> string
+    //    pseudoRandom: function (protocolKey, string) -> string,
+    //    paddingBytes: function(number) -> number
     //  };
     //
     //  var checksumProfile = {
@@ -413,6 +414,12 @@ var kcrypto = (function() {
                                       simpleProfile.unkeyedHash)
             };
         };
+        enc.paddingBytes = function(len) {
+            len %= simpleProfile.messageBlockSize;
+            if (len != 0)
+                return simpleProfile.messageBlockSize - len;
+            return 0;
+        };
 
         var checksum = { };
         checksum.sumtype = simpleProfile.sumtype;
@@ -741,6 +748,12 @@ var kcrypto = (function() {
                 arrayutils.fromCryptoJS(state),
                 arrayutils.fromCryptoJS(encrypted.ciphertext)
             ];
+        };
+        profile.paddingBytes = function(len) {
+            len %= 8;
+            if (len != 0)
+                return 8 - len;
+            return len;
         };
         return profile;
     };
