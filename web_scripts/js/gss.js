@@ -233,6 +233,13 @@ var gss = (function() {
         asn1.encodeTagDER(GSSAPI_TOKEN_TAG, buf);
     }
 
+    // RFC 4121, 2 Key Derivation for Per-Message Tokens
+    var KG_USAGE_ACCEPTOR_SEAL = 22;
+    var KG_USAGE_ACCEPTOR_SIGN = 23;
+    var KG_USAGE_INITIATOR_SEAL = 24;
+    var KG_USAGE_INITIATOR_SIGN = 25;
+
+    // RFC 4121, 4.1.1.1 Checksum Flags Field
     var DELEG_FLAG    = 1;
     var MUTUAL_FLAG   = 2;
     var REPLAY_FLAG   = 4;
@@ -244,6 +251,11 @@ var gss = (function() {
     var INITIAL_STATE = 1;
     var PENDING_AP_REP = 2;
     var ESTABLISHED_STATE = 3;
+
+    // RFC 4121, 4.2.2 Flags Field
+    var MSG_SEND_BY_ACCEPTOR = 1 << 0;
+    var MSG_SEALED = 1 << 1;
+    var MSG_ACCEPTOR_SUBKEY = 1 << 2;
 
     /**
      * Creates an initiator GSS context. If the need ever arises, we
@@ -294,8 +306,12 @@ var gss = (function() {
         // TODO: This is actually the MD5 sum of something...
         this.bindings = opts.bindings || new Uint8Array(16);
 
+        // We're always the initiator. Meh.
+        this.isInitiator = true;
+
         // Fields to be initialized later.
-        this.subkey = null;
+        this.initiatorSubkey = null;
+        this.acceptorSubkey = null;
         this.ctime = -1;
         this.cusec = -1;
         this.sendSeqno = -1;
@@ -370,7 +386,7 @@ var gss = (function() {
             prependTokenWrapping(gss.KRB5_MECHANISM, buf);
 
             // Save the key, seqno, and date.
-            this.subkey = context.subkey;
+            this.initiatorSubkey = context.subkey;
             this.sendSeqno = context.seqNumber;
             // Can't find it in the spec, but source-diving says this
             // is the default.
@@ -427,9 +443,13 @@ var gss = (function() {
                                         gss.KRB5_S_G_VALIDATE_FAILED,
                                         "Mutual authentication failed");
 
-                // TODO: Save subkey and stuff.
                 if (encApRepPart.seqNumber !== undefined)
                     this.recvSeqno = encApRepPart.seqNumber;
+                if (encApRepPart.subkey !== undefined) {
+                    this.acceptorSubkey =
+                        new krb.Key(encApRepPart.subkey.keytype,
+                                    encApRepPart.subkey.keyvalue);
+                }
 
                 this.state = ESTABLISHED_STATE;
                 return null;
@@ -456,6 +476,53 @@ var gss = (function() {
     };
     gss.Context.prototype.wrap = function(message, confidential, qop) {
         // QOP is ignored, per RFC 4121, section 3.
+        message = arrayutils.asUint8Array(message);
+        var flags =
+            (this.isInitiator ? 0 : MSG_SEND_BY_ACCEPTOR) |
+            (confidential ? MSG_SEALED : 0) |
+            (this.acceptorSubkey ? MSG_ACCEPTOR_SUBKEY : 0);
+        var key = this.acceptorSubkey ?
+            this.acceptorSubkey : this.initiatorSubkey;
+        if (confidential) {
+            var usage = (this.isInitiator ?
+                         KG_USAGE_INITIATOR_SEAL :
+                         KG_USAGE_ACCEPTOR_SEAL);
+            // FIXME: This is supposed to pad enough that we don't
+            // cryptosystem residue. But it seems that MIT Kerberos
+            // doesn't get this right?
+            var ec = 0;
+            var plaintext = new Uint8Array(message.length + ec + 16);
+            plaintext.set(message, 0);
+            var header = plaintext.subarray(message.length + ec);
+            var headerDV = new DataView(header.buffer,
+                                        header.byteOffset,
+                                        header.byteLength);
+            headerDV.setUint16(0, TOK_ID_WRAP);
+            headerDV.setUint8(2, flags);
+            headerDV.setUint8(3, 0xff);  // Filler
+            headerDV.setUint16(4, ec);
+            headerDV.setUint16(6, 0);  // RRC
+            // 64-bit seqno. But you negotiate a 32-bit one. What?
+            headerDV.setUint32(8, 0);
+            headerDV.setUint32(12, this.sendSeqno);
+            var data = key.encrypt(usage, plaintext).cipher;
+            var token = new Uint8Array(16 + data.length);
+            token.set(header, 0);
+            token.set(data, 16);
+            this.sendSeqno++;
+            // TODO: Arguably this should return a dictionary with
+            // both a token property and a confidential property, but
+            // requiring you to go back and check that you got what
+            // you requested is dumb. If we really care, I think you
+            // should pass in a tri-valued NONE/OPTIONAL/REQUIRED enum
+            // and have the implementation assert for you.
+            return token;
+        } else {
+            var usage = (this.isInitiator ?
+                         KG_USAGE_INITIATOR_SIGN :
+                         KG_USAGE_ACCEPTOR_SIGN);
+            throw "Not implemented!";
+        }
     };
 
     return gss;
