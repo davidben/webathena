@@ -475,6 +475,11 @@ var gss = (function() {
         return this.state === ESTABLISHED_STATE;
     };
     gss.Context.prototype.wrap = function(message, confidential, qop) {
+        if (!this.isEstablished())
+            throw new gss.Error(gss.S_NO_CONTEXT,
+                                gss.KRB5_S_KG_CTX_INCOMPLETE,
+                                "Context incomplete");
+
         // QOP is ignored, per RFC 4121, section 3.
         message = arrayutils.asUint8Array(message);
         var flags =
@@ -523,6 +528,11 @@ var gss = (function() {
     };
 
     gss.Context.prototype.unwrap = function(token) {
+        if (!this.isEstablished())
+            throw new gss.Error(gss.S_NO_CONTEXT,
+                                gss.KRB5_S_KG_CTX_INCOMPLETE,
+                                "Context incomplete");
+
         token = arrayutils.asUint8Array(token);
         if (token.length < 16)
             throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
