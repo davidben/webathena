@@ -500,7 +500,7 @@ var gss = (function() {
             headerDV.setUint16(4, ec);
             headerDV.setUint16(6, 0);  // RRC
             // 64-bit seqno. But you negotiate a 32-bit one. What?
-            headerDV.setUint32(8, 0);
+            headerDV.setUint32(8, this.sendSeqno / 0x100000000);
             headerDV.setUint32(12, this.sendSeqno);
             var data = key.encrypt(usage, plaintext).cipher;
             var token = new Uint8Array(16 + data.length);
@@ -520,6 +520,93 @@ var gss = (function() {
                          KG_USAGE_ACCEPTOR_SIGN);
             throw "Not implemented!";
         }
+    };
+
+    gss.Context.prototype.unwrap = function(token) {
+        token = arrayutils.asUint8Array(token);
+        if (token.length < 16)
+            throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+        var header = new DataView(token.buffer, token.byteOffset, 16);
+        if (header.getUint16(0) !== TOK_ID_WRAP)
+            throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+        var flags = header.getUint8(2);
+        if ((flags & MSG_SEND_BY_ACCEPTOR) !==
+            (this.isInitiator ? MSG_SEND_BY_ACCEPTOR : 0))
+            throw new gss.Error(gss.S_BAD_SIG, 0, "Bad direction");
+        if (header.getUint8(3) !== 0xff)  // Filler
+            throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad token");
+        var ec = header.getUint16(4);
+        var rrc = header.getUint16(6);
+
+        var key = (this.acceptorSubkey && (flags & MSG_ACCEPTOR_SUBKEY)) ?
+            this.acceptorSubkey : this.initiatorSubkey;
+        var data = token.subarray(16);
+
+        if (rrc !== 0) {
+            // Make a copy and apply the rotation.
+            var newToken = new Uint8Array(token.length);
+            // Copy the header.
+            newToken.set(new Uint8Array(token.buffer, token.byteOffset, 16));
+            var newHeader = new DataView(newToken.buffer, token.byteOffset, 16);
+            // Zero the RRC field for checksum purposes.
+            newHeader.setUint16(6, 0);
+            // And rotate the ciphertext.
+            var newData = newToken.subarray(16);
+            for (var i = 0; i < newData.length; i++) {
+                newData[(i + rrc) % newData.length] = data[i];
+            }
+
+            token = newToken;
+            header = newHeader;
+            data = newData;
+        }
+
+        var message;
+        if (flags & MSG_SEALED) {
+            var usage = (this.isInitiator ?
+                         KG_USAGE_ACCEPTOR_SEAL :
+                         KG_USAGE_INITIATOR_SEAL);
+            try {
+                var plain = key.decrypt(usage, {
+                    etype: key.keytype,
+                    cipher: data
+                });
+            } catch (e) {
+                if (e instanceof kcrypto.DecryptionError)
+                    throw new gss.Error(gss.S_BAD_SIG, 0, "Bad checksum");
+            }
+
+            // Check the copy of the header in the plaintext.
+            if (plain.length < ec + 16)
+                throw new gss.Error(gss.S_DEFECTIVE_TOKEN, 0, "Bad length");
+            if (!arrayutils.equals(header, plain.subarray(plain.length - 16)))
+                throw new gss.Error(gss.S_BAD_SIG, 0, "Header mismatch");
+            message = plain.subarray(0, plain.length - ec - 16);
+        } else {
+            var usage = (this.isInitiator ?
+                         KG_USAGE_ACCEPTOR_SIGN :
+                         KG_USAGE_INITIATOR_SIGN);
+            throw "Not implemented";
+        }
+
+        if (this.replayDetection || this.sequence) {
+            var seqno =
+                header.getUint32(8) * 0x100000000 + header.getUint32(12);
+            // FIXME: GSS-API doesn't actually make this a fatal
+            // error. Also the MIT kerberos implementation is far more
+            // complicated to handle for replay detection without full
+            // sequencing. For now just make it fatal and only support
+            // things over TCP.
+            if (seqno !== this.recvSeqno)
+                throw new gss.Error(gss.S_UNSEQ_TOKEN, 0,
+                                    "Bad sequence number");
+            this.recvSeqno++;
+        }
+
+        return {
+            confidential: (flags & MSG_SEALED) ? true : false,
+            message: new Uint8Array(message)
+        };
     };
 
     return gss;
