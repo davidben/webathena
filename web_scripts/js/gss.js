@@ -475,12 +475,15 @@ var gss = (function() {
         return this.state === ESTABLISHED_STATE;
     };
     gss.Context.prototype.wrap = function(message, confidential, qop) {
+        if (qop !== 0 && qop !== undefined)
+            throw new gss.Error(gss.S_BAD_QOP,
+                                gss.KRB5_S_G_UNKNOWN_QOP,
+                                "Bad QOP value");
         if (!this.isEstablished())
             throw new gss.Error(gss.S_NO_CONTEXT,
                                 gss.KRB5_S_KG_CTX_INCOMPLETE,
                                 "Context incomplete");
 
-        // QOP is ignored, per RFC 4121, section 3.
         message = arrayutils.asUint8Array(message);
         var flags =
             (this.isInitiator ? 0 : MSG_SEND_BY_ACCEPTOR) |
@@ -615,6 +618,7 @@ var gss = (function() {
 
         return {
             confidential: (flags & MSG_SEALED) ? true : false,
+            qop: 0,
             message: new Uint8Array(message)
         };
     };
