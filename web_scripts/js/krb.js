@@ -1,5 +1,11 @@
 (function() {
     /** @const */ krb.realm = "ATHENA.MIT.EDU"; // XXX
+    /** @const */ krb.supportedEnctypes = [
+	kcrypto.enctype.aes256_cts_hmac_sha1_96,
+	kcrypto.enctype.aes128_cts_hmac_sha1_96,
+	kcrypto.enctype.des_cbc_crc,
+	kcrypto.enctype.des_cbc_md5
+    ];
 
     /** @constructor */
     krb.Principal = function(principalName, realm) {
@@ -283,7 +289,20 @@
             auth.seqNumber = seqNumber;
         }
 
-        // TODO: RFC 4537, Kerberos Cryptosystem Negotiation Extension
+        if (apReq.apOptions[krb.APOptions.mutual_required] &&
+            opts.etypeNegotiation &&
+            this.key.keytype !== krb.supportedEnctypes[0]) {
+            // RFC 4537, Kerberos Cryptosystem Negotiation Extension
+            var adIfRelevant = [{
+                adType: krb.AD_ETYPE_NEGOTIATION,
+                adData: krb.EtypeList.encodeDER(krb.supportedEnctypes)
+            }];
+            var adEntry = {
+                adType: krb.AD_IF_RELEVANT_TYPE,
+                adData: krb.AD_IF_RELEVANT.encodeDER(adIfRelevant)
+            };
+            auth.authorizationData = [adEntry];
+        }
 
 	// Encode the authenticator.
         apReq.authenticator = this.key.encryptAs(krb.Authenticator,

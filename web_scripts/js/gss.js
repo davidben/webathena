@@ -377,7 +377,8 @@ var gss = (function() {
                   checksum: cksumBuf.contents() },
                 { apOptions: apOptions,
                   useSeqNumber: true,
-                  useSubkey: true
+                  useSubkey: true,
+                  etypeNegotiation: true
                 });
 
             var buf = new asn1.Buffer();

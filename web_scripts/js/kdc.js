@@ -56,12 +56,6 @@ var KDC = (function() {
     var KDC = {};
 
     KDC.urlBase = '/kdc/v1/';
-    KDC.supportedEnctypes = [
-	kcrypto.enctype.aes256_cts_hmac_sha1_96,
-	kcrypto.enctype.aes128_cts_hmac_sha1_96,
-	kcrypto.enctype.des_cbc_crc,
-	kcrypto.enctype.des_cbc_md5
-    ];
 
     /** @constructor */
     KDC.Error = function(code, message) {
@@ -146,7 +140,7 @@ var KDC = (function() {
 
             asReq.reqBody.till = new Date(0);
             asReq.reqBody.nonce = Crypto.randomNonce();
-            asReq.reqBody.etype = KDC.supportedEnctypes;
+            asReq.reqBody.etype = krb.supportedEnctypes;
 
             return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
                                        'AS_REQ', krb.AS_REP_OR_ERROR)
@@ -354,7 +348,7 @@ var KDC = (function() {
             // reasonable default I guess.
             tgsReq.reqBody.till = new Date(0);
             tgsReq.reqBody.nonce = Crypto.randomNonce();
-            tgsReq.reqBody.etype = KDC.supportedEnctypes;
+            tgsReq.reqBody.etype = krb.supportedEnctypes;
 
             // Checksum the reqBody. Note: if our DER encoder isn't completely
             // correct, the proxy will re-encode it and possibly mess up the

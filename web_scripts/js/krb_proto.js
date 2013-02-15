@@ -349,6 +349,9 @@ krb.EncAPRepPart = new asn1.SEQUENCE(
 
 // TODO: 5.8.1.  KRB_CRED Definition
 
+// RFC 4537, Negotiation Extension
+krb.EtypeList = new asn1.SEQUENCE_OF(krb.Int32);
+
 // 7.5.1.  Key Usage Numbers
 /** @const */ krb.KU_AS_REQ_PA_ENC_TIMESTAMP = 1;
 /** @const */ krb.KU_KDC_REP_TICKET = 2;
@@ -418,7 +421,7 @@ krb.EncAPRepPart = new asn1.SEQUENCE(
 /** @const */ krb.ADDRESS_IPV6              = 24;
 
 // 7.5.4.  Authorization Data Types
-/** @const */ krb.AD_IF_RELEVANT                     = 1;
+/** @const */ krb.AD_IF_RELEVANT_TYPE                = 1;
 /** @const */ krb.AD_INTENDED_FOR_SERVER             = 2;
 /** @const */ krb.AD_INTENDED_FOR_APPLICATION_CLASS  = 3;
 /** @const */ krb.AD_KDC_ISSUED                      = 4;
