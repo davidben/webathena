@@ -43,7 +43,6 @@ function RemctlSocket(host, port) {
         this.onready();
     }.bind(this));
     this.socket.on('data', function(b64) {
-        console.log("data");
         // We got more data. Copy what we can into the current buffer.
         var data = arrayutils.fromByteString(atob(b64));
         while (data.length > 0) {
@@ -165,10 +164,8 @@ function RemctlSession(credential, host, port) {
     }.bind(this);
 }
 RemctlSession.prototype._processAuthToken = function(token) {
-    console.log("_processAuthToken");
     var resp = this.context.initSecContext(token);
     if (resp) {
-        console.log(btoa(arrayutils.toByteString(resp)));
         this.socket.sendPacket(TOKEN_CONTEXT|TOKEN_PROTOCOL, resp);
     }
     if (this.context.isEstablished()) {
@@ -198,7 +195,6 @@ function getCredential(peer) {
 	    principal: peer.principal.principalName.nameString
 	}
     }, function (err, r) {
-	console.log("got reply", err, r);
 	if (err) {
 	    deferred.reject(err);
 	    return;
