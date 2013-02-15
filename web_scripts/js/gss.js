@@ -532,6 +532,14 @@ var gss = (function() {
     };
 
     gss.Context.prototype.unwrap = function(token) {
+        // NOTE: It seems at least one remctl server (zsr.mit.edu)
+        // will, when using a DES enctype, use the RFC 1964 format for
+        // per-message tokens. Probably this is true of anything using
+        // MIT Kerberos, but I didn't check. If we ever care, we can
+        // implement that... it can be distinguished by noting that
+        // the TOK_ID is actually the start of GSS-API token
+        // wrapping. Then it has the old wrap token format (TOK_ID
+        // 0x0201).
         if (!this.isEstablished())
             throw new gss.Error(gss.S_NO_CONTEXT,
                                 gss.KRB5_S_KG_CTX_INCOMPLETE,
