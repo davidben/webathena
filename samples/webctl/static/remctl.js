@@ -208,6 +208,23 @@ function getCredential(peer) {
     return deferred.promise;
 }
 
+function makeCommandMessage(cmd, opts) {
+    // TODO: For reeeeaaaaallly large messages, deal with splitting.
+    opts = opts || {};
+    // May as well do the reverse-building thing. We have a buffer...
+    var buf = new asn1.Buffer();
+    for (var i = cmd.length - 1; i >= 0; i--) {
+        var arglen = buf.prependBytes(arrayutils.fromByteString(cmd[i]));
+        buf.prependUint32(arglen);
+    }
+    buf.prependUint32(cmd.length);
+    buf.prependUint8(0); // continue
+    buf.prependUint8(opts.keepalive || 0);
+    buf.prependUint8(MESSAGE_COMMAND);
+    buf.prependUint8(2); // protocol version
+    return buf.contents();
+}
+
 function doSomething() {
     var server = "zygorthian-space-raiders.mit.edu";  // "xvm-remote.mit.edu";
     var cmd = ["volume", "get"];  // ["list"];
@@ -217,19 +234,7 @@ function doSomething() {
     return getCredential(peer).then(function(credential) {
         var session = new RemctlSession(credential, server);
         session.onready = function() {
-            // Okay. Now send our message. Maybe as well do the
-            // reverse-building thing. We have a buffer...
-            var buf = new asn1.Buffer();
-            for (var i = cmd.length - 1; i >= 0; i--) {
-                var arglen = buf.prependBytes(arrayutils.fromByteString(cmd[i]));
-                buf.prependUint32(arglen);
-            }
-            buf.prependUint32(cmd.length);
-            buf.prependUint8(0); // continue
-            buf.prependUint8(0); // keepalive
-            buf.prependUint8(MESSAGE_COMMAND);
-            buf.prependUint8(2); // protocol version
-            session.sendMessage(buf.contents());
+            session.sendMessage(makeCommandMessage(cmd));
         };
         session.onmessage = function(version, type, data) {
             if (type === MESSAGE_OUTPUT && version === 2) {
