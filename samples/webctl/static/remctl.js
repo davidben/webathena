@@ -241,14 +241,16 @@ function doSomething() {
                                             data.byteOffset,
                                             data.byteLength);
                 var stream = dataview.getUint8(0);
-                var length = dataview.getUint32(1);  // What's the point of this? Whatever.
+                // What's the point of this? Whatever.
+                var length = dataview.getUint32(1);
                 var output = data.subarray(5, 5 + length);
                 console.log(stream, arrayutils.toByteString(output));
             } else if (type === MESSAGE_STATUS && version === 2) {
                 var status = data[0];
                 console.log("Exit code", status);
             } else {
-                console.log('unknown', version, type, arrayutils.toByteString(data));
+                console.log('unknown', version, type,
+                            arrayutils.toByteString(data));
             }
         };
         session.onerror = function(error) {
