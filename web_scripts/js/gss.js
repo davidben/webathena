@@ -277,6 +277,11 @@ var gss = (function() {
      * Not all flags can be provided, so the corresponding attributes
      * should be checked on the returned gss.Context object.
      *
+     * FIXME: Passing the peer in is weird. In the real GSS-API, this
+     * makes sense since I gather the credential is a krbtgt
+     * session. But currently this one isn't, so this is
+     * redundant. See FIXME below.
+     *
      * @constructor
      */
     gss.Context = function(peer, mechanism, credential, opts) {

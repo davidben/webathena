@@ -113,10 +113,9 @@ RemctlSocket.prototype.disconnect = function() {
     }
 };
 
-function RemctlSession(credential, host, port) {
+function RemctlSession(peer, credential, host, port) {
     this.onready = this.onmessage = this.onerror = this.onend = function() { };
 
-    var peer = gss.Name.importName("host@" + host, gss.NT_HOSTBASED_SERVICE);
     this.context = new gss.Context(peer, gss.KRB5_MECHANISM, credential, {
         mutualAuthentication: true,
         confidentiality: true,
@@ -232,7 +231,7 @@ function doSomething() {
     var peer = gss.Name.importName("host@" + server, gss.NT_HOSTBASED_SERVICE);
 
     return getCredential(peer).then(function(credential) {
-        var session = new RemctlSession(credential, server);
+        var session = new RemctlSession(peer, credential, server);
         session.onready = function() {
             session.sendMessage(makeCommandMessage(cmd));
         };
