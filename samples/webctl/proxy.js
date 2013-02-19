@@ -36,13 +36,11 @@ io.sockets.on('connection', function(socket) {
             return;
         }
 
-        console.log("Connecting to", host, port);
         tcp = net.createConnection({host: host, port: port}, function() {
             socket.emit('ready');
         });
 
         tcp.on('data', function(buffer) {
-            console.log("Received " + buffer.length);
             socket.emit('data', buffer.toString('base64'));
         });
         tcp.on('end', function() {
@@ -62,8 +60,7 @@ io.sockets.on('connection', function(socket) {
             socket.emit('error', 'No socket');
             return;
         }
-        console.log('Writing data', data);
-        tcp.write(data, 'base64', function() { console.log('written'); });
+        tcp.write(data, 'base64');
     });
     socket.on('end', function() {
         if (tcp === null) {
