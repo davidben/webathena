@@ -19,6 +19,7 @@ var MESSAGE_VERSION = 0x06;
 var MESSAGE_NOOP = 0x07;
 
 var MAX_TOKEN_SIZE = 1048576;
+var MAX_WRAP_SIZE = 65536;
 
 function RemctlSocket(host, port) {
     if (port === undefined) port = REMCTL_PORT;
@@ -183,6 +184,60 @@ RemctlSession.prototype.disconnect = function() {
         this.socket = null;
     }
 };
+RemctlSession.prototype.command = function(args, keepAlive) {
+    // Most commands are small, so figure out how much we need instead
+    // of always allocating MAX_WRAP_SIZE.
+    var len = 4 + 4;
+    for (var i = 0; i < args.length; i++) {
+        len += (4 + args[i].length);
+    }
+    var firstSend = true;
+    var buffer = new Uint8Array(Math.min(len, MAX_WRAP_SIZE));
+    // Reserve two bytes for the keep-alive and continue flags, in
+    // addition to the message header.
+    var offset = 4;
+
+    // Various functions for buffering and sending buffers out when full.
+    var flushBuffer = function(finish) {
+        buffer[0] = 2;  // protocol version
+        buffer[1] = MESSAGE_COMMAND;
+        buffer[2] = keepAlive ? 1 : 0;
+        if (firstSend)
+            buffer[3] = finish ? 0 : 1;
+        else
+            buffer[3] = finish ? 3 : 2;
+        this.sendMessage(buffer.subarray(0, offset));
+        // Reserve two bytes for the keep-alive and continue flags, in
+        // addition to the message header.
+        offset = 4;
+        firstSend = false;
+    }.bind(this);
+    var appendBytes = function(bytes) {
+        while (bytes.length > 0) {
+            // Flush buffer if full.
+            if (offset === buffer.length)
+                flushBuffer(false);
+            // Append what we can.
+            var len = Math.min(buffer.length - offset, bytes.length);
+            buffer.set(bytes.subarray(0, len), offset);
+            offset += len;
+            bytes = bytes.subarray(len);
+        }
+    };
+    var appendUint32 = function(val) {
+        var buf = new Uint8Array(4);
+        new DataView(buf.buffer).setUint32(0, val);
+        appendBytes(buf);
+    };
+
+    // Phew. All that's out of the way. Now format the message.
+    appendUint32(args.length);
+    for (var i = 0; i < args.length; i++) {
+        appendUint32(args[i].length);
+        appendBytes(arrayutils.fromUTF16(args[i]));
+    }
+    flushBuffer(true);
+};
 
 function getCredential(peer) {
     var deferred = Q.defer();
@@ -207,23 +262,6 @@ function getCredential(peer) {
     return deferred.promise;
 }
 
-function makeCommandMessage(cmd, opts) {
-    // TODO: For reeeeaaaaallly large messages, deal with splitting.
-    opts = opts || {};
-    // May as well do the reverse-building thing. We have a buffer...
-    var buf = new asn1.Buffer();
-    for (var i = cmd.length - 1; i >= 0; i--) {
-        var arglen = buf.prependBytes(arrayutils.fromByteString(cmd[i]));
-        buf.prependUint32(arglen);
-    }
-    buf.prependUint32(cmd.length);
-    buf.prependUint8(0); // continue
-    buf.prependUint8(opts.keepalive || 0);
-    buf.prependUint8(MESSAGE_COMMAND);
-    buf.prependUint8(2); // protocol version
-    return buf.contents();
-}
-
 function doSomething() {
     var server = "zygorthian-space-raiders.mit.edu";  // "xvm-remote.mit.edu";
     var cmd = ["volume", "get"];  // ["list"];
@@ -233,7 +271,7 @@ function doSomething() {
     return getCredential(peer).then(function(credential) {
         var session = new RemctlSession(peer, credential, server);
         session.onready = function() {
-            session.sendMessage(makeCommandMessage(cmd));
+            session.command(cmd);
         };
         session.onmessage = function(version, type, data) {
             if (type === MESSAGE_OUTPUT && version === 2) {
