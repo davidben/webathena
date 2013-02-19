@@ -18,8 +18,26 @@ var MESSAGE_ERROR = 0x05;
 var MESSAGE_VERSION = 0x06;
 var MESSAGE_NOOP = 0x07;
 
+var ERROR_INTERNAL           = 1;
+var ERROR_BAD_TOKEN          = 2;
+var ERROR_UNKNOWN_MESSAGE    = 3;
+var ERROR_BAD_COMMAND        = 4;
+var ERROR_UNKNOWN_COMMAND    = 5;
+var ERROR_ACCESS             = 6;
+var ERROR_TOOMANY_ARGS       = 7;
+var ERROR_TOOMUCH_DATA       = 8;
+var ERROR_UNEXPECTED_MESSAGE = 9;
+
 var MAX_TOKEN_SIZE = 1048576;
 var MAX_WRAP_SIZE = 65536;
+
+function RemctlError(code, message) {
+    this.code = code;
+    this.message = message;
+}
+RemctlError.prototype.toString = function() {
+    return this.message;
+};
 
 function RemctlSocket(host, port) {
     if (port === undefined) port = REMCTL_PORT;
@@ -115,7 +133,11 @@ RemctlSocket.prototype.disconnect = function() {
 };
 
 function RemctlSession(peer, credential, host, port) {
-    this.onready = this.onmessage = this.onerror = this.onend = function() { };
+    this.onready = this.onerror = this.onend = function() { };
+
+    // State for the current command.
+    this.deferredStatus = null;
+    this.onOutput = null;
 
     this.context = new gss.Context(peer, gss.KRB5_MECHANISM, credential, {
         mutualAuthentication: true,
@@ -146,7 +168,7 @@ function RemctlSession(peer, credential, host, port) {
             var version = unwrapped[0];
             var type = unwrapped[1];
             var data = unwrapped.subarray(2);
-            this.onmessage(version, type, data);
+            this._handleMessage(version, type, data);
         } else {
             if (flags !== (TOKEN_CONTEXT|TOKEN_PROTOCOL)) {
                 this.onerror("Bad flags");
@@ -172,6 +194,55 @@ RemctlSession.prototype._processAuthToken = function(token) {
         this.onready();
     }
 };
+RemctlSession.prototype._handleMessage = function(version, type, data) {
+    // We should only receive messages when there is a pending
+    // command.
+    if (!this.deferredStatus)
+        this.onerror("Unexpected message");
+    if (type === MESSAGE_OUTPUT) {
+        if (this.onOutput) {
+            var dataview = new DataView(data.buffer,
+                                        data.byteOffset,
+                                        data.byteLength);
+            var stream = dataview.getUint8(0);
+            // What's the point of this? Whatever. We'll pull out that
+            // length and check it.
+            var length = dataview.getUint32(1);
+            if (5 + length > data.length) {
+                this.onerror("Bad message");
+                return;
+            }
+            var output = data.subarray(5, 5 + length);
+            this.onOutput(stream, output);
+        }
+    } else if (type === MESSAGE_STATUS) {
+        var status = data[0];
+        this.deferredStatus.resolve(status);
+        this.deferredStatus = null;
+        this.onOutput = null;
+    } else if (type === MESSAGE_ERROR) {
+        var dataview = new DataView(data.buffer,
+                                    data.byteOffset,
+                                    data.byteLength);
+        var code = dataview.getUint32(0);
+        // What's the point of this? Whatever. We'll pull out that
+        // length and check it.
+        var length = dataview.getUint32(4);
+        if (8 + length > data.length) {
+            this.onerror("Bad message");
+            return;
+        }
+        var message = data.subarray(8, 8 + length);
+        console.log(code, message);
+        this.deferredStatus.reject(new RemctlError(code, message));
+        this.deferredStatus = null;
+        this.onOutput = null;
+    } else if (type === MESSAGE_VERSION) {
+        // TODO: If we handle MESSAGE_NOOP, we'll care about this.
+    } else {
+        this.onerror("Unknown message type " + type);
+    }
+};
 RemctlSession.prototype.sendMessage = function(data) {
     // Meh. Probably could pass the version/type and have it assemble
     // this for you.
@@ -184,7 +255,18 @@ RemctlSession.prototype.disconnect = function() {
         this.socket = null;
     }
 };
-RemctlSession.prototype.command = function(args, keepAlive) {
+RemctlSession.prototype.quit = function() {
+    this.sendMessage(new Uint8Array([2, MESSAGE_QUIT]));
+};
+RemctlSession.prototype.command = function(args, onOutput, keepAlive) {
+    // Only one command at a time. (Can you pipeline? Meh.)
+    if (this.deferredStatus) {
+        return Q.reject("remctl session is busy");
+    }
+
+    this.onOutput = onOutput;
+    this.deferredStatus = Q.defer();
+
     // Most commands are small, so figure out how much we need instead
     // of always allocating MAX_WRAP_SIZE.
     var len = 4 + 4;
@@ -237,6 +319,8 @@ RemctlSession.prototype.command = function(args, keepAlive) {
         appendBytes(arrayutils.fromUTF16(args[i]));
     }
     flushBuffer(true);
+
+    return this.deferredStatus.promise;
 };
 
 function getCredential(peer) {
@@ -271,25 +355,11 @@ function doSomething() {
     return getCredential(peer).then(function(credential) {
         var session = new RemctlSession(peer, credential, server);
         session.onready = function() {
-            session.command(cmd);
-        };
-        session.onmessage = function(version, type, data) {
-            if (type === MESSAGE_OUTPUT && version === 2) {
-                var dataview = new DataView(data.buffer,
-                                            data.byteOffset,
-                                            data.byteLength);
-                var stream = dataview.getUint8(0);
-                // What's the point of this? Whatever.
-                var length = dataview.getUint32(1);
-                var output = data.subarray(5, 5 + length);
-                console.log(stream, arrayutils.toByteString(output));
-            } else if (type === MESSAGE_STATUS && version === 2) {
-                var status = data[0];
+            session.command(cmd, function(stream, data) {
+                console.log(stream, arrayutils.toByteString(data));
+            }).then(function(status) {
                 console.log("Exit code", status);
-            } else {
-                console.log('unknown', version, type,
-                            arrayutils.toByteString(data));
-            }
+            }).done();
         };
         session.onerror = function(error) {
             console.log('ERROR', error);
