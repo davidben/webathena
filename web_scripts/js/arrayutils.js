@@ -36,6 +36,10 @@ var arrayutils = (function() {
     };
 
     /**
+     * This function actually isn't well-named. It's convenient that
+     * everything here is from/to, but it should specify that it's
+     * from JS-string-as-UTF-16 to Uint8Array-as-UTF-8.
+     *
      * @param {string} str
      * @returns {Uint8Array}
      */
