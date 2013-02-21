@@ -39,9 +39,10 @@ Crypto.retryForEntropy = function (action) {
             deferred.resolve(action());
 	} catch (e) {
             if (e instanceof sjcl.exception.notReady) {
-		// Retry when we have more entropy.
-		// FIXME: NO. Just... no.
-		alert("Not enough entropy! Please jiggle the mouse a bunch.");
+		// Retry when we have more entropy. There should
+		// ideally be a callback, but we ask for entropy from
+		// the server on page load, so it should resolve
+		// itself quickly.
 		sjcl.random.addEventListener("seeded", retry);
             } else {
 		deferred.reject(e);
@@ -73,31 +74,15 @@ var KDC = (function() {
         return this.message;
     };
 
-    KDC.kdcProxyRequest = function (data, target, outputType) {
-	var deferred = Q.defer();
-	var xhr = new XMLHttpRequest();
-	xhr.open('POST', KDC.urlBase + target);
-	xhr.setRequestHeader('X-WebKDC-Request', 'OK');
-	xhr.setRequestHeader('Content-Type', 'text/plain');
-	xhr.onreadystatechange = function (e) {
+    KDC.xhrRequest = function(data, target) {
+        var deferred = Q.defer();
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', KDC.urlBase + target);
+        xhr.onreadystatechange = function (e) {
             if (this.readyState != 4)
-		return;
+                return;
             if (this.status == 200) {
-		var data = JSON.parse(this.responseText);
-		switch(data.status) {
-		case 'ERROR':
-                    deferred.reject(new KDC.NetworkError(data.msg));
-                    break;
-		case 'TIMEOUT':
-                    deferred.reject(new KDC.NetworkError(
-                        'KDC connection timed out'));
-                    break;
-		case 'OK':
-                    var der = arrayutils.fromByteString(atob(data.reply));
-                    var reply = outputType.decodeDER(der)[1];
-                    deferred.resolve(reply);
-                    break;
-		}
+                deferred.resolve(this.responseText);
             } else if (this.status) {
                 deferred.reject(new KDC.NetworkError(
                     'HTTP error ' + this.status + ': ' + this.statusText));
@@ -105,8 +90,29 @@ var KDC = (function() {
                 deferred.reject(new KDC.NetworkError('Network error'));
             }
 	};
-	xhr.send(btoa(arrayutils.toByteString(data)));
-	return deferred.promise;
+        xhr.setRequestHeader('X-WebKDC-Request', 'OK');
+        if (data) {
+            xhr.setRequestHeader('Content-Type', 'text/plain');
+            xhr.send(btoa(arrayutils.toByteString(data)));
+        } else {
+            xhr.send();
+        }
+        return deferred.promise;
+    };
+
+    KDC.kdcProxyRequest = function(data, target, outputType) {
+        return KDC.xhrRequest(data, target).then(function(responseText) {
+	    var data = JSON.parse(responseText);
+	    switch (data.status) {
+	    case 'ERROR':
+                throw new KDC.NetworkError(data.msg);
+	    case 'TIMEOUT':
+                throw new KDC.NetworkError('KDC connection timed out');
+	    case 'OK':
+                var der = arrayutils.fromByteString(atob(data.reply));
+                return outputType.decodeDER(der)[1];
+            }
+        });
     };
 
     KDC.asReq = function(principal, padata) {

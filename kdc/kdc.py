@@ -2,6 +2,7 @@
 import base64
 import dns.resolver
 import json
+import os
 import select
 import socket
 
@@ -18,6 +19,9 @@ import settings
 
 # This is the same limit used internally in MIT Kerberos it seems.
 MAX_PACKET_SIZE = 4096
+
+# How many bytes of randomness to return
+URANDOM_BYTES = 1024 / 8
 
 def wait_on_sockets(socks, timeout):
     """
@@ -65,6 +69,7 @@ class WebKDC(object):
             Rule('/v1/TGS_REQ',
                  endpoint=('TGS_REQ', krb_asn1.TGS_REQ)),
             Rule('/v1/AP_REQ', endpoint=('AP_REQ', krb_asn1.AP_REQ)),
+            Rule('/v1/urandom', endpoint=('urandom', None)),
         ])
 
 
@@ -87,6 +92,16 @@ class WebKDC(object):
         data = { 'status': 'ERROR',
                  'msg': str(e) }
         return Response(json.dumps(data), mimetype='application/json')
+
+    def handle_urandom(self):
+        random = os.urandom(URANDOM_BYTES)
+        # FIXME: We probably should be using a constant-time encoding
+        # scheme here...
+        return Response(
+            base64.b64encode(random),
+            mimetype='application/base64',
+            headers=[('Content-Disposition',
+                      'attachment; filename="b64_response.txt"')])
 
     def proxy_kdc_request(self, request, endpoint):
         """
@@ -117,6 +132,10 @@ class WebKDC(object):
         # http://lists.webappsec.org/pipermail/websecurity_lists.webappsec.org/2011-February/007533.html
         if request.headers.get('X-WebKDC-Request') != 'OK':
             return self._error_response('Missing header')
+
+        if req_name == "urandom":
+            return self.handle_urandom()
+
         # Werkzeug docs make a big deal about memory problems if the
         # client sends you MB of data. So, fine, we'll limit it.
         length = request.headers.get('Content-Length', type=int)
@@ -146,6 +165,9 @@ class WebKDC(object):
         if krb_rep is None:
             data = { 'status': 'TIMEOUT' }
         else:
+            # TODO: The JSON wrapping here is really kinda
+            # pointless. Just make this base64 and report errors with
+            # HTTP status codes + JSON or whatever.
             data = {
                 'status': 'OK',
                 'reply': base64.b64encode(krb_rep)
