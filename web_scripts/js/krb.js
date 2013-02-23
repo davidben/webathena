@@ -1,4 +1,6 @@
 (function() {
+    "use strict";
+
     /** @const */ krb.realm = "ATHENA.MIT.EDU"; // XXX
     /** @const */ krb.supportedEnctypes = [
 	kcrypto.enctype.aes256_cts_hmac_sha1_96,
