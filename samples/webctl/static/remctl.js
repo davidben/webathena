@@ -43,7 +43,12 @@ function RemctlSocket(host, port) {
     if (port === undefined) port = REMCTL_PORT;
 
     // Default callbacks to no-ops.
-    this.onready = this.onpacket = this.onerror = this.onend = function() { };
+    this.onpacket = this.onerror = function() { };
+
+    // Various deferred's to get a nicer API for when the socket is
+    // open or closed.
+    this.deferredReady = Q.defer();
+    this.deferredEnd = Q.defer();
 
     // True if buffer is waiting on a header, rather than data.
     this.pendingHeader = true;
@@ -59,7 +64,7 @@ function RemctlSocket(host, port) {
         this.socket.emit('init', host, port);
     }.bind(this));
     this.socket.on('ready', function() {
-        this.onready();
+        this.deferredReady.resolve(null);
     }.bind(this));
     this.socket.on('data', function(b64) {
         // We got more data. Copy what we can into the current buffer.
@@ -112,7 +117,6 @@ function RemctlSocket(host, port) {
         this.onerror(err);
     }.bind(this));
 }
-
 RemctlSocket.prototype.sendPacket = function(flags, data) {
     // Prepend the header.
     data = arrayutils.asUint8Array(data);
@@ -123,17 +127,28 @@ RemctlSocket.prototype.sendPacket = function(flags, data) {
     // And write.
     this.socket.emit('write', btoa(arrayutils.toByteString(buf)));
 };
-
+RemctlSocket.prototype.ready = function() {
+    return this.deferredReady.promise;
+};
+RemctlSocket.prototype.end = function() {
+    return this.deferredEnd.promise;
+};
 RemctlSocket.prototype.disconnect = function() {
     if (this.socket) {
-        this.onend();
+        // TODO: Pass along a reason for closing the connection, like
+        // invalid host/port. This separate error event is a pain.
+        if (!this.deferredReady.promise.isResolved())
+            this.deferredReady.reject("Connection closed");
+        this.deferredEnd.resolve(null);
         this.socket.disconnect();
         this.socket = null;
     }
 };
 
 function RemctlSession(peer, credential, host, port) {
-    this.onready = this.onerror = this.onend = function() { };
+    this.onerror = function() { };
+
+    this.deferredReady = Q.defer();
 
     // State for the current command.
     this.deferredStatus = null;
@@ -146,12 +161,19 @@ function RemctlSession(peer, credential, host, port) {
         sequence: true,
         replayDetection: true
     });
+
     this.socket = new RemctlSocket(host, port);
-    this.socket.onready = function() {
+    this.socket.ready().then(function() {
         this.socket.sendPacket(TOKEN_NOOP | TOKEN_CONTEXT_NEXT | TOKEN_PROTOCOL,
                                new Uint8Array(0));
         this._processAuthToken();
-    }.bind(this);
+    }.bind(this)).done();
+    this.socket.end().then(function() {
+        // If we haven't completed the context yet, we were never
+        // ready. Make it throw.
+        if (!this.deferredReady.promise.isResolved())
+            this.deferredReady.reject("Disconnected");
+    }.bind(this)).done();
     this.socket.onpacket = function(flags, data) {
         if (this.context.isEstablished()) {
             if (flags !== (TOKEN_DATA|TOKEN_PROTOCOL)) {
@@ -181,17 +203,23 @@ function RemctlSession(peer, credential, host, port) {
     this.socket.onerror = function(error) {
         this.onerror(error);
     }.bind(this);
-    this.socket.onend = function() {
-        this.onend();
-    }.bind(this);
 }
 RemctlSession.prototype._processAuthToken = function(token) {
-    var resp = this.context.initSecContext(token);
-    if (resp) {
-        this.socket.sendPacket(TOKEN_CONTEXT|TOKEN_PROTOCOL, resp);
-    }
-    if (this.context.isEstablished()) {
-        this.onready();
+    try {
+        var resp = this.context.initSecContext(token);
+        if (resp) {
+            this.socket.sendPacket(TOKEN_CONTEXT|TOKEN_PROTOCOL, resp);
+        }
+        if (this.context.isEstablished()) {
+            this.deferredReady.resolve(null);
+        }
+    } catch (e) {
+        // I don't think it's possible for this to fail, but things
+        // might have been reordered?
+        if (!this.deferredReady.promise.isResolved())
+            this.deferredReady.reject(e);
+        // GSS error. Disconnect.
+        this.socket.disconnect();
     }
 };
 RemctlSession.prototype._handleMessage = function(version, type, data) {
@@ -233,8 +261,8 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
             return;
         }
         var message = data.subarray(8, 8 + length);
-        console.log(code, message);
-        this.deferredStatus.reject(new RemctlError(code, message));
+        this.deferredStatus.reject(
+            new RemctlError(code, arrayutils.toUTF16(message)));
         this.deferredStatus = null;
         this.onOutput = null;
     } else if (type === MESSAGE_VERSION) {
@@ -242,6 +270,12 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
     } else {
         this.onerror("Unknown message type " + type);
     }
+};
+RemctlSession.prototype.ready = function() {
+    return this.deferredReady.promise;
+};
+RemctlSession.prototype.end = function() {
+    return this.socket.end();
 };
 RemctlSession.prototype.sendMessage = function(data) {
     // Meh. Probably could pass the version/type and have it assemble
@@ -354,18 +388,29 @@ function doSomething() {
 
     return getCredential(peer).then(function(credential) {
         var session = new RemctlSession(peer, credential, server);
-        session.onready = function() {
-            session.command(cmd, function(stream, data) {
+
+        session.ready().then(function() {
+            return session.command(cmd, function(stream, data) {
                 console.log(stream, arrayutils.toByteString(data));
-            }).then(function(status) {
-                console.log("Exit code", status);
-            }).done();
-        };
+            });
+        }, function(error) {
+            console.log("Failed to establish session", error);
+        }).then(function(status) {
+            console.log("Exit code", status);
+        }, function(error) {
+            if (error instanceof RemctlError) {
+                console.log("Got error", error.code, error.message);
+            } else {
+                throw error;
+            }
+        }).done();
+
         session.onerror = function(error) {
             console.log('ERROR', error);
         };
-        session.onend = function() {
+
+        session.end().then(function() {
             console.log('Disconnected');
-        };
+        });
     }).done();
 }
