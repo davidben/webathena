@@ -27,12 +27,11 @@ io.sockets.on('connection', function(socket) {
     var tcp = null;
 
     socket.on('init', function(host, port) {
-        if (tcp !== null) {
-            socket.emit('error', 'Already connected');
-            return;
-        }
+        if (tcp !== null)
+            return;  // Ignore.
         if (!isAllowedEndpoint(host, port)) {
-            socket.emit('error', 'Bad host/port');
+            socket.emit('init-error', 'Bad host/port');
+            socket.disconnect();
             return;
         }
 
@@ -46,8 +45,9 @@ io.sockets.on('connection', function(socket) {
         tcp.on('end', function() {
             socket.emit('end');
         });
-        tcp.on('timeout', function() {
-            socket.emit('timeout');
+        tcp.on('error', function(e) {
+            // TODO: Send a more structured error along?
+            socket.emit('error', e.toString());
         });
         tcp.on('close', function() {
             socket.emit('close');
@@ -56,17 +56,13 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('write', function(data) {
-        if (tcp === null) {
-            socket.emit('error', 'No socket');
-            return;
-        }
+        if (tcp === null)
+            return;  // Ignore.
         tcp.write(data, 'base64');
     });
     socket.on('end', function() {
-        if (tcp === null) {
-            socket.emit('error', 'No socket');
-            return;
-        }
+        if (tcp === null)
+            return;  // Ignore.
         tcp.end();
     });
 });

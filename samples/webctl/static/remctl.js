@@ -43,7 +43,7 @@ function RemctlSocket(host, port) {
     if (port === undefined) port = REMCTL_PORT;
 
     // Default callbacks to no-ops.
-    this.onpacket = this.onerror = function() { };
+    this.onpacket = function() { };
 
     // Various deferred's to get a nicer API for when the socket is
     // open or closed.
@@ -62,6 +62,9 @@ function RemctlSocket(host, port) {
     this.socket = io.connect('', { 'force new connection': true });
     this.socket.on('connect', function() {
         this.socket.emit('init', host, port);
+    }.bind(this));
+    this.socket.on('init-error', function(msg) {
+        this.disconnect(new Error(msg));
     }.bind(this));
     this.socket.on('ready', function() {
         this.deferredReady.resolve(null);
@@ -86,8 +89,7 @@ function RemctlSocket(host, port) {
                     var len = dataview.getUint32(1);
                     if (len > MAX_TOKEN_SIZE) {
                         // Too long. Disconnect and error.
-                        this.onerror("Packet too long.");
-                        this.disconnect();
+                        this.disconnect(new Error("Packet too long."));
                         return;
                     }
                     this.pendingHeader = false;
@@ -106,15 +108,14 @@ function RemctlSocket(host, port) {
     this.socket.on('end', function() {
         this.disconnect();
     }.bind(this));
-    this.socket.on('timeout', function() {
-        this.onerror("Timeout");
-        this.disconnect();
-    }.bind(this));
     this.socket.on('close', function() {
         this.disconnect();
     }.bind(this));
-    this.socket.on('error', function(err) {
-        this.onerror(err);
+    this.socket.on('error', function(msg) {
+        // Got an error after establishing the socket. We're going to
+        // get a close event really soon, but report the disconnect
+        // now so we keep the error.
+        this.disconnect(new Error(msg));
     }.bind(this));
 }
 RemctlSocket.prototype.sendPacket = function(flags, data) {
@@ -133,21 +134,17 @@ RemctlSocket.prototype.ready = function() {
 RemctlSocket.prototype.end = function() {
     return this.deferredEnd.promise;
 };
-RemctlSocket.prototype.disconnect = function() {
-    if (this.socket) {
-        // TODO: Pass along a reason for closing the connection, like
-        // invalid host/port. This separate error event is a pain.
+RemctlSocket.prototype.disconnect = function(reason) {
+    if (!this.deferredEnd.promise.isResolved()) {
         if (!this.deferredReady.promise.isResolved())
-            this.deferredReady.reject("Connection closed");
-        this.deferredEnd.resolve(null);
+            this.deferredReady.reject(reason);
+        this.deferredEnd.resolve(reason);
         this.socket.disconnect();
         this.socket = null;
     }
 };
 
 function RemctlSession(peer, credential, host, port) {
-    this.onerror = function() { };
-
     this.deferredReady = Q.defer();
 
     // State for the current command.
@@ -163,28 +160,31 @@ function RemctlSession(peer, credential, host, port) {
     });
 
     this.socket = new RemctlSocket(host, port);
+
     this.socket.ready().then(function() {
         this.socket.sendPacket(TOKEN_NOOP | TOKEN_CONTEXT_NEXT | TOKEN_PROTOCOL,
                                new Uint8Array(0));
         this._processAuthToken();
+    }.bind(this), function(err) {
+        this.deferredReady.reject(err);
     }.bind(this)).done();
+
     this.socket.end().then(function() {
         // If we haven't completed the context yet, we were never
         // ready. Make it throw.
         if (!this.deferredReady.promise.isResolved())
-            this.deferredReady.reject("Disconnected");
+            this.deferredReady.reject(new Error("Disconnected"));
     }.bind(this)).done();
+
     this.socket.onpacket = function(flags, data) {
         if (this.context.isEstablished()) {
             if (flags !== (TOKEN_DATA|TOKEN_PROTOCOL)) {
-                this.onerror("Bad flags");
-                this.disconnect();
+                this.disconnect(new Error("Bad flags"));
                 return;
             }
             var unwrapped = this.context.unwrap(data).message;
             if (unwrapped.length < 2) {
-                this.onerror("Bad message length");
-                this.disconnect();
+                this.disconnect(new Error("Bad message length"));
                 return;
             }
             var version = unwrapped[0];
@@ -193,15 +193,11 @@ function RemctlSession(peer, credential, host, port) {
             this._handleMessage(version, type, data);
         } else {
             if (flags !== (TOKEN_CONTEXT|TOKEN_PROTOCOL)) {
-                this.onerror("Bad flags");
-                this.disconnect();
+                this.disconnect(new Error("Bad flags"));
                 return;
             }
             this._processAuthToken(data);
         }
-    }.bind(this);
-    this.socket.onerror = function(error) {
-        this.onerror(error);
     }.bind(this);
 }
 RemctlSession.prototype._processAuthToken = function(token) {
@@ -225,8 +221,10 @@ RemctlSession.prototype._processAuthToken = function(token) {
 RemctlSession.prototype._handleMessage = function(version, type, data) {
     // We should only receive messages when there is a pending
     // command.
-    if (!this.deferredStatus)
-        this.onerror("Unexpected message");
+    if (!this.deferredStatus) {
+        this.disconnect(new Error("Unexpected message"));
+        return;
+    }
     if (type === MESSAGE_OUTPUT) {
         if (this.onOutput) {
             var dataview = new DataView(data.buffer,
@@ -237,7 +235,7 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
             // length and check it.
             var length = dataview.getUint32(1);
             if (5 + length > data.length) {
-                this.onerror("Bad message");
+                this.disconnect(new Error("Bad message"));
                 return;
             }
             var output = data.subarray(5, 5 + length);
@@ -257,7 +255,7 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
         // length and check it.
         var length = dataview.getUint32(4);
         if (8 + length > data.length) {
-            this.onerror("Bad message");
+            this.disconnect(new Error("Bad message"));
             return;
         }
         var message = data.subarray(8, 8 + length);
@@ -268,7 +266,7 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
     } else if (type === MESSAGE_VERSION) {
         // TODO: If we handle MESSAGE_NOOP, we'll care about this.
     } else {
-        this.onerror("Unknown message type " + type);
+        this.disconnect(new Error("Unknown message type " + type));
     }
 };
 RemctlSession.prototype.ready = function() {
@@ -283,9 +281,12 @@ RemctlSession.prototype.sendMessage = function(data) {
     this.socket.sendPacket(TOKEN_DATA | TOKEN_PROTOCOL,
                            this.context.wrap(data, true));
 };
-RemctlSession.prototype.disconnect = function() {
+RemctlSession.prototype.disconnect = function(reason) {
     if (this.socket) {
-        this.socket.disconnect();
+        // If we got a disconnect mid-command, that's an error.
+        if (this.deferredStatus)
+            this.deferredStatus.reject(reason);
+        this.socket.disconnect(reason);
         this.socket = null;
     }
 };
@@ -295,7 +296,7 @@ RemctlSession.prototype.quit = function() {
 RemctlSession.prototype.command = function(args, onOutput, keepAlive) {
     // Only one command at a time. (Can you pipeline? Meh.)
     if (this.deferredStatus) {
-        return Q.reject("remctl session is busy");
+        return Q.reject(new Error("remctl session is busy"));
     }
 
     this.onOutput = onOutput;
@@ -386,7 +387,7 @@ function doSomething() {
 
     var peer = gss.Name.importName("host@" + server, gss.NT_HOSTBASED_SERVICE);
 
-    return getCredential(peer).then(function(credential) {
+    getCredential(peer).then(function(credential) {
         var session = new RemctlSession(peer, credential, server);
 
         session.ready().then(function() {
@@ -394,7 +395,7 @@ function doSomething() {
                 console.log(stream, arrayutils.toByteString(data));
             });
         }, function(error) {
-            console.log("Failed to establish session", error);
+            console.log("Failed to establish session", error.message);
         }).then(function(status) {
             console.log("Exit code", status);
         }, function(error) {
@@ -405,12 +406,11 @@ function doSomething() {
             }
         }).done();
 
-        session.onerror = function(error) {
-            console.log('ERROR', error);
-        };
-
         session.end().then(function() {
             console.log('Disconnected');
-        });
+        }).done();
+    }, function(err) {
+        console.log("Caught error", err);
+        throw err;
     }).done();
 }
