@@ -413,6 +413,8 @@ window.addEventListener("load", function() {
             var session = new RemctlSession(peer, credential, server);
 
             session.ready().then(function() {
+                // TODO: Keep established sessions around for
+                // keep-alive and the like.
                 return session.command(command, function(stream, data) {
                     // FIXME: If a UTF-8 code unit spans multiple
                     // writes, this does dumb things.
@@ -442,8 +444,7 @@ window.addEventListener("load", function() {
                 console.log('Disconnected');
             }).done();
         }, function(err) {
-            console.log("Caught error", err);
-            throw err;
+            output.appendChild(makeSpan("error", "Failed to get credentials"));
         }).done();
     });
 });
