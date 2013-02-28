@@ -381,36 +381,62 @@ function getCredential(peer) {
     return deferred.promise;
 }
 
-function doSomething() {
-    var server = "zygorthian-space-raiders.mit.edu";  // "xvm-remote.mit.edu";
-    var cmd = ["volume", "get"];  // ["list"];
-
-    var peer = gss.Name.importName("host@" + server, gss.NT_HOSTBASED_SERVICE);
-
-    getCredential(peer).then(function(credential) {
-        var session = new RemctlSession(peer, credential, server);
-
-        session.ready().then(function() {
-            return session.command(cmd, function(stream, data) {
-                console.log(stream, arrayutils.toByteString(data));
-            });
-        }, function(error) {
-            console.log("Failed to establish session", error.message);
-        }).then(function(status) {
-            console.log("Exit code", status);
-        }, function(error) {
-            if (error instanceof RemctlError) {
-                console.log("Got error", error.code, error.message);
-            } else {
-                throw error;
-            }
-        }).done();
-
-        session.end().then(function() {
-            console.log('Disconnected');
-        }).done();
-    }, function(err) {
-        console.log("Caught error", err);
-        throw err;
-    }).done();
+function makeSpan(className, text) {
+    var span = document.createElement("span");
+    span.className = className;
+    span.textContent = text;
+    return span;
 }
+
+window.addEventListener("load", function() {
+    var form = document.getElementById("remctl-form");
+    var output = document.getElementById("output");
+    form.addEventListener("submit", function(ev) {
+        ev.preventDefault();
+
+        output.textContent = '';
+
+        var server = form.server.value;
+        var command = form.command.value.split(" ");  // Bah.
+
+        var peer = gss.Name.importName("host@" + server,
+                                       gss.NT_HOSTBASED_SERVICE);
+
+        getCredential(peer).then(function(credential) {
+            var session = new RemctlSession(peer, credential, server);
+
+            session.ready().then(function() {
+                return session.command(command, function(stream, data) {
+                    // FIXME: If a UTF-8 code unit spans multiple
+                    // writes, this does dumb things.
+                    output.appendChild(makeSpan("stream" + stream,
+                                                arrayutils.toUTF16(data)));
+                });
+            }, function(error) {
+                output.appendChild(
+                    makeSpan("error",
+                             "Failed to establish session: " + error.message));
+            }).then(function(status) {
+                if (status) {
+                    output.appendChild(
+                        makeSpan("error",
+                                 "Command exited with status: " + status));
+                }
+            }, function(error) {
+                if (error instanceof RemctlError) {
+                    output.appendChild(makeSpan("error",
+                                                "ERROR: " + error.message));
+                } else {
+                    throw error;
+                }
+            }).done();
+
+            session.end().then(function() {
+                console.log('Disconnected');
+            }).done();
+        }, function(err) {
+            console.log("Caught error", err);
+            throw err;
+        }).done();
+    });
+});
