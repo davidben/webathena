@@ -1,6 +1,6 @@
 "use strict";
 
-var WEBATHENA_HOST = "http://localhost:5000"; // "https://webathena.mit.edu";
+var WEBATHENA_HOST = "https://webathena.mit.edu";
 
 var REMCTL_PORT = 4373;
 
