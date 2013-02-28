@@ -358,7 +358,12 @@ RemctlSession.prototype.command = function(args, onOutput, keepAlive) {
     return this.deferredStatus.promise;
 };
 
+var ccache = { };
 function getCredential(peer) {
+    var key = peer.principal.toString();
+    if (ccache[key])
+        return Q.resolve(ccache[key]);
+
     var deferred = Q.defer();
     WinChan.open({
         url: WEBATHENA_HOST + "/#!request_ticket_v1",
@@ -376,7 +381,9 @@ function getCredential(peer) {
 	    deferred.reject(r);
 	    return;
 	}
-	deferred.resolve(krb.Session.fromDict(r.session));
+        var session = krb.Session.fromDict(r.session);
+        ccache[key] = session;
+        deferred.resolve(session);
     });
     return deferred.promise;
 }
