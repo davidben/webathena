@@ -448,3 +448,9 @@ window.addEventListener("load", function() {
         }).done();
     });
 });
+
+// Start SJCL's collectors. TODO: Probably also pull some entropy from
+// webathena.mit.edu? We are getting some from the session ticket key,
+// as MIT kerberos does, which is enough to appease SJCL's default
+// paranoia value. But still.
+sjcl.random.startCollectors();
