@@ -350,8 +350,9 @@ RemctlSession.prototype.command = function(args, onOutput, keepAlive) {
     // Phew. All that's out of the way. Now format the message.
     appendUint32(args.length);
     for (var i = 0; i < args.length; i++) {
-        appendUint32(args[i].length);
-        appendBytes(arrayutils.fromUTF16(args[i]));
+        var arg = new TextEncoder("utf-8").encode(args[i]);
+        appendUint32(arg.length);
+        appendBytes(arg);
     }
     flushBuffer(true);
 
@@ -411,27 +412,39 @@ window.addEventListener("load", function() {
 
         getCredential(peer).then(function(credential) {
             var session = new RemctlSession(peer, credential, server);
+            var streams = { };
+
+            function flushStreams() {
+                for (var key in streams) {
+                    if (!streams.hasOwnProperty(key)) continue;
+                    output.appendChild(makeSpan("stream" + key,
+                                                streams[key].decode()));
+                }
+            }
 
             session.ready().then(function() {
                 // TODO: Keep established sessions around for
                 // keep-alive and the like.
                 return session.command(command, function(stream, data) {
-                    // FIXME: If a UTF-8 code unit spans multiple
-                    // writes, this does dumb things.
-                    output.appendChild(makeSpan("stream" + stream,
-                                                arrayutils.toUTF16(data)));
+                    if (!streams[stream])
+                        streams[stream] = new TextDecoder("utf-8");
+                    output.appendChild(
+                        makeSpan("stream" + stream,
+                                 streams[stream].decode(data, {stream:true})));
                 });
             }, function(error) {
                 output.appendChild(
                     makeSpan("error",
                              "Failed to establish session: " + error.message));
             }).then(function(status) {
+                flushStreams();
                 if (status) {
                     output.appendChild(
                         makeSpan("error",
                                  "Command exited with status: " + status));
                 }
             }, function(error) {
+                flushStreams();
                 if (error instanceof RemctlError) {
                     output.appendChild(makeSpan("error",
                                                 "ERROR: " + error.message));
