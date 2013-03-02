@@ -8,7 +8,7 @@ var ALLOWED_HOSTS = {
     'xvm-remote.mit.edu': true,
     'zygorthian-space-raiders.mit.edu': true
 };
-var REMCTL_PORT = 4373
+var REMCTL_PORT = 4373;
 
 function isAllowedEndpoint(host, port) {
     return ALLOWED_HOSTS[host] && port === REMCTL_PORT;
