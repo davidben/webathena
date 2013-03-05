@@ -59,7 +59,10 @@ function RemctlSocket(host, port) {
     // How far we are into the buffer.
     this.bufferPos = 0;
 
-    this.socket = io.connect('', { 'force new connection': true });
+    this.socket = io.connect('', {
+        'force new connection': true,
+        'reconnect': false
+    });
     this.socket.on('connect', function() {
         this.socket.emit('init', host, port);
     }.bind(this));
