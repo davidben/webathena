@@ -59,7 +59,11 @@ function RemctlSocket(host, port) {
     // How far we are into the buffer.
     this.bufferPos = 0;
 
-    this.socket = io.connect('', {
+    // Silliness.
+    var target = '';
+    if (location.host === 'ctlfish-davidben.rhcloud.com')
+        target = 'https://ctlfish-davidben.rhcloud.com:8443';
+    this.socket = io.connect(target, {
         'force new connection': true,
         'reconnect': false
     });
