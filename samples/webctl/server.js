@@ -35,9 +35,16 @@ io.sockets.on('connection', function(socket) {
             return;
         }
 
-        tcp = net.createConnection({host: host, port: port}, function() {
-            socket.emit('ready');
-        });
+        // Bah.
+        if (/^v0\.6\./.exec(process.version)) {
+            tcp = net.createConnection(port, host, function() {
+                socket.emit('ready');
+            });
+        } else {
+            tcp = net.createConnection({host: host, port: port}, function() {
+                socket.emit('ready');
+            });
+        }
 
         tcp.on('data', function(buffer) {
             socket.emit('data', buffer.toString('base64'));
@@ -67,4 +74,8 @@ io.sockets.on('connection', function(socket) {
     });
 });
 
-app.listen(1337, '127.0.0.1');
+if (process.env.OPENSHIFT_INTERNALPORT) {
+    // Meh.
+    io.set('log level', 1);
+}
+app.listen(process.env.OPENSHIFT_INTERNALPORT || 8080, process.env.OPENSHIFT_INTERNAL_IP || '127.0.0.1');
