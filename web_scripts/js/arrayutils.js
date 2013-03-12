@@ -27,13 +27,31 @@ var arrayutils = (function() {
         return ret;
     };
 
-    /**
-     * @param {ArrayBufferView} arr
-     * @returns {string}
-     */
-    arrayutils.toByteString = function(arr) {
-        return String.fromCharCode.apply(String, arrayutils.asUint8Array(arr));
-    };
+    if (Uint8Array.prototype._getter) {
+        /**
+         * @param {ArrayBufferView} arr
+         * @returns {string}
+         */
+        arrayutils.toByteString = function(arr) {
+            // Apparently the polyfill and Function.prototype.apply on
+            // old Android don't like each other. (Do we care? We
+            // require SNI anyway. Meh.)
+            arr = arrayutils.asUint8Array(arr);
+            var ret = "";
+            for (var i = 0; i < arr.length; i++) {
+                ret += String.fromCharCode(arr._getter(i));
+            }
+            return ret;
+        };
+    } else {
+        /**
+         * @param {ArrayBufferView} arr
+         * @returns {string}
+         */
+        arrayutils.toByteString = function(arr) {
+            return String.fromCharCode.apply(String, arrayutils.asUint8Array(arr));
+        };
+    }
 
     /**
      * This function actually isn't well-named. It's convenient that
