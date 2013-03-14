@@ -147,13 +147,13 @@
         // buffers as byte strings.
         return {
             keytype: this.keytype,
-            keyvalue: arrayutils.toByteString(this.keyvalue)
+            keyvalue: arrayutils.toBase64(this.keyvalue)
         };
     };
 
     krb.Key.fromDict = function(key) {
 	return new krb.Key(key.keytype,
-                           arrayutils.fromByteString(key.keyvalue));
+                           arrayutils.fromBase64(key.keyvalue));
     };
     krb.Key.fromPassword = function(keytype, password, salt, params) {
 	var encProfile = kcrypto.encProfiles[keytype];
@@ -194,7 +194,7 @@
                 encPart: {
                     kvno: dict.ticket.encPart.kvno,
                     etype: dict.ticket.encPart.etype,
-                    cipher: arrayutils.fromByteString(
+                    cipher: arrayutils.fromBase64(
                         dict.ticket.encPart.cipher)
                 }
             }
@@ -203,7 +203,7 @@
             // different ctor for krb.Session to avoid type confusion.
             key: {
                 keytype: dict.key.keytype,
-                keyvalue: arrayutils.fromByteString(dict.key.keyvalue)
+                keyvalue: arrayutils.fromBase64(dict.key.keyvalue)
             },
             lastReq: dict.lastReq,
             nonce: dict.nonce,
@@ -233,7 +233,7 @@
                 encPart: {
                     kvno: this.ticket.encPart.kvno,
                     etype: this.ticket.encPart.etype,
-                    cipher: arrayutils.toByteString(this.ticket.encPart.cipher)
+                    cipher: arrayutils.toBase64(this.ticket.encPart.cipher)
                 }
             },
             key: this.key.toDict(),

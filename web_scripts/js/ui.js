@@ -164,6 +164,13 @@ function showRenewPrompt(oldSession) {
 
 
 function getTGTSession() {
+    // Blow away ccache on format changes.
+    var currentVersion = '1';
+    if (localStorage.getItem('version') !== currentVersion) {
+        localStorage.clear();
+        localStorage.setItem('version', currentVersion);
+    }
+
     // Check if we're already logged in.
     var sessionJson = localStorage.getItem('tgtSession');
     if (sessionJson) {
