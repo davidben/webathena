@@ -4,15 +4,12 @@
 
 <script src="q.min.js"></script>
 <script src="sjcl.js"></script>
-<script src="util.js"></script>
-<script src="crypto-js/rollups/tripledes.js"></script>
-<script src="crypto-js/components/pad-nopadding-min.js"></script>
-<script src="crc32.js"></script>
-<script src="asn1.js"></script>
-<script src="krb.js"></script>
-<script src="kcrypto.js"></script>
-<script src="kdc.js"></script>
+<script src="crypto-js-tripledes.js"></script>
 <script src="winchan.js"></script>
+
+<script src="webathena.js"></script>
+<!-- FIXME: Don't use this file... deal with entropy or something. -->
+<script src="kdc.js"></script>
 
 <h1>zwrite.js proof of concept</h1>
 
@@ -39,6 +36,8 @@ sanity checking on the proxy. Perhaps independent authentication (through
 something less evil than SSL client auth) and stuff. I dunno.
 </p>
 <script>
+    // TODO: Replace all the byte arrays in this code with typed arrays.
+
     var Z_MAXPKTLEN = 1024;
     var Z_FRAGFUDGE = 13;
 
@@ -102,12 +101,12 @@ something less evil than SSL client auth) and stuff. I dunno.
 	        console.log("session", session);
 	        console.log("ip", ip);
 
+                // FIXME: Ugh.
 		return Crypto.retryForEntropy(function() {
-		    return krb.AP_REQ.encodeDER(session.makeAPReq(krb.KU_AP_REQ_AUTHENTICATOR));
+		    return arrayutils.toByteString(
+                        krb.AP_REQ.encodeDER(session.makeAPReq(krb.KU_AP_REQ_AUTHENTICATOR).apReq));
 		}).then(function(apReq) {
-		    // FIXME: This NEEDS to be part of the KDC.Session API
-		    // FIXME: Mumble escaping mumble.
-		    var sender = session.cname.nameString.join("/") + "@" + session.crealm;
+		    var sender = session.client.toString();
 
 		    var uid = makeUid(ip);
 
@@ -142,7 +141,7 @@ something less evil than SSL client auth) and stuff. I dunno.
 		    // Compute the header length.
 		    var headerLength = before_checksum.concat(after_checksum).join("\0").length;
 		    // Checksum length could up to double if we're unlucky. Also \0 and Z
-		    headerLength += 1 + 1 + 2 * session.key.getEncProfile().checksum.checksumBytes;
+		    headerLength += 1 + 1 + 2 * session.key.profile.checksum.checksumBytes;
 		    // How much body can we fit in one fragment?
 		    var fragSize = Z_MAXPKTLEN - headerLength - Z_FRAGFUDGE;
 		    var bodyText = body.join("\0");
@@ -160,7 +159,7 @@ something less evil than SSL client auth) and stuff. I dunno.
 			console.log("bodyPart", bodyPart);
 
 			var checksum_data = before_checksum.concat(after_checksum).concat([bodyPart]).join("\0");
-			var checksum = z_make_zcode(session.key.checksum(1027, checksum_data).checksum);
+			var checksum = z_make_zcode(arrayutils.toByteString(session.key.checksum(1027, arrayutils.fromByteString(checksum_data)).checksum));
 
 			var notice = before_checksum.concat([checksum]).concat(after_checksum).concat([bodyPart]).join("\0");
 			console.log("notice", JSON.stringify(notice));
@@ -198,7 +197,7 @@ something less evil than SSL client auth) and stuff. I dunno.
 		deferred.reject(r);
 		return;
 	    }
-	    session = KDC.Session.fromDict(r.session);
+	    session = krb.Session.fromDict(r.session);
 	    deferred.resolve(session);
 	});
 	return deferred.promise;
@@ -224,7 +223,7 @@ something less evil than SSL client auth) and stuff. I dunno.
     }
 
     function sendZnotice(notice, cb) {
-	var b64 = Crypto.toBase64(notice);
+	var b64 = btoa(notice);
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', 'zhm.cgi');
 	xhr.setRequestHeader('Content-Type', 'text/plain')
