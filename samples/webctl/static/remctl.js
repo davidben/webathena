@@ -78,7 +78,7 @@ function RemctlSocket(host, port) {
     }.bind(this));
     this.socket.on('data', function(b64) {
         // We got more data. Copy what we can into the current buffer.
-        var data = arrayutils.fromByteString(atob(b64));
+        var data = arrayutils.fromBase64(b64);
         while (data.length > 0) {
             var count = Math.min(this.buffer.length - this.bufferPos,
                                  data.length);
@@ -133,7 +133,7 @@ RemctlSocket.prototype.sendPacket = function(flags, data) {
     new DataView(buf.buffer).setUint32(1, data.length);
     buf.set(data, 5);
     // And write.
-    this.socket.emit('write', btoa(arrayutils.toByteString(buf)));
+    this.socket.emit('write', arrayutils.toBase64(buf));
 };
 RemctlSocket.prototype.ready = function() {
     return this.deferredReady.promise;

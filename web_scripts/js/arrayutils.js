@@ -77,6 +77,23 @@ var arrayutils = (function() {
     };
 
     /**
+     * @param {string} str
+     * @returns {Uint8Array}
+     */
+    arrayutils.fromBase64 = function(str) {
+        return arrayutils.fromByteString(atob(str));
+    };
+
+    /**
+     * @param {ArrayBufferView} arr
+     * @returns {string}
+     */
+    arrayutils.toBase64 = function(arr) {
+        return btoa(arrayutils.toByteString(arr));
+    };
+
+
+    /**
      * Adapted from sjcl.codec.utf8String.
      * @param {Array.<number>}
      * @returns {Uint8Array}

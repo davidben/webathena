@@ -13,7 +13,7 @@ sjcl.random.startCollectors();
 // a trusted third party in Kerberos. Also GSS-API mutual auth allows
 // the server to pick the final key.)
 KDC.xhrRequest(null, 'urandom').then(function(data) {
-    var bytes = arrayutils.fromByteString(atob(data));
+    var bytes = arrayutils.fromBase64(data);
     var words = new Uint32Array(bytes.buffer,
                                 bytes.byteOffset,
                                 bytes.byteLength / 4);

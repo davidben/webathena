@@ -93,7 +93,7 @@ var KDC = (function() {
         xhr.setRequestHeader('X-WebKDC-Request', 'OK');
         if (data) {
             xhr.setRequestHeader('Content-Type', 'text/plain');
-            xhr.send(btoa(arrayutils.toByteString(data)));
+            xhr.send(arrayutils.toBase64(data));
         } else {
             xhr.send();
         }
@@ -109,7 +109,7 @@ var KDC = (function() {
 	    case 'TIMEOUT':
                 throw new KDC.NetworkError('KDC connection timed out');
 	    case 'OK':
-                var der = arrayutils.fromByteString(atob(data.reply));
+                var der = arrayutils.fromBase64(data.reply);
                 return outputType.decodeDER(der)[1];
             }
         });
