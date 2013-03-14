@@ -172,6 +172,7 @@
 
         this.key = new krb.Key(encRepPart.key.keytype, encRepPart.key.keyvalue);
         this.flags = encRepPart.flags;
+        this.authtime = encRepPart.authtime;
         this.starttime = encRepPart.starttime;
         this.endtime = encRepPart.endtime;
         this.renewTill = encRepPart.renewTill;
@@ -208,6 +209,7 @@
             nonce: dict.nonce,
             keyExpiration: dict.keyExpiration,
             flags: dict.flags,
+            authtime: new Date(dict.authtime),
             starttime: dateOrUndef(dict.starttime),
             endtime: new Date(dict.endtime),
             renewTill: dateOrUndef(dict.renewTill),
@@ -236,6 +238,7 @@
             },
             key: this.key.toDict(),
             flags: this.flags,
+            authtime: this.authtime.getTime(),
             starttime: getTimeOrUndef(this.starttime),
             endtime: this.endtime.getTime(),
             renewTill: getTimeOrUndef(this.renewTill),
