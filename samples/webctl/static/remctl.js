@@ -142,8 +142,8 @@ RemctlSocket.prototype.end = function() {
     return this.deferredEnd.promise;
 };
 RemctlSocket.prototype.disconnect = function(reason) {
-    if (!this.deferredEnd.promise.isResolved()) {
-        if (!this.deferredReady.promise.isResolved())
+    if (this.deferredEnd.promise.isPending()) {
+        if (this.deferredReady.promise.isPending())
             this.deferredReady.reject(reason);
         this.deferredEnd.resolve(reason);
         this.socket.disconnect();
@@ -179,7 +179,7 @@ function RemctlSession(peer, credential, host, port) {
     this.socket.end().then(function() {
         // If we haven't completed the context yet, we were never
         // ready. Make it throw.
-        if (!this.deferredReady.promise.isResolved())
+        if (this.deferredReady.promise.isPending())
             this.deferredReady.reject(new Error("Disconnected"));
     }.bind(this)).done();
 
@@ -219,7 +219,7 @@ RemctlSession.prototype._processAuthToken = function(token) {
     } catch (e) {
         // I don't think it's possible for this to fail, but things
         // might have been reordered?
-        if (!this.deferredReady.promise.isResolved())
+        if (this.deferredReady.promise.isPending())
             this.deferredReady.reject(e);
         // GSS error. Disconnect.
         this.socket.disconnect();
