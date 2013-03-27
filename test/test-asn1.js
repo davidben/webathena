@@ -147,3 +147,16 @@ test("Extra tests", function() {
                "\x18\x1219900803031415.92Z",
                "GeneralizedTime with milliseconds");
 });
+
+test("INTEGER edge cases", function() {
+    isEncoding(asn1.INTEGER,    0, "\x02\x01" + "\x00",     "0");
+    isEncoding(asn1.INTEGER,  127, "\x02\x01" + "\x7f",     "127");
+    isEncoding(asn1.INTEGER,  128, "\x02\x02" + "\x00\x80", "128");
+    isEncoding(asn1.INTEGER,  255, "\x02\x02" + "\x00\xff", "255");
+    isEncoding(asn1.INTEGER,  256, "\x02\x02" + "\x01\x00", "256");
+    isEncoding(asn1.INTEGER,   -1, "\x02\x01" + "\xff",     "-1");
+    isEncoding(asn1.INTEGER, -128, "\x02\x01" + "\x80",     "-128");
+    isEncoding(asn1.INTEGER, -129, "\x02\x02" + "\xff\x7f", "-129");
+    isEncoding(asn1.INTEGER, -256, "\x02\x02" + "\xff\x00", "-256");
+    isEncoding(asn1.INTEGER, -257, "\x02\x02" + "\xfe\xff", "-257");
+});

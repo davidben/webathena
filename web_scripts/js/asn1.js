@@ -384,18 +384,18 @@ asn1.INTEGER = new asn1.Type(asn1.tag(0x02, asn1.TAG_UNIVERSAL), true);
 
 asn1.INTEGER.encodeDERValue = function(object, buffer) {
     var bytes = 0;
-    var sign = 0;
+    var sign;  // What you would get if you sign-extend the current high bit.
     if (typeof object != "number")
         throw new TypeError("Not a number");
     // Encode in two's-complement, base 256, most sigificant bit
-    // first, with the minimum number of bytes needed.
-    while ((object >= 0 && (sign != 1 || object > 0)) ||
-           (object <= -1 && (sign != -1 || object < -1))) {
+    // first, with the minimum number of bytes needed. We stop once
+    // the remaining unencoded value matches the sign-extension.
+    do {
         var digit = object & 0xff;
         bytes += buffer.prependUint8(digit);
-        sign = (digit & 0x80) ? -1 : 1;
+        sign = (digit & 0x80) ? -1 : 0;
         object = object >> 8;
-    }
+    } while (object !== sign);
     return bytes;
 };
 
