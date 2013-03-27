@@ -346,7 +346,8 @@ var KDC = (function() {
 
             tgsReq.reqBody = { };
             // TODO: What flags?
-            tgsReq.reqBody.kdcOptions = krb.KDCOptions.make();
+            tgsReq.reqBody.kdcOptions = krb.KDCOptions.make(
+                krb.KDCOptions.forwardable);
             tgsReq.reqBody.sname = service.principalName;
             tgsReq.reqBody.realm = service.realm;
 
