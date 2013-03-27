@@ -5,19 +5,24 @@
     var SHELL_URL = "/shell-webathena";
 
     var button = document.getElementById("login");
+    var delegateCheckbox = document.getElementById("delegate");
     var container = document.getElementById("siab");
     // Pfft. Firefox seems to leave it disabled sometimes.
     button.disabled = false;
     button.addEventListener("click", function (ev) {
 	button.disabled = true;
+	var delegate = delegateCheckbox.checked;
 
-	// TODO: Also support delegating a TGT?
+	var principal = ["host", REMOTE_HOST];
+	if (delegate)
+	    principal = ["krbtgt", REALM];
+
         WinChan.open({
             url: WEBATHENA_HOST + "/#!request_ticket_v1",
             relay_url: WEBATHENA_HOST + "/relay.html",
 	    params: {
 		realm: REALM,
-		principal: ["host", REMOTE_HOST]
+		principal: principal
 	    }
 	}, function (err, r) {
 	    if (err) {
@@ -40,7 +45,10 @@
 
 	    container.innerHTML = "";
 	    var iframe = document.createElement("iframe");
-	    iframe.src = SHELL_URL + "?cred=" + encodeURIComponent(session);
+	    var url = SHELL_URL + "?cred=" + encodeURIComponent(session);
+	    if (delegate)
+		url += "&delegate=1"
+	    iframe.src = url;
 	    container.appendChild(iframe);
 	});
     });
