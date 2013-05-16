@@ -15,13 +15,48 @@ function registerTicketAPI() {
     // dunno. This currently has silliness where, if onOpen gets
     // called after the UI is shown, placeholder values are visible.
 
-    // TODO: Sanitize this request some more?
-    if (!args.realm || !args.principal) {
-        cb({
-            status: "ERROR",
-            code: "BAD_REQUEST"
+    // Makes a principal, but is picky about types.
+    function makePrincipal(principal, realm) {
+      if (typeof realm !== "string")
+        throw new TypeError();
+      if (!(principal instanceof Array))
+        throw new TypeError();
+      principal.forEach(function(component) {
+        if (typeof component !== "string")
+          throw new TypeError();
+      });
+      return new krb.Principal({
+        nameType: krb.KRB_NT_UNKNOWN,
+        nameString: principal
+      }, realm);
+    }
+
+    var services = [];
+    var returnList = true;
+    try {
+      if (args.services) {
+        if (!(args.services instanceof Array))
+          throw TypeError();
+        services = args.services.map(function(service) {
+          return makePrincipal(service.principal, service.realm);
         });
-        return;
+      } else {
+        services = [makePrincipal(args.principal, args.realm)];
+        returnList = false;
+      }
+    } catch (e) {
+      cb({
+        status: "ERROR",
+        code: "BAD_REQUEST"
+      });
+      throw e;
+    }
+    if (services.length == 0) {
+      cb({
+        status: "ERROR",
+        code: "BAD_REQUEST"
+      });
+      return;
     }
 
     function deny() {
@@ -42,11 +77,6 @@ function registerTicketAPI() {
         return;
     }
 
-    var principal = new krb.Principal({
-        nameType: krb.KRB_NT_UNKNOWN,
-        nameString: args.principal
-    }, args.realm);
-
     getTGTSession().then(function(r) {
         var tgtSession = r[0], prompted = r[1];
 
@@ -57,7 +87,9 @@ function registerTicketAPI() {
 
         authed.find('.client-principal').text(tgtSession.client.toString());
         authed.find('.foreign-origin').text(origin);
-        authed.find('.service-principal').text(principal.toString());
+        authed.find('.service-principal').text(
+          services.map(function(service) {
+            return service.toString(); }).join(', '));
 
         authed.find('.request-ticket-deny').click(deny);
         authed.find('.request-ticket-allow').click(function(e) {
@@ -80,22 +112,33 @@ function registerTicketAPI() {
             }
 
             // User gave us permission and we have a legit TGT. Let's go!
-            KDC.getServiceSession(tgtSession, principal).then(
-                function (session) {
-                    // TODO: Do we want to store this in the ccache
-                    // too, so a service which doesn't cache its own
-                    // tickets needn't get new ones all the time?
-                    // Also, the ccache needs some fancy abstraction
-                    // or something.
-                    cb({
-                        status: 'OK',
-                        session: session.toDict()
-                    });
-                },
-                function (error) {
-                    log(error);
-                    deny();
-                }).done();
+            Q.all(services.map(function(service) {
+              return KDC.getServiceSession(tgtSession, service);
+            })).then(function(sessions) {
+              // TODO: Do we want to store this in the ccache
+              // too, so a service which doesn't cache its own
+              // tickets needn't get new ones all the time?
+              // Also, the ccache needs some fancy abstraction
+              // or something.
+              if (returnList) {
+                cb({
+                  status: 'OK',
+                  sessions: sessions.map(function(session) {
+                    return session.toDict();
+                  })
+                });
+              } else {
+                cb({
+                  status: 'OK',
+                  session: sessions[0].toDict()
+                });
+              }
+            }, function (error) {
+              // TODO(davidben): This is an internal error. We
+              // shouldn't close just yet.
+              log(error);
+              deny();
+            }).done();
         });
     }).done();
   });
