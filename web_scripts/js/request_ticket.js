@@ -36,7 +36,7 @@ function makeServiceNode(service) {
     // Label it "Accessing BLAH on your behalf".
     // (Okay, fine, dealing with the DOM directly can be annoying.)
     var target = document.createElement("code");
-    code.className = "identifier";
+    target.className = "identifier";
     if (service.principalName.nameString.length === 2 &&
         service.principalName.nameString[0] === "host") {
       $(target).text(service.principalName.nameString[1]);
