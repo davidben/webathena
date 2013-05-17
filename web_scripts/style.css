@@ -3,7 +3,6 @@ html, body {
     padding: 0;
     max-width: 800px;
     margin: auto;
-    text-transform: lowercase;
     font-family: 'Alegreya', serif;
     background: white;
     background: -moz-linear-gradient(left, white, white) repeat-y, #909098;
@@ -18,6 +17,7 @@ html, body {
     text-align: right;
     margin-right: 20px;
     margin-top: 8px;
+    text-transform: lowercase;
 }
 
 #whatis a {
@@ -29,7 +29,6 @@ html, body {
     display: none;
     padding: 0.5em;
     margin-bottom: 24px;
-    text-transform: none;
     font-size: 12pt;
 }
 
@@ -50,6 +49,7 @@ html, body {
 }
 
 header {
+    text-transform: lowercase;
     position: relative;
 }
 
@@ -168,7 +168,6 @@ table.body {
 
 button {
     width: 100%;
-    text-transform: lowercase;
     font-family: 'Alegreya', serif;
     font-size: 1em;
 }
@@ -188,7 +187,6 @@ button {
 }
 
 .identifier {
-    text-transform: none;
     font-family: 'PT Mono', monospace;
     font-size: 18pt;
 }
