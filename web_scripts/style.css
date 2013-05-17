@@ -190,3 +190,13 @@ button {
     font-family: 'PT Mono', monospace;
     font-size: 18pt;
 }
+
+.permission-list {
+    text-align: left;
+    margin-top: 0;
+}
+
+.permission-list > li.dangerous {
+    font-weight: bold;
+    list-style-image: url(dangerous.png);
+}

@@ -1,5 +1,55 @@
 "use strict";
 
+// Friendly names of known service principals.
+// TODO(davidben): Cross-realm?
+// TODO(davidben): Move this to a config.js.
+var SERVICES = { };
+SERVICES["krbtgt/" + krb.realm + "@" + krb.realm] = {
+  dangerous: true,
+  desc: "Full access to your Athena account"
+};
+SERVICES["moira/moira7.mit.edu" + "@" + krb.realm] = {
+  dangerous: true,
+  desc: "View and modify your mailing lists and groups"
+};
+SERVICES["afs/athena.mit.edu" + "@" + krb.realm] = {
+  dangerous: true,
+  desc: "Full access to all your files on Athena"
+};
+SERVICES["zephyr/zephyr" + "@" + krb.realm] = {
+  desc: "Send and receive zephyr notices as you"
+};
+
+function makeServiceNode(service) {
+  var serviceStr = service.toString();
+
+  var li = document.createElement("li");
+  var abbr = document.createElement("abbr");
+  li.appendChild(abbr);
+  abbr.title = serviceStr;
+  if (serviceStr in SERVICES) {
+    var info = SERVICES[serviceStr];
+    if (info.dangerous)
+      li.className = "dangerous";
+    $(abbr).text(info.desc);
+  } else {
+    // Label it "Accessing BLAH on your behalf".
+    // (Okay, fine, dealing with the DOM directly can be annoying.)
+    var target = document.createElement("code");
+    code.className = "identifier";
+    if (service.principalName.nameString.length === 2 &&
+        service.principalName.nameString[0] === "host") {
+      $(target).text(service.principalName.nameString[1]);
+    } else {
+      $(target).text(serviceStr);
+    }
+    abbr.appendChild(document.createTextNode("Accessing "));
+    abbr.appendChild(target);
+    abbr.appendChild(document.createTextNode(" on your behalf"));
+  }
+  return li;
+}
+
 function registerTicketAPI() {
   WinChan.onOpen(function (origin, args, cb) {
     // NOTE: origin is a trusted value we get from the browser. args
@@ -40,6 +90,8 @@ function registerTicketAPI() {
         services = args.services.map(function(service) {
           return makePrincipal(service.principal, service.realm);
         });
+        if (services.length == 0)
+          throw Error();
       } else {
         services = [makePrincipal(args.principal, args.realm)];
         returnList = false;
@@ -50,13 +102,6 @@ function registerTicketAPI() {
         code: "BAD_REQUEST"
       });
       throw e;
-    }
-    if (services.length == 0) {
-      cb({
-        status: "ERROR",
-        code: "BAD_REQUEST"
-      });
-      return;
     }
 
     function deny() {
@@ -87,6 +132,10 @@ function registerTicketAPI() {
 
         authed.find('.client-principal').text(tgtSession.client.toString());
         authed.find('.foreign-origin').text(origin);
+        var permissionList = authed.find('.permission-list');
+        services.forEach(function(service) {
+          permissionList.append(makeServiceNode(service));
+        });
         authed.find('.service-principal').text(
           services.map(function(service) {
             return service.toString(); }).join(', '));
