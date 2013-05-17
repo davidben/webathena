@@ -33,7 +33,7 @@ function makeServiceNode(service) {
       li.className = "dangerous";
     $(abbr).text(info.desc);
   } else {
-    // Label it "Accessing BLAH on your behalf".
+    // Label it "Access BLAH on your behalf".
     // (Okay, fine, dealing with the DOM directly can be annoying.)
     var target = document.createElement("code");
     target.className = "identifier";
@@ -43,7 +43,7 @@ function makeServiceNode(service) {
     } else {
       $(target).text(serviceStr);
     }
-    abbr.appendChild(document.createTextNode("Accessing "));
+    abbr.appendChild(document.createTextNode("Access "));
     abbr.appendChild(target);
     abbr.appendChild(document.createTextNode(" on your behalf"));
   }
