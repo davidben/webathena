@@ -208,10 +208,8 @@ $(function() {
                 dy = event.pageY - $(this).offset().top - $(this).height() / 2,
                 transform = 'rotate(' + Math.atan2(dx, -dy) + 'rad)';
             $(this).css({ transform: transform,
-                          '-moz-transform': transform,
                           '-webkit-transform': transform,
-                          '-ms-transform': transform,
-                          '-o-transform': transform });
+                          '-ms-transform': transform });
         });
     });
     
