@@ -207,9 +207,9 @@ $(function() {
             var dx = event.pageX - $(this).offset().left - $(this).width() / 2,
                 dy = event.pageY - $(this).offset().top - $(this).height() / 2,
                 transform = 'rotate(' + Math.atan2(dx, -dy) + 'rad)';
-            $(this).css({ transform: transform,
-                          '-webkit-transform': transform,
-                          '-ms-transform': transform });
+            // jQuery handles prefixes for us. Also browsers are
+            // unprefixing this anyway.
+            $(this).css({ transform: transform });
         });
     });
     
