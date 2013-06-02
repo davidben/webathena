@@ -480,8 +480,10 @@ asn1.OCTET_STRING = new asn1.Type(asn1.tag(0x04, asn1.TAG_UNIVERSAL), true);
 
 asn1.OCTET_STRING.encodeDERValue = function(object, buffer) {
     // Apparently this isn't exposed everywhere. Sigh.
-    if (window.ArrayBufferView && !object instanceof ArrayBufferView)
+    if (typeof ArrayBufferView !== "undefined" &&
+        !object instanceof ArrayBufferView) {
         throw new TypeError("Not an array buffer");
+    }
     return buffer.prependBytes(object);
 };
 
