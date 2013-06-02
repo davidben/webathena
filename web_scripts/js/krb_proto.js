@@ -1,5 +1,9 @@
 "use strict";
 
+if (typeof asn1 === "undefined" && typeof require === "function") {
+    var asn1 = require("./asn1.js");
+}
+
 // TODO: Rename this to krb_proto or krb_asn1? Kind of awkward that I
 // have names like krb.PrincipalName as an ASN.1 type and
 // krb.Principal as a JS constructor.
