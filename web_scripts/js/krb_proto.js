@@ -533,3 +533,8 @@ krb.EtypeList = new asn1.SEQUENCE_OF(krb.Int32);
 /** @const */ krb.KDC_ERR_REVOCATION_STATUS_UNAVAILABLE = 74;
 /** @const */ krb.KDC_ERR_CLIENT_NAME_MISMATCH          = 75;
 /** @const */ krb.KDC_ERR_KDC_NAME_MISMATCH             = 76;
+
+// Make this usable as a nodejs module
+if (typeof exports === "object") {
+    module.exports = krb;
+}
