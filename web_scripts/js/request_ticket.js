@@ -104,6 +104,19 @@ function registerTicketAPI() {
       throw e;
     }
 
+    var user = null;
+    if (args.user) {
+      try {
+        user = makePrincipal(args.user.principal, args.user.realm);
+      } catch (e) {
+        cb({
+          status: "ERROR",
+          code: "BAD_REQUEST"
+        });
+        throw e;
+      }
+    }
+
     function deny() {
         cb({
             status: "DENIED",
@@ -124,6 +137,23 @@ function registerTicketAPI() {
 
     getTGTSession().then(function(r) {
         var tgtSession = r[0], prompted = r[1];
+
+        if (user) {
+          // If the caller requested a particular user, don't give
+          // them back a mismatching principal.
+          //
+          // TODO(davidben): Be less confusing and use this to inform
+          // the UI somehow. Multiple sign-on?
+          if (tgtSession.client.realm != user.realm ||
+              !krb.principalNamesEqual(tgtSession.client.principalName,
+                                       user.principalName)) {
+            cb({
+              status: "DENIED",
+              code: "WRONG_USER"
+            });
+            return;
+          }
+        }
 
         var authed = $('#request-ticket-template').children().clone();
         authed.appendTo(document.body);
