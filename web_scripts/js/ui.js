@@ -175,13 +175,17 @@ function getTGTSession() {
     var sessionJson = localStorage.getItem('tgtSession');
     if (sessionJson) {
         var tgtSession = krb.Session.fromDict(JSON.parse(sessionJson));
-        if (tgtSession.isExpired())
+        // Treat as expired if we have less than an hour left. It'd be
+        // poor to give clients an old ticket.
+        if (tgtSession.endtime.getTime() - 60 * 60 * 1000 <=
+            (new Date()).getTime()) {
             return showRenewPrompt(tgtSession).then(function(tgtSession) {
                 // Save in local storage.
                 localStorage.setItem('tgtSession',
                                      JSON.stringify(tgtSession.toDict()));
                 return [tgtSession, true];
             });
+        }
         return Q.resolve([tgtSession, false]);
     }
 
