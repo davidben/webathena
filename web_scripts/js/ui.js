@@ -177,8 +177,7 @@ function getTGTSession() {
         var tgtSession = krb.Session.fromDict(JSON.parse(sessionJson));
         // Treat as expired if we have less than an hour left. It'd be
         // poor to give clients an old ticket.
-        if (tgtSession.endtime.getTime() - 60 * 60 * 1000 <=
-            (new Date()).getTime()) {
+        if (tgtSession.timeRemaining() < 60 * 60 * 1000) {
             return showRenewPrompt(tgtSession).then(function(tgtSession) {
                 // Save in local storage.
                 localStorage.setItem('tgtSession',

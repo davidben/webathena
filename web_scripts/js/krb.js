@@ -248,8 +248,12 @@
         };
     };
 
+    krb.Session.prototype.timeRemaining = function() {
+        return this.endtime.getTime() - (new Date()).getTime();
+    };
+
     krb.Session.prototype.isExpired = function() {
-	return this.endtime <= new Date();
+	return this.timeRemaining() < 0;
     };
 
     krb.Session.prototype.makeAPReq = function(keyUsage,
