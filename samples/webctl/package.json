@@ -1,0 +1,17 @@
+{
+  "name": "ctlfish",
+  "version": "0.0.0",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "node-static": "~0.6.7",
+    "socket.io": "~0.9.13"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "David Benjamin <davidben@mit.edu>",
+  "license": "MIT"
+}
