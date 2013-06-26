@@ -39,7 +39,7 @@ RemctlError.prototype.toString = function() {
     return this.message;
 };
 
-function RemctlSocket(host, port) {
+function RemctlSocket(proxy, host, port) {
     if (port === undefined) port = REMCTL_PORT;
 
     // Default callbacks to no-ops.
@@ -59,11 +59,7 @@ function RemctlSocket(host, port) {
     // How far we are into the buffer.
     this.bufferPos = 0;
 
-    // Silliness.
-    var target = '';
-    if (location.host === 'ctlfish-davidben.rhcloud.com')
-        target = 'https://ctlfish-davidben.rhcloud.com:8443';
-    this.socket = io.connect(target, {
+    this.socket = io.connect(proxy, {
         'force new connection': true,
         'reconnect': false
     });
@@ -151,7 +147,7 @@ RemctlSocket.prototype.disconnect = function(reason) {
     }
 };
 
-function RemctlSession(peer, credential, host, port) {
+function RemctlSession(proxy, peer, credential, host, port) {
     this.deferredReady = Q.defer();
 
     // State for the current command.
@@ -166,7 +162,7 @@ function RemctlSession(peer, credential, host, port) {
         replayDetection: true
     });
 
-    this.socket = new RemctlSocket(host, port);
+    this.socket = new RemctlSocket(proxy, host, port);
 
     this.socket.ready().then(function() {
         this.socket.sendPacket(TOKEN_NOOP | TOKEN_CONTEXT_NEXT | TOKEN_PROTOCOL,

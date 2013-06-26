@@ -50,7 +50,12 @@ window.addEventListener("load", function() {
                                        gss.NT_HOSTBASED_SERVICE);
 
         getCredential(peer).then(function(credential) {
-            var session = new RemctlSession(peer, credential, server);
+	    // Silliness.
+	    var proxy = '';
+	    if (location.host === 'ctlfish-davidben.rhcloud.com')
+		proxy = 'https://ctlfish-davidben.rhcloud.com:8443';
+
+            var session = new RemctlSession(proxy, peer, credential, server);
             var streams = { };
 
             function flushStreams() {
