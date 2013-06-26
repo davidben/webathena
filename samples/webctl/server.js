@@ -19,7 +19,7 @@ var file = new nodeStatic.Server(__dirname + '/static/');
 var app = http.createServer(function(req, res) {
     req.addListener('end', function() {
         file.serve(req, res);
-    });
+    }).resume();
 });
 
 var io = socketIo.listen(app);
