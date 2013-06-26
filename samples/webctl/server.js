@@ -5,6 +5,7 @@ var socketIo = require('socket.io');
 var nodeStatic = require('node-static');
 
 var ALLOWED_HOSTS = {
+    'primary-key.mit.edu': true,
     'xvm-remote.mit.edu': true,
     'zygorthian-space-raiders.mit.edu': true
 };
