@@ -170,7 +170,7 @@ var KDC = (function() {
             if (methodData[i].padataType == krb.PA_ETYPE_INFO2) {
 		var info = krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
                 if (info.salt !== undefined)
-                    info.salt = arrayutils.fromUTF16(info.salt);
+                    info.salt = arrayutils.fromString(info.salt);
                 return info;
             }
 	}
@@ -189,7 +189,7 @@ var KDC = (function() {
         // pre-authentication data, is the concatenation of the
         // principal's realm and name components, in order, with no
         // separators.
-	return arrayutils.fromUTF16(
+	return arrayutils.fromString(
             principal.realm + principal.principalName.nameString.join(""));
     }
     function keyFromPassword(etypeInfo, principal, password) {

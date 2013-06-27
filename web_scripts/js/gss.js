@@ -140,7 +140,7 @@ var gss = (function() {
                 throw new gss.Error(gss.S_BAD_NAME, 0, "Bad length");
             try {
                 return new gss.Name(krb.Principal.fromString(
-                    arrayutils.toUTF16(data.subarray(4 + mechOidLen + 4))));
+                    arrayutils.toString(data.subarray(4 + mechOidLen + 4))));
             } catch (e) {
                 throw new gss.Error(gss.S_BAD_NAME, 0, e);
             }
@@ -185,7 +185,7 @@ var gss = (function() {
         // Build it backwards.
         var b = new asn1.Buffer();
         var nameLen =
-            b.prependBytes(arrayutils.fromUTF16(this.principal.toString()));
+            b.prependBytes(arrayutils.fromString(this.principal.toString()));
         b.prependUint32(name.length);
         var mechOidLen =
             asn1.OBJECT_IDENTIFIER.encodeDERTriple(gss.KRB5_MECHANISM, b);

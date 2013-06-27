@@ -48,7 +48,7 @@ test("RFC 3961 n-fold test vectors", function() {
 });
 
 test("RFC 3961 mit_des_string_to_key test vectors", function() {
-    var afu = arrayutils.fromUTF16;
+    var afu = arrayutils.fromString;
     var mit_des_string_to_key =
         kcrypto.DesCbcCrcProfile.stringToKey.bind(kcrypto.DesCbcCrcProfile);
     arraysEqual(mit_des_string_to_key("password", afu("ATHENA.MIT.EDUraeburn")),

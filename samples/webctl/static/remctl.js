@@ -263,7 +263,7 @@ RemctlSession.prototype._handleMessage = function(version, type, data) {
         }
         var message = data.subarray(8, 8 + length);
         this.deferredStatus.reject(
-            new RemctlError(code, arrayutils.toUTF16(message)));
+            new RemctlError(code, arrayutils.toString(message)));
         this.deferredStatus = null;
         this.onOutput = null;
     } else if (type === MESSAGE_VERSION) {
@@ -353,7 +353,7 @@ RemctlSession.prototype.command = function(args, onOutput, keepAlive) {
     // Phew. All that's out of the way. Now format the message.
     appendUint32(args.length);
     for (var i = 0; i < args.length; i++) {
-        var arg = arrayutils.fromUTF16(args[i]);
+        var arg = arrayutils.fromString(args[i]);
         appendUint32(arg.length);
         appendBytes(arg);
     }

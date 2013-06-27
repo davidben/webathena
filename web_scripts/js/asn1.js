@@ -581,12 +581,12 @@ asn1.GeneralString = new asn1.Type(asn1.tag(0x1b, asn1.TAG_UNIVERSAL), true);
 asn1.GeneralString.encodeDERValue = function(object, buffer) {
     if (typeof object != "string")
         throw new TypeError("Not a string");
-    return buffer.prependBytes(arrayutils.fromUTF16(object));
+    return buffer.prependBytes(arrayutils.fromString(object));
 };
 
 asn1.GeneralString.decodeDERValue = function(data) {
     try {
-        return arrayutils.toUTF16(data);
+        return arrayutils.toString(data);
     } catch (e) {
         if (e instanceof URIError)
             throw new asn1.Error("Invalid UTF-8 string");
