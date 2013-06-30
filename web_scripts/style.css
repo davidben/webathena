@@ -104,11 +104,24 @@ header ~ * * {
     background: linear-gradient(to bottom, orange, darkorange);
 }
 
-table.body {
+.body {
     margin: auto;
     margin-top: 2em;
     padding: 1em;
     max-width: 500px;
+}
+
+table.form-box {
+    margin: 0 auto 0 auto;
+    text-align: left;
+}
+table.form-box > tbody > tr > td:first-child {
+    padding-right: 0.5em;
+    text-align: right;
+}
+table.form-box > tbody > tr > td:only-child {
+    padding: 0;
+    text-align: center;
 }
 
 #alert td:first-child {
@@ -128,8 +141,7 @@ table.body {
     right: 0;
 }
 
-.login table {
-    text-align: center;
+.login {
     box-shadow: 1pt 1pt 4pt black;
     background: tomato;
     background: -moz-linear-gradient(top, lightsalmon, tomato);
@@ -141,13 +153,12 @@ table.body {
 .login-message {
     text-align: center;
 }
+.logout-message {
+    text-align: right;
+}
 
 .logout-link {
     font-size: 0.8em;
-}
-
-.logout-message {
-    text-align: right;
 }
 
 .login td {

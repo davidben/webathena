@@ -69,64 +69,82 @@
         </table>
 
         <div hidden id="login-template">
-          <form class="login" action="about:blank">
-            <table class="body">
-              <tr>
-                <td><label for="username">Username</label></td>
-                <td>
-                  <div class="container">
-                    <input class="username" type="text" autofocus>
-                    <div class="error">&#x25C0;   Please enter your username</div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><label for="password">Password</label></td>
-                <td>
-                  <div class="container">
-                    <input class="password" type="password" autocomplete="off">
-                    <div class="error">&#x25C0;   Please enter your password</div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td colspan=2>
-                  <button name="submit" class="submit">Log in to Athena</button>
-                </td>
-              </tr>
-            </table>
+          <form action="about:blank">
+            <div class="login body">
+              <table class="form-box">
+                <tr>
+                  <td><label for="username">Username</label></td>
+                  <td>
+                    <div class="container">
+                      <input class="username" type="text" autofocus>
+                      <div class="error">&#x25C0;   Please enter your username</div>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label for="password">Password</label></td>
+                  <td>
+                    <div class="container">
+                      <input class="password" type="password" autocomplete="off">
+                      <div class="error">&#x25C0;   Please enter your password</div>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan=2>
+                    <button name="submit" class="submit">Log in to Athena</button>
+                  </td>
+                </tr>
+              </table>
+              <p>
+                Webathena manages your Athena login for you using the
+                Kerberos protocol. Your password never leaves your
+                computer.
+                <strong>Never enter your password into websites other than
+                  <a href="https://ca.mit.edu" target="_blank"><code>ca.mit.edu</code></a>,
+                  <a href="https://idp.mit.edu" target="_blank"><code>idp.mit.edu</code></a>, or
+                  <a href="https://webathena.mit.edu" target="_blank"><code>webathena.mit.edu</code></a>.
+                </strong>
+              </p>
+            </div>
           </form>
         </div>
 
         <div hidden id="renew-template">
-          <form class="login" action="about:blank">
-            <table class="body">
-              <tr>
-                <td class="login-message" colspan=2>
-                  Your login has expired.
-                </td>
-              </tr>
-              <tr><td colspan=2 class="client-principal identifier">example@ATHENA.MIT.EDU</td></tr>
-              <tr>
-                <td><label for="password">Password</label></td>
-                <td>
-                  <div class="container">
-                    <input class="password" type="password" autocomplete="off">
-                    <div class="error">&#x25C0;   Please enter your password</div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td colspan=2>
-                  <button name="submit" class="submit">Renew login</button>
-                </td>
-              </tr>
-              <tr>
-                <td colspan=2 class="logout-message">
-                  <a class="logout-link" href="#">Login as another user.</a>
-                </td>
-              </tr>
-            </table>
+          <form action="about:blank">
+            <div class="login body">
+              <div class="login-message">Your login has expired.</div>
+              <table class="form-box">
+                <tr><td colspan=2 class="client-principal identifier">example@ATHENA.MIT.EDU</td></tr>
+                <tr>
+                 <td><label for="password">Password</label></td>
+                  <td>
+                    <div class="container">
+                      <input class="password" type="password" autocomplete="off">
+                      <div class="error">&#x25C0;   Please enter your password</div>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan=2>
+                    <button name="submit" class="submit">Renew login</button>
+                  </td>
+                </tr>
+              </table>
+              <p>
+                Webathena manages your Athena login for you using the
+                Kerberos protocol. Your password never leaves your
+                computer.
+                <strong>Never enter your password into websites other than
+                  <a href="https://ca.mit.edu" target="_blank"><code>ca.mit.edu</code></a>,
+                  <a href="https://idp.mit.edu" target="_blank"><code>idp.mit.edu</code></a>, or
+                  <a href="https://webathena.mit.edu" target="_blank"><code>webathena.mit.edu</code></a>.
+                </strong>
+              </p>
+              <div class="logout-message">
+                <a class="logout-link" href="#">Login as another user.</a>
+              </div>
+            </div>
           </form>
         </div>
 
