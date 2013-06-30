@@ -149,33 +149,27 @@
         </div>
 
         <div hidden id="authed-template">
-          <table class="authed body">
-            <tr><td>You are logged in as</td></tr>
-            <tr><td class="client-principal identifier"></td></tr>
-            <tr><td><button class="logout">Log out</button></td></tr>
-          </table>
+          <div class="authed body">
+            <p>You are logged in as</p>
+            <p class="client-principal identifier"></p>
+            <p><button class="logout">Log out</button></p>
+          </div>
         </div>
 
         <div hidden id="request-ticket-template">
-          <table class="authed body">
-            <tr><td colspan=2>You are logged in as</td></tr>
-            <tr><td class="client-principal identifier" colspan=2>example@ATHENA.MIT.EDU</td></tr>
-            <tr>
-                <td class="foreign-origin identifier" colspan=2>https://example.com</td>
-            </tr>
-            <tr><td colspan=2>requests permission to</td></tr>
-            <tr>
-              <td colspan=2>
-                <ul class="permission-list">
-                  <li>Learn your email address</li>
-                </ul>
-              </td>
-            </tr>
-            <tr>
-                <td><button class="request-ticket-allow">Allow</button></td>
-                <td><button class="request-ticket-deny">Deny</button></td>
-            </tr>
-          </table>
+          <div class="authed body">
+            <p>You are logged in as</p>
+            <p class="client-principal identifier">example@ATHENA.MIT.EDU</p>
+            <p class="foreign-origin identifier">https://example.com</p>
+            <p>requests permission to</p>
+            <ul class="permission-list">
+              <li>Learn your email address</li>
+            </ul>
+            <div class="button-box">
+              <button class="request-ticket-allow">Allow</button>
+              <button class="request-ticket-deny">Deny</button>
+            </div>
+          </div>
         </div>
     </body>
 </html>

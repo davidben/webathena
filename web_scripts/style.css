@@ -111,6 +111,16 @@ header ~ * * {
     max-width: 500px;
 }
 
+.body > p {
+    margin: 0.5em 0 0.5em 0;
+}
+.body > p:first-child {
+    margin-top: 0;
+}
+.body > p:last-child {
+    margin-bottom: 0;
+}
+
 table.form-box {
     margin: 0 auto 0 auto;
     text-align: left;
@@ -123,6 +133,13 @@ table.form-box > tbody > tr > td:only-child {
     padding: 0;
     text-align: center;
 }
+
+.button-box > button {
+    width: 48%;
+    margin: 0 1% 0 1%;
+    float: left;
+}
+.button-box::after { clear: both; content: ""; display: block; }
 
 #alert td:first-child {
     text-align: center;
@@ -199,7 +216,7 @@ button {
 }
 
 .authed .client-principal {
-    padding-bottom: 1em;
+    margin-bottom: 1em;
 }
 
 .identifier {
