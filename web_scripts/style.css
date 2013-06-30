@@ -108,6 +108,7 @@ table.body {
     margin: auto;
     margin-top: 2em;
     padding: 1em;
+    max-width: 500px;
 }
 
 #alert td:first-child {
@@ -128,7 +129,7 @@ table.body {
 }
 
 .login table {
-    text-align: right;
+    text-align: center;
     box-shadow: 1pt 1pt 4pt black;
     background: tomato;
     background: -moz-linear-gradient(top, lightsalmon, tomato);
@@ -143,6 +144,10 @@ table.body {
 
 .logout-link {
     font-size: 0.8em;
+}
+
+.logout-message {
+    text-align: right;
 }
 
 .login td {
