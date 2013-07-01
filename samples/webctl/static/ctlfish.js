@@ -54,6 +54,7 @@ window.addEventListener("load", function() {
 	    var proxy = '';
 	    if (location.host === 'ctlfish-davidben.rhcloud.com')
 		proxy = 'https://ctlfish-davidben.rhcloud.com:8443';
+            proxy += '/socket';
 
             var session = new RemctlSession(proxy, peer, credential, server);
             var streams = { };

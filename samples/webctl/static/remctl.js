@@ -2,6 +2,15 @@
 
 var WEBATHENA_HOST = "https://webathena.mit.edu";
 
+// Socket proxy errors.
+var ERR_BAD_FORMAT = 4000;
+var ERR_BAD_PARAMS = 4001;
+var ERR_ALREADY_INITIALIZED = 4002;
+var ERR_FORBIDDEN_ENDPOINT = 4003;
+var ERR_SOCKET_ERROR = 4004;
+var ERR_UNINITIALIZED = 4005;
+var ERR_BAD_MESSAGE_TYPE = 4006;
+
 var REMCTL_PORT = 4373;
 
 var TOKEN_NOOP = 0x01;
@@ -59,66 +68,71 @@ function RemctlSocket(proxy, host, port) {
     // How far we are into the buffer.
     this.bufferPos = 0;
 
-    this.socket = io.connect(proxy, {
-        'force new connection': true,
-        'reconnect': false
-    });
-    this.socket.on('connect', function() {
-        this.socket.emit('init', host, port);
+    this.socket = new SockJS(proxy);
+    this.socket.addEventListener('open', function() {
+        this.socket.send(JSON.stringify({
+            type: 'init',
+            host: host,
+            port: port
+        }));
     }.bind(this));
-    this.socket.on('init-error', function(msg) {
-        this.disconnect(new Error(msg));
-    }.bind(this));
-    this.socket.on('ready', function() {
-        this.deferredReady.resolve(null);
-    }.bind(this));
-    this.socket.on('data', function(b64) {
-        // We got more data. Copy what we can into the current buffer.
-        var data = arrayutils.fromBase64(b64);
-        while (data.length > 0) {
-            var count = Math.min(this.buffer.length - this.bufferPos,
-                                 data.length);
-            // Copy data into the current buffer.
-            this.buffer.set(data.subarray(0, count), this.bufferPos);
-            this.bufferPos += count;
-            data = data.subarray(count);
+    this.socket.addEventListener('message', function(ev) {
+        try {
+            var msg = JSON.parse(ev.data);
+        } catch (err) {
+            this.disconnect(new Error('Bad server message format'));
+            throw err;
+        }
+        if (msg.type === 'ready') {
+            this.deferredReady.resolve(null);
+        } else if (msg.type === 'data') {
+            var b64 = msg.data;
+            // We got more data. Copy what we can into the current buffer.
+            var data = arrayutils.fromBase64(b64);
+            while (data.length > 0) {
+                var count = Math.min(this.buffer.length - this.bufferPos,
+                                     data.length);
+                // Copy data into the current buffer.
+                this.buffer.set(data.subarray(0, count), this.bufferPos);
+                this.bufferPos += count;
+                data = data.subarray(count);
 
-            // See if we've completed a buffer.
-            if (this.bufferPos >= this.buffer.length) {
-                // We've either just gotten a 5-byte header or
-                // finished some data.
-                if (this.pendingHeader) {
-                    var dataview = new DataView(this.buffer.buffer);
-                    var len = dataview.getUint32(1);
-                    if (len > MAX_TOKEN_SIZE) {
-                        // Too long. Disconnect and error.
-                        this.disconnect(new Error("Packet too long."));
-                        return;
+                // See if we've completed a buffer.
+                if (this.bufferPos >= this.buffer.length) {
+                    // We've either just gotten a 5-byte header or
+                    // finished some data.
+                    if (this.pendingHeader) {
+                        var dataview = new DataView(this.buffer.buffer);
+                        var len = dataview.getUint32(1);
+                        if (len > MAX_TOKEN_SIZE) {
+                            // Too long. Disconnect and error.
+                            this.disconnect(new Error("Packet too long."));
+                            return;
+                        }
+                        this.pendingHeader = false;
+                        this.flags = dataview.getUint8(0);
+                        this.buffer = new Uint8Array(len);
+                        this.bufferPos = 0;
+                    } else {
+                        this.onpacket(this.flags, this.buffer);
+                        this.pendingHeader = true;
+                        this.buffer = new Uint8Array(5);
+                        this.bufferPos = 0;
                     }
-                    this.pendingHeader = false;
-                    this.flags = dataview.getUint8(0);
-                    this.buffer = new Uint8Array(len);
-                    this.bufferPos = 0;
-                } else {
-                    this.onpacket(this.flags, this.buffer);
-                    this.pendingHeader = true;
-                    this.buffer = new Uint8Array(5);
-                    this.bufferPos = 0;
                 }
             }
+        } else {
+            console.log('Unexpected message', msg);
         }
     }.bind(this));
-    this.socket.on('end', function() {
-        this.disconnect();
-    }.bind(this));
-    this.socket.on('close', function() {
-        this.disconnect();
-    }.bind(this));
-    this.socket.on('error', function(msg) {
-        // Got an error after establishing the socket. We're going to
-        // get a close event really soon, but report the disconnect
-        // now so we keep the error.
-        this.disconnect(new Error(msg));
+    this.socket.addEventListener('close', function(ev) {
+        console.log(this);
+        if (ev.code === 1000) {
+            this.disconnect();
+        } else {
+            // TODO(davidben): Pass the exit code along too.
+            this.disconnect(new Error(ev.reason));
+        }
     }.bind(this));
 }
 RemctlSocket.prototype.sendPacket = function(flags, data) {
@@ -129,7 +143,10 @@ RemctlSocket.prototype.sendPacket = function(flags, data) {
     new DataView(buf.buffer).setUint32(1, data.length);
     buf.set(data, 5);
     // And write.
-    this.socket.emit('write', arrayutils.toBase64(buf));
+    this.socket.send(JSON.stringify({
+        type: 'write',
+        data: arrayutils.toBase64(buf)
+    }));
 };
 RemctlSocket.prototype.ready = function() {
     return this.deferredReady.promise;
@@ -142,7 +159,7 @@ RemctlSocket.prototype.disconnect = function(reason) {
         if (this.deferredReady.promise.isPending())
             this.deferredReady.reject(reason);
         this.deferredEnd.resolve(reason);
-        this.socket.disconnect();
+        this.socket.close();
         this.socket = null;
     }
 };
