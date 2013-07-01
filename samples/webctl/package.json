@@ -1,7 +1,7 @@
 {
   "name": "ctlfish",
-  "version": "0.0.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "ctlfish remctl client",
   "main": "server.js",
   "dependencies": {
     "node-static": "~0.6.7",
