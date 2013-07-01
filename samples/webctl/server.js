@@ -114,8 +114,4 @@ sockServer.on('connection', function(socket) {
 });
 sockServer.installHandlers(app, {prefix: '/socket'});
 
-if (process.env.OPENSHIFT_INTERNAL_PORT) {
-    // Meh.
-    io.set('log level', 1);
-}
 app.listen(process.env.OPENSHIFT_INTERNAL_PORT || 8080, process.env.OPENSHIFT_INTERNAL_IP || '127.0.0.1');
