@@ -70,6 +70,20 @@ function showLoginPrompt() {
         var principal = krb.Principal.fromString(username);
         KDC.getTGTSession(principal, password).then(function(tgtSession) {
             resetForm();
+            // Position-absolute it so it doesn't interfere with its
+            // replacement. jQuery's position function tries to take
+            // the margins into account and this seems to be
+            // buggy. Just compute the position straight and be done
+            // with it.
+            var position = login.get(0).getBoundingClientRect();
+            var parentPosition =
+                login.offsetParent().get(0).getBoundingClientRect();
+            login.css({
+                margin: '0',
+                position: 'absolute',
+                top: (position.top - parentPosition.top) + 'px',
+                left: (position.left - parentPosition.left) + 'px'
+            });
             login.fadeOut(function() { $(this).remove(); });
             deferred.resolve(tgtSession);
         }, function(error) {
@@ -133,6 +147,20 @@ function showRenewPrompt(oldSession) {
         };
         KDC.getTGTSession(oldSession.client, password).then(function(tgtSession) {
             resetForm();
+            // Position-absolute it so it doesn't interfere with its
+            // replacement. jQuery's position function tries to take
+            // the margins into account and this seems to be
+            // buggy. Just compute the position straight and be done
+            // with it.
+            var position = login.get(0).getBoundingClientRect();
+            var parentPosition =
+                login.offsetParent().get(0).getBoundingClientRect();
+            login.css({
+                margin: '0',
+                position: 'absolute',
+                top: (position.top - parentPosition.top) + 'px',
+                left: (position.left - parentPosition.left) + 'px'
+            });
             login.fadeOut(function() { $(this).remove(); });
             deferred.resolve(tgtSession);
         }, function(error) {

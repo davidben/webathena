@@ -1,14 +1,17 @@
 html, body {
-    margin: 0;
     padding: 0;
     max-width: 800px;
-    margin: auto;
+    margin: 0 auto;
     font-family: 'Alegreya', serif;
     background: white;
     background: -moz-linear-gradient(left, white, white) repeat-y, #909098;
     background: -webkit-linear-gradient(left, white, white) repeat-y, #909098;
     background: -o-linear-gradient(left, white, white) repeat-y, #909098;
     background: linear-gradient(to left, white, white) repeat-y, #909098;
+}
+
+body {
+    position: relative;
 }
 
 [hidden] { display: none !important; visibility: hidden !important; }
@@ -156,12 +159,6 @@ table.form-box > tbody > tr > td:only-child {
 #alert-content {
     text-align: left;
     max-width: 300px;
-}
-
-.login {
-    position: absolute;
-    left: 0;
-    right: 0;
 }
 
 .login {
