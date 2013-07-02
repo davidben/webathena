@@ -32,7 +32,7 @@ function showLoginPrompt() {
     login.appendTo(document.body);
     login.find('.username').focus();
 
-    login.submit(function(e) {
+    login.find('form').submit(function(e) {
         e.preventDefault();
 
         $('#alert').slideUp(100);
@@ -108,7 +108,7 @@ function showRenewPrompt(oldSession) {
     login.appendTo(document.body);
     login.find('.password').focus();
 
-    login.submit(function(e) {
+    login.find('form').submit(function(e) {
         e.preventDefault();
 
         $('#alert').slideUp(100);
