@@ -36,14 +36,21 @@ function makeServiceNode(service) {
     // Label it "Access BLAH on your behalf".
     // (Okay, fine, dealing with the DOM directly can be annoying.)
     var target = document.createElement("code");
+    var detail = null;
     target.className = "identifier";
     if (service.principalName.nameString.length === 2 &&
         service.principalName.nameString[0] === "host") {
+      $(target).text(service.principalName.nameString[1]);
+    } else if (service.principalName.nameString.length === 2 &&
+               service.principalName.nameString[0] === "HTTP") {
+      detail = document.createTextNode("web services on ");
       $(target).text(service.principalName.nameString[1]);
     } else {
       $(target).text(serviceStr);
     }
     abbr.appendChild(document.createTextNode("Access "));
+    if (detail)
+      abbr.appendChild(detail);
     abbr.appendChild(target);
     abbr.appendChild(document.createTextNode(" on your behalf"));
   }
