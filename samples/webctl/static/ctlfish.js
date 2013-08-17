@@ -9,8 +9,10 @@ function getCredential(peer) {
         url: WEBATHENA_HOST + "/#!request_ticket_v1",
         relay_url: WEBATHENA_HOST + "/relay.html",
 	params: {
-	    realm: peer.principal.realm,
-	    principal: peer.principal.principalName.nameString
+            services: [{
+	        realm: peer.principal.realm,
+	        principal: peer.principal.principalName.nameString
+            }]
 	}
     }, function (err, r) {
 	if (err) {
@@ -21,7 +23,7 @@ function getCredential(peer) {
 	    deferred.reject(r);
 	    return;
 	}
-        var session = krb.Session.fromDict(r.session);
+        var session = krb.Session.fromDict(r.sessions[0]);
         ccache[key] = session;
         deferred.resolve(session);
     });
