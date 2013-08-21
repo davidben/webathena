@@ -65,13 +65,13 @@ header {
     height: 160px;
     border-radius: 1em;
     box-shadow: 2pt 2pt 5pt black;
-    background: url(logo.png), #ddd;
-    background: url(logo.png), -moz-linear-gradient(top, #fff, #ddd);
-    background: url(logo.png), -webkit-linear-gradient(top, #fff, #ddd);
-    background: url(logo.png), -o-linear-gradient(top, #fff, #ddd);
-    background: url(logo.png), linear-gradient(to bottom, #fff, #ddd);
+    background: url(logo.png), #ff7560;
+    background: url(logo.png), -moz-linear-gradient(top, #ff937a, #ff5847);
+    background: url(logo.png), -webkit-linear-gradient(top, #ff937a, #ff5847);
+    background: url(logo.png), -o-linear-gradient(top, #ff937a, #ff5847);
+    background: url(logo.png), linear-gradient(to bottom, #ff937a, #ff5847);
     background-image: -webkit-image-set(url(logo.png) 1x, url(logo@2x.png) 2x),
-                -webkit-linear-gradient(top, #fff, #ddd);
+                -webkit-linear-gradient(top, #ff937a, #ff5847);
 }
 
 #logo img {
@@ -163,11 +163,11 @@ table.form-box > tbody > tr > td:only-child {
 
 .login {
     box-shadow: 1pt 1pt 4pt black;
-    background: tomato;
-    background: -moz-linear-gradient(top, lightsalmon, tomato);
-    background: -webkit-linear-gradient(top, lightsalmon, tomato);
-    background: -o-linear-gradient(top, lightsalmon, tomato);
-    background: linear-gradient(to bottom, lightsalmon, tomato);
+    background: #ddd;
+    background: -moz-linear-gradient(top, #eee, #ccc);
+    background: -webkit-linear-gradient(top, #eee, #ccc);
+    background: -o-linear-gradient(top, #eee, #ccc);
+    background: linear-gradient(to bottom, #eee, #ccc);
 }
 
 .login-message {
@@ -190,7 +190,8 @@ table.form-box > tbody > tr > td:only-child {
 }
 
 .login input {
-    border: 2px inset chocolate;
+    border: 1px solid #888;
+    border-radius: 2px;
     font-family: 'PT Mono', monospace;
 }
 
@@ -211,11 +212,11 @@ button {
 .authed {
     text-align: center;
     box-shadow: 1pt 1pt 4pt black;
-    background: olivedrab;
-    background: -moz-linear-gradient(top, limegreen, olivedrab);
-    background: -webkit-linear-gradient(top, limegreen, olivedrab);
-    background: -o-linear-gradient(top, limegreen, olivedrab);
-    background: linear-gradient(to bottom, limegreen, olivedrab);
+    background: #ddd;
+    background: -moz-linear-gradient(top, #eee, #ccc);
+    background: -webkit-linear-gradient(top, #eee, #ccc);
+    background: -o-linear-gradient(top, #eee, #ccc);
+    background: linear-gradient(to bottom, #eee, #ccc);
 }
 
 .authed .client-principal {
