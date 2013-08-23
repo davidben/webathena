@@ -136,8 +136,9 @@ function registerTicketAPI() {
     // future probably, though chrome-extension://aslkdfjsdlkfjdslkfs
     // is not a useful string. Also allow things running over
     // localhost. Overwise testing is a nightmare.
-    if (origin.substring(0, 8) != "https://" &&
-        origin.substring(0, 17) != "http://localhost:") {
+    if (!origin.startsWith("https:") &&
+        !origin.startsWith("http://localhost:") &&
+        !origin.startsWith("http://127.0.0.1:")) {
         deny();
         return;
     }
