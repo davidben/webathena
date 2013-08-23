@@ -106,7 +106,8 @@ function registerTicketAPI() {
     } catch (e) {
       cb({
         status: "ERROR",
-        code: "BAD_REQUEST"
+        code: "BAD_REQUEST",
+        message: "Bad services argument."
       });
       throw e;
     }
@@ -118,17 +119,21 @@ function registerTicketAPI() {
       } catch (e) {
         cb({
           status: "ERROR",
-          code: "BAD_REQUEST"
+          code: "BAD_REQUEST",
+          message: "Bad user argument."
         });
         throw e;
       }
     }
 
-    function deny() {
-        cb({
-            status: "DENIED",
-            code: "NOT_ALLOWED"
-        });
+    function deny(code, message) {
+      code = code || "NOT_ALLOWED";
+      message = message || "The user did not approve the permission grant.";
+      cb({
+        status: "DENIED",
+        code: code,
+        message: message
+      });
     }
 
     // Require everyone to use SSL. (Is there no better way to do this
@@ -139,7 +144,7 @@ function registerTicketAPI() {
     if (!origin.startsWith("https:") &&
         !origin.startsWith("http://localhost:") &&
         !origin.startsWith("http://127.0.0.1:")) {
-        deny();
+        deny("BAD_ORIGIN", "Site must be under SSL or hosted on localhost.");
         return;
     }
 
@@ -178,7 +183,7 @@ function registerTicketAPI() {
           services.map(function(service) {
             return service.toString(); }).join(', '));
 
-        authed.find('.request-ticket-deny').click(deny);
+        authed.find('.request-ticket-deny').click(function() { deny() });
         authed.find('.request-ticket-allow').click(function(e) {
             // None of these errors should really happen. Ideally this
             // file would be in control of the UI and this event
