@@ -1,5 +1,14 @@
 var WEBATHENA_HOST = "https://webathena.mit.edu";
 
+function WebathenaError(err) {
+  this.status = err.status;
+  this.code = err.code;
+  this.message = err.message;
+};
+WebathenaError.prototype.toString = function() {
+  return this.message;
+};
+
 var ccache = { };
 function getCredential(peer) {
     var key = peer.principal.toString();
@@ -22,7 +31,7 @@ function getCredential(peer) {
 	    return;
 	}
 	if (r.status !== "OK") {
-	    deferred.reject(r);
+	    deferred.reject(new WebathenaError(r));
 	    return;
 	}
         var session = krb.Session.fromDict(r.sessions[0]);
@@ -106,7 +115,7 @@ window.addEventListener("load", function() {
                 console.log('Disconnected');
             }).done();
         }, function(err) {
-            output.appendChild(makeSpan("error", "Failed to get credentials"));
+            output.appendChild(makeSpan("error", "Failed to get credentials: " + err));
         }).done();
     });
 });
