@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Update this line as they make new releases.
-VERSION=20130603
+VERSION=20130722
 
 URL=https://closure-compiler.googlecode.com/files/compiler-$VERSION.tar.gz
 TMPFILE=$(mktemp /tmp/compiler.tgz.XXXX)
