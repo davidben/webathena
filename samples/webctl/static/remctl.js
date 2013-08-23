@@ -1,7 +1,5 @@
 "use strict";
 
-var WEBATHENA_HOST = "https://webathena.mit.edu";
-
 // Socket proxy errors.
 var ERR_BAD_FORMAT = 4000;
 var ERR_BAD_PARAMS = 4001;

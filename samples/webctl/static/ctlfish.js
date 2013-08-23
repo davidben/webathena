@@ -1,3 +1,5 @@
+var WEBATHENA_HOST = "https://webathena.mit.edu";
+
 var ccache = { };
 function getCredential(peer) {
     var key = peer.principal.toString();
