@@ -101,3 +101,17 @@ if (window.Uint8Array && new Uint8Array(1).subarray(1).byteLength !== 0) {
         }
     })();
 }
+
+if (!String.prototype.startsWith) {
+  // We can use Object.defineProperty; typedarray.js polyfills that
+  // in. (Ugh, so much random polyfilling.)
+  Object.defineProperty(String.prototype, 'startsWith', {
+    enumerable: false,
+    configurable: false,
+    writable: false,
+    value: function (searchString, position) {
+      position = position || 0;
+      return this.substr(position, searchString.length) === searchString;
+    }
+  });
+}
