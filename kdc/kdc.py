@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Web-based proxy to a Kerberos KDC for Webathena. """
 import base64
 import dns.resolver
@@ -230,6 +231,12 @@ def create_app():
 
 
 if __name__ == '__main__':
+    import sys
     from werkzeug.serving import run_simple
     app = create_app()
-    run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True)
+    ip = '127.0.0.1'
+    port = 5000
+    if len(sys.argv) > 1:
+        ip, port = sys.argv[1].rsplit(':', 1)
+        port = int(port)
+    run_simple(ip, port, app, use_debugger=True, use_reloader=True)
