@@ -60,7 +60,7 @@ def create_app():
     Serves the entire mess, including hack to make index.html work.
     """
     web_scripts = os.path.join(BASEDIR, 'app')
-    test = os.path.join(BASEDIR, 'test')
+    test = os.path.join(BASEDIR, 'test-old')
 
     return DispatcherMiddleware(create_static_app(web_scripts), {
             '/kdc': kdc.create_app(),
