@@ -22,7 +22,7 @@ def parse_htaccess():
     Parse some subset of .htaccess so we can serve the same headers.
     """
     directives = []
-    htaccess = os.path.join(BASEDIR, 'web_scripts/.htaccess')
+    htaccess = os.path.join(BASEDIR, 'app/.htaccess')
     with open(htaccess) as f:
         for line in f:
             line = line.strip()
@@ -59,7 +59,7 @@ def create_app():
     """
     Serves the entire mess, including hack to make index.html work.
     """
-    web_scripts = os.path.join(BASEDIR, 'web_scripts')
+    web_scripts = os.path.join(BASEDIR, 'app')
     test = os.path.join(BASEDIR, 'test')
 
     return DispatcherMiddleware(create_static_app(web_scripts), {
