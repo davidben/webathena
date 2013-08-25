@@ -1,1 +1,6 @@
+node_modules
+out
+.tmp
 *.pyc
+app/bower_components
+app/.htaccess
