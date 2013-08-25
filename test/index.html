@@ -14,12 +14,15 @@
     <script>var assert = chai.assert</script>
 
     <!--[if lt IE 9]>
-    <script src="/scripts/html5shiv.js"></script>
-    <![endif]-->
+        <script src="/scripts/html5shiv.js"></script>
+        <![endif]-->
+    <link href="/styles/style.css" rel="stylesheet" type="text/css">
     <script src="/scripts/jquery.min.js"></script>
-    <script src="/scripts/q.min.js"></script>
+    <!-- build:js /scripts/q.min.js -->
+    <script src="/bower_components/q/q.js"></script>
+    <!-- endbuild -->
     <script src="/scripts/sjcl.js"></script>
-    <script src="/scripts/crypto-js/rollups/tripledes.js"></script>
+    <script src="/scripts/cryptojs-tripledes.js"></script>
 
     <!-- build:js /scripts/webathena.js -->
     <script src="/scripts-src/crc32.js"></script>

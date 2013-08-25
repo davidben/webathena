@@ -15,9 +15,11 @@
         <![endif]-->
         <link href="/styles/style.css" rel="stylesheet" type="text/css">
         <script src="/scripts/jquery.min.js"></script>
-        <script src="/scripts/q.min.js"></script>
+        <!-- build:js /scripts/q.min.js -->
+        <script src="/bower_components/q/q.js"></script>
+        <!-- endbuild -->
         <script src="/scripts/sjcl.js"></script>
-        <script src="/scripts/crypto-js/rollups/tripledes.js"></script>
+        <script src="/scripts/cryptojs-tripledes.js"></script>
 
         <!-- build:js /scripts/webathena.js -->
         <script src="/scripts-src/crc32.js"></script>
@@ -30,7 +32,7 @@
         <script src="/scripts-src/krb.js"></script>
         <!-- endbuild -->
         <!-- build:js /scripts/webathena.ui.js -->
-        <script src="/scripts-src/winchan.js"></script>
+        <script src="/bower_components/winchan/winchan.js"></script>
         <script src="/scripts-src/kdc.js"></script>
         <script src="/scripts-src/request_ticket.js"></script>
         <script src="/scripts-src/ui.js"></script>

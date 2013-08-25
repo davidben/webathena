@@ -2,5 +2,10 @@
   "name": "roost-client",
   "version": "0.0.0",
   "dependencies": {
+    "jquery": "1.9.x",
+    "q": "~0.9.6",
+    "winchan": "https://github.com/mozilla/winchan.git",
+    "html5shiv": "~3.6.2",
+    "cryptojs": "https://crypto-js.googlecode.com/files/CryptoJS%20v3.1.2.zip"
   }
 }
