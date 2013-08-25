@@ -225,14 +225,10 @@ function getTGTSession() {
 }
 
 $(function() {
-    $('<img src="eye-small.png">').css({ left: 78, top: 12 })
-                                  .appendTo('#logo');
-    $('<img src="eye-large.png">').css({ left: 87, top: 16 })
-                                  .appendTo('#logo');
-    $('<img src="eye-large.png">').css({ left: 105, top: 16 })
-                                  .appendTo('#logo');
-    $('<img src="eye-small.png">').css({ left: 121, top: 12 })
-                                  .appendTo('#logo');
+    $('#eye1').css({ left: 78, top: 12 }).removeAttr('hidden');
+    $('#eye2').css({ left: 87, top: 16 }).removeAttr('hidden');
+    $('#eye3').css({ left: 105, top: 16 }).removeAttr('hidden');
+    $('#eye4').css({ left: 121, top: 12 }).removeAttr('hidden');
     $(document).mousemove(function(event) {
         $('#logo img').each(function() {
             var dx = event.pageX - $(this).offset().left - $(this).width() / 2,
