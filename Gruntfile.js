@@ -252,11 +252,12 @@ module.exports = function (grunt) {
         }
     });
 
-    /*
     grunt.registerTask('config', function() {
+/*
         grunt.file.write(yeomanConfig.app + '/scripts-src/config.js',
                          '"use strict"\n' +
                          'var CONFIG = ' + JSON.stringify(appConfig) + ';');
+*/
 
         var htaccess = grunt.file.read(yeomanConfig.app + '/htaccess-header');
         htaccess += '\n';
@@ -270,7 +271,6 @@ module.exports = function (grunt) {
         htaccess += grunt.file.read(yeomanConfig.app + '/htaccess-footer');
         grunt.file.write(yeomanConfig.app + '/.htaccess', htaccess);
     });
-    */
 
     grunt.registerTask('kdc-proxy', function() {
         grunt.log.writeln('Spawning KDC proxy')
@@ -297,7 +297,7 @@ module.exports = function (grunt) {
 
         grunt.task.run([
             'clean:server',
-//            'config',
+            'config',
             'kdc-proxy',
             'connect:livereload',
             'open',
@@ -307,7 +307,7 @@ module.exports = function (grunt) {
 
     grunt.registerTask('test', [
         'clean:server',
-//        'config',
+        'config',
         'connect:test',
         'mocha'
     ]);
@@ -319,7 +319,7 @@ module.exports = function (grunt) {
 
     grunt.registerTask('build', [
         'clean:dist',
-//        'config',
+        'config',
         'useminPrepare',
         'concat',
         'uglify',
