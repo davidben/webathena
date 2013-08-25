@@ -1,4 +1,4 @@
-all: web_scripts/js/webathena.js web_scripts/js/webathena-ui.js
+all: app/scripts/webathena.js app/scripts/webathena-ui.js
 
 compiler.jar: download-compiler.sh
 	./download-compiler.sh
@@ -21,22 +21,22 @@ UI_JS_SOURCES := \
 
 # For now, only build with simple optimizations. We can't run with
 # advanced ones yet.
-web_scripts/js/webathena.js: compiler.jar $(addprefix web_scripts/js/,$(CORE_JS_SOURCES))
-	cd web_scripts/js && java -jar ../../compiler.jar \
+app/scripts/webathena.js: compiler.jar $(addprefix app/scripts/,$(CORE_JS_SOURCES))
+	cd app/scripts && java -jar ../../compiler.jar \
 		$(addprefix --js ,$(CORE_JS_SOURCES)) \
 		--js_output_file webathena.js.tmp \
 		--language_in ECMASCRIPT5_STRICT \
 		--source_map_format=V3 \
 		--create_source_map webathena.js.map
-	echo '//@ sourceMappingURL=webathena.js.map' >> web_scripts/js/webathena.js.tmp
-	mv web_scripts/js/webathena.js.tmp $@
+	echo '//@ sourceMappingURL=webathena.js.map' >> app/scripts/webathena.js.tmp
+	mv app/scripts/webathena.js.tmp $@
 
-web_scripts/js/webathena-ui.js: compiler.jar $(addprefix web_scripts/js/,$(UI_JS_SOURCES))
-	cd web_scripts/js && java -jar ../../compiler.jar \
+app/scripts/webathena-ui.js: compiler.jar $(addprefix app/scripts/,$(UI_JS_SOURCES))
+	cd app/scripts && java -jar ../../compiler.jar \
 		$(addprefix --js ,$(UI_JS_SOURCES)) \
 		--js_output_file webathena-ui.js.tmp \
 		--language_in ECMASCRIPT5_STRICT \
 		--source_map_format=V3 \
 		--create_source_map webathena-ui.js.map
-	echo '//@ sourceMappingURL=webathena-ui.js.map' >> web_scripts/js/webathena-ui.js.tmp
-	mv web_scripts/js/webathena-ui.js.tmp $@
+	echo '//@ sourceMappingURL=webathena-ui.js.map' >> app/scripts/webathena-ui.js.tmp
+	mv app/scripts/webathena-ui.js.tmp $@
