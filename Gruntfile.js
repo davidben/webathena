@@ -137,6 +137,7 @@ module.exports = function (grunt) {
                         return [
                             mountFolder(connect, '.tmp'),
                             mountFolder(connect, 'test'),
+                            mountFolder(connect, yeomanConfig.app + '/dev-overlay'),
                             mountFolder(connect, yeomanConfig.app)
                         ];
                     }
