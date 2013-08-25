@@ -1,1 +1,1 @@
-../../web_scripts/js/webathena.js
+../../dist/webathena.js

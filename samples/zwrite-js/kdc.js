@@ -1,1 +1,1 @@
-../../web_scripts/js/kdc.js
+../../app/scripts-src/kdc.js

@@ -1,1 +1,1 @@
-../../../web_scripts/js/sjcl.js
+../../../app/scripts/sjcl.js

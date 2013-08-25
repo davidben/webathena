@@ -1,1 +1,1 @@
-../../../web_scripts/js/winchan.js
+../../../app/bower_components/winchan/winchan.js
