@@ -2,6 +2,7 @@
 'use strict';
 
 var child_process = require('child_process');
+var fs = require('fs');
 var path = require('path');
 var proxy = require('proxy-middleware');
 
@@ -313,6 +314,11 @@ module.exports = function (grunt) {
         'mocha'
     ]);
 
+    grunt.registerTask('fix-perms', function() {
+        // Because grunt is lame.
+        fs.chmodSync(path.join(yeomanConfig.dist, 'kdc.fcgi'), '755');
+    });
+
     grunt.registerTask('export-webathena', function() {
         grunt.file.copy(path.join(yeomanConfig.dist, 'scripts/webathena.js'),
                         'dist/webathena.js');
@@ -325,6 +331,7 @@ module.exports = function (grunt) {
         'concat',
         'uglify',
         'copy:dist',
+        'fix-perms',
         'export-webathena',
         'rev',
         'usemin'
