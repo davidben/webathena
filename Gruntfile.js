@@ -312,6 +312,11 @@ module.exports = function (grunt) {
         'mocha'
     ]);
 
+    grunt.registerTask('export-webathena', function() {
+        grunt.file.copy(path.join(yeomanConfig.dist, 'scripts/webathena.js'),
+                        'dist/webathena.js');
+    });
+
     grunt.registerTask('build', [
         'clean:dist',
 //        'config',
@@ -319,6 +324,7 @@ module.exports = function (grunt) {
         'concat',
         'uglify',
         'copy:dist',
+        'export-webathena',
         'rev',
         'usemin'
     ]);
