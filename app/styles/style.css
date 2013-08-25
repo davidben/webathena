@@ -65,12 +65,12 @@ header {
     height: 160px;
     border-radius: 1em;
     box-shadow: 2pt 2pt 5pt black;
-    background: url(logo.png), #ff7560;
-    background: url(logo.png), -moz-linear-gradient(top, #ff937a, #ff5847);
-    background: url(logo.png), -webkit-linear-gradient(top, #ff937a, #ff5847);
-    background: url(logo.png), -o-linear-gradient(top, #ff937a, #ff5847);
-    background: url(logo.png), linear-gradient(to bottom, #ff937a, #ff5847);
-    background-image: -webkit-image-set(url(logo.png) 1x, url(logo@2x.png) 2x),
+    background: url(/logo.png), #ff7560;
+    background: url(/logo.png), -moz-linear-gradient(top, #ff937a, #ff5847);
+    background: url(/logo.png), -webkit-linear-gradient(top, #ff937a, #ff5847);
+    background: url(/logo.png), -o-linear-gradient(top, #ff937a, #ff5847);
+    background: url(/logo.png), linear-gradient(to bottom, #ff937a, #ff5847);
+    background-image: -webkit-image-set(url(/logo.png) 1x, url(/logo@2x.png) 2x),
                 -webkit-linear-gradient(top, #ff937a, #ff5847);
 }
 
@@ -235,5 +235,5 @@ button {
 
 .permission-list > li.dangerous {
     font-weight: bold;
-    list-style-image: url(dangerous.png);
+    list-style-image: url(/dangerous.png);
 }
