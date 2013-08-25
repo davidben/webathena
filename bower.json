@@ -1,5 +1,5 @@
 {
-  "name": "roost-client",
+  "name": "webathena",
   "version": "0.0.0",
   "dependencies": {
     "q": "~0.9.6",
