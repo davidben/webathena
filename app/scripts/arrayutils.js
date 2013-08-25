@@ -44,13 +44,33 @@ var arrayutils = (function() {
             return ret;
         };
     } else {
-        /**
-         * @param {ArrayBufferView} arr
-         * @returns {string}
-         */
-        arrayutils.toByteString = function(arr) {
-            return String.fromCharCode.apply(String, arrayutils.asUint8Array(arr));
-        };
+        // Detect if we can Function#apply a Uint8Array. It seems
+        // PhantomJS (sigh) can't deal.
+        try {
+            String.fromCharCode.apply(String, new Uint8Array([1,2,3]));
+
+            /**
+             * @param {ArrayBufferView} arr
+             * @returns {string}
+             */
+            arrayutils.toByteString = function(arr) {
+                return String.fromCharCode.apply(
+                    String, arrayutils.asUint8Array(arr));
+            };
+        } catch (e) {
+            /**
+             * @param {ArrayBufferView} arr
+             * @returns {string}
+             */
+            arrayutils.toByteString = function(arr) {
+                arr = arrayutils.asUint8Array(arr);
+                var ret = "";
+                for (var i = 0; i < arr.length; i++) {
+                    ret += String.fromCharCode(arr[i]);
+                }
+                return ret;
+            };
+        }
     }
 
     /**
