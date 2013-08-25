@@ -1,25 +1,25 @@
 "use strict";
 
-module("kcrypto");
+describe("kcrypto", function() {
 
-function hexDigit(h) {
+  function hexDigit(h) {
     var c = h.toLowerCase().charCodeAt(0);
     if ('a'.charCodeAt(0) <= c && c <= 'f'.charCodeAt(0))
-        return c - 'a'.charCodeAt(0) + 10;
+      return c - 'a'.charCodeAt(0) + 10;
     return c - '0'.charCodeAt(0);
-}
+  }
 
-function hexToBytes(h) {
+  function hexToBytes(h) {
     h = h.replace(/ /g, '');
     var ret = new Uint8Array(h.length / 2);
     for (var i = 0; i < h.length; i += 2) {
-        var octet = (hexDigit(h[i]) << 4) | hexDigit(h[i + 1]);
-        ret[i / 2] = octet;
+      var octet = (hexDigit(h[i]) << 4) | hexDigit(h[i + 1]);
+      ret[i / 2] = octet;
     }
     return ret;
-}
+  }
 
-test("RFC 3961 n-fold test vectors", function() {
+  it("should match RFC 3961 n-fold test vectors", function() {
     var afbs = arrayutils.fromByteString;
     arraysEqual(kcrypto.nFold(64, afbs("012345")),
                 hexToBytes("be072631276b1955"));
@@ -45,12 +45,12 @@ test("RFC 3961 n-fold test vectors", function() {
     arraysEqual(kcrypto.nFold(256, afbs("kerberos")),
                 hexToBytes("6b657262 65726f73 7b9b5b2b 93132b93" +
                            "5c9bdcda d95c9899 c4cae4de e6d6cae4"));
-});
+  });
 
-test("RFC 3961 mit_des_string_to_key test vectors", function() {
+  it("should match RFC 3961 mit_des_string_to_key test vectors", function() {
     var afu = arrayutils.fromString;
     var mit_des_string_to_key =
-        kcrypto.DesCbcCrcProfile.stringToKey.bind(kcrypto.DesCbcCrcProfile);
+      kcrypto.DesCbcCrcProfile.stringToKey.bind(kcrypto.DesCbcCrcProfile);
     arraysEqual(mit_des_string_to_key("password", afu("ATHENA.MIT.EDUraeburn")),
                 hexToBytes("cbc22fae235298e3"));
     arraysEqual(mit_des_string_to_key("potatoe", afu("WHITEHOUSE.GOVdanny")),
@@ -66,9 +66,9 @@ test("RFC 3961 mit_des_string_to_key test vectors", function() {
                 hexToBytes("984054d0f1a73e31"));
     arraysEqual(mit_des_string_to_key("NNNN6666", afu("FFFFAAAA")),
                 hexToBytes("c4bf6b25adf7a4f8"));
-});
+  });
 
-test("RFC 3961 mod-crc-32 test vectors", function() {
+  it("should match RFC 3961 mod-crc-32 test vectors", function() {
     var afbs = arrayutils.fromByteString;
     var mod_crc_32 = kcrypto.Crc32Checksum.getMIC.bind(kcrypto.Crc32Checksum,
                                                        afbs(""));
@@ -82,21 +82,21 @@ test("RFC 3961 mod-crc-32 test vectors", function() {
     arraysEqual(mod_crc_32(hexToBytes("80")), hexToBytes("20 83 b8 ed"));
     arraysEqual(mod_crc_32(hexToBytes("80000000")), hexToBytes("3b b6 59 ed"));
     arraysEqual(mod_crc_32(hexToBytes("00000001")), hexToBytes("96 30 07 77"));
-});
+  });
 
-test("RFC 3962 PBKDF2 test vectors", function() {
+  it("should match RFC 3962 PBKDF2 test vectors", function() {
     var afbs = arrayutils.fromByteString;
     function testStringToKey(password, salt, iters, expected128, expected256) {
-        var param = new Uint8Array(4);
-        new DataView(param.buffer).setUint32(0, iters);
-        arraysEqual(kcrypto.Aes128CtsHmacShaOne96.stringToKey(password,
-                                                              salt,
-                                                              param),
-                    hexToBytes(expected128));
-        arraysEqual(kcrypto.Aes256CtsHmacShaOne96.stringToKey(password,
-                                                              salt,
-                                                              param),
-                    hexToBytes(expected256));
+      var param = new Uint8Array(4);
+      new DataView(param.buffer).setUint32(0, iters);
+      arraysEqual(kcrypto.Aes128CtsHmacShaOne96.stringToKey(password,
+                                                            salt,
+                                                            param),
+                  hexToBytes(expected128));
+      arraysEqual(kcrypto.Aes256CtsHmacShaOne96.stringToKey(password,
+                                                            salt,
+                                                            param),
+                  hexToBytes(expected256));
     }
     testStringToKey("password", afbs("ATHENA.MIT.EDUraeburn"), 1,
                     "42 26 3c 6e 89 f4 fc 28 b8 df 68 ee 09 79 9f 15",
@@ -146,17 +146,17 @@ test("RFC 3962 PBKDF2 test vectors", function() {
 
                     "4b 6d 98 39 f8 44 06 df 1f 09 cc 16 6d b4 b8 3c" +
                     "57 18 48 b7 84 a3 d6 bd c3 46 58 9a 3e 39 3f 9e");
-});
+  });
 
-test("RFC 3962 AES-CBC-CTS test vectors", function() {
+  it("should match RFC 3962 AES-CBC-CTS test vectors", function() {
     function testCipher(key, iv, input, output, nextIv) {
-        // Test both directions.
-        var r = kcrypto.aesCtsEncrypt(key, iv, input);
-        arraysEqual(r[0], nextIv, "encrypt - nextIv");
-        arraysEqual(r[1], output, "encrypt - output");
-        var r = kcrypto.aesCtsDecrypt(key, iv, output);
-        arraysEqual(r[0], nextIv, "decrypt - nextIv");
-        arraysEqual(r[1], input, "encrypt - output");
+      // Test both directions.
+      var r = kcrypto.aesCtsEncrypt(key, iv, input);
+      arraysEqual(r[0], nextIv, "encrypt - nextIv");
+      arraysEqual(r[1], output, "encrypt - output");
+      var r = kcrypto.aesCtsDecrypt(key, iv, output);
+      arraysEqual(r[0], nextIv, "decrypt - nextIv");
+      arraysEqual(r[1], input, "encrypt - output");
     }
 
     var key = hexToBytes("63 68 69 63 6b 65 6e 20 74 65 72 69 79 61 6b 69");
@@ -211,4 +211,5 @@ test("RFC 3962 AES-CBC-CTS test vectors", function() {
                           "48 07 ef e8 36 ee 89 a5 26 73 0d bc 2f 7b c8 40" +
                           "9d ad 8b bb 96 c4 cd c0 3b c1 03 e1 a1 94 bb d8"),
                hexToBytes("48 07 ef e8 36 ee 89 a5 26 73 0d bc 2f 7b c8 40"));
+  });
 });

@@ -1,27 +1,27 @@
 "use strict";
 
-module("asn1");
+describe("asn1", function() {
 
-// Our bitstrings are arrays.
-function bytesToBitString(b, remainder) {
+  // Our bitstrings are arrays.
+  function bytesToBitString(b, remainder) {
     var bits = [];
     for (var i = 0; i < b.length; i++) {
-        var octet = b.charCodeAt(i);
-        for (var m = (1 << 7); m > 0; m >>= 1) {
-            bits.push((octet & m) ? 1 : 0);
-        }
+      var octet = b.charCodeAt(i);
+      for (var m = (1 << 7); m > 0; m >>= 1) {
+        bits.push((octet & m) ? 1 : 0);
+      }
     }
     return bits.slice(0, bits.length - remainder);
-}
+  }
 
-function isEncoding(type, input, output, msg, equalityTest) {
-    equalityTest = equalityTest || deepEqual;
+  function isEncoding(type, input, output, msg, equalityTest) {
+    equalityTest = equalityTest || assert.deepEqual;
     output = arrayutils.fromByteString(output);
     equalityTest(type.decodeDER(output), input, msg + " - decode");
     arraysEqual(type.encodeDER(input), output, msg + " - encode");
-}
+  }
 
-test("X.690 examples", function() {
+  it("should parse X.690 examples", function() {
     var b = new asn1.Buffer();
     asn1.encodeLengthDER(38, b);
     arraysEqual(b.contents(), new Uint8Array([0x26]),
@@ -37,6 +37,7 @@ test("X.690 examples", function() {
                "\x03\x07\x04\x0a\x3b\x5f\x29\x1c\xd0",
                "BIT STRING");
     isEncoding(asn1.NULL, null, "\x05\x00", "NULL");
+
     // IA5String changed to GeneralString.
     isEncoding(new asn1.SEQUENCE([{id: "name", type: asn1.GeneralString},
                                   {id: "ok", type: asn1.BOOLEAN}]),
@@ -66,57 +67,57 @@ test("X.690 examples", function() {
     // VisibleString changed to GeneralString.
     isEncoding(asn1.GeneralString, "Jones", "\x1b\x05\x4a\x6f\x6e\x65\x73",
                "GeneralString");
-});
+  });
 
-test("X.690 Annex A example (modified)", function() {
+  it("should parse X.690 Annex A example (modified)", function() {
     // This isn't quite the sample A.1. The following changes were
     // made:
     // - All strings changed to GeneralString
     // - All SETs changed to SEQUENCEs
     // - All DEFAULT fields changed to OPTIONAL.
     var Date = asn1.GeneralString.implicitlyTagged(
-        asn1.tag(3, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
+      asn1.tag(3, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
     var EmployeeNumber = asn1.INTEGER.implicitlyTagged(
-        asn1.tag(2, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
+      asn1.tag(2, asn1.TAG_PRIMITIVE, asn1.TAG_APPLICATION));
     var Name = new asn1.SEQUENCE([
-        {id: "givenName", type: asn1.GeneralString},
-        {id: "initial", type: asn1.GeneralString},
-        {id: "familyName", type: asn1.GeneralString}
+      {id: "givenName", type: asn1.GeneralString},
+      {id: "initial", type: asn1.GeneralString},
+      {id: "familyName", type: asn1.GeneralString}
     ]).implicitlyTagged(asn1.tag(1, asn1.TAG_CONSTRUCTED,
                                  asn1.TAG_APPLICATION));
     var ChildInformation = new asn1.SEQUENCE([
-        {id: "name", type: Name},
-        {id: "dateOfBirth", type: Date.tagged(asn1.tag(0))}
+      {id: "name", type: Name},
+      {id: "dateOfBirth", type: Date.tagged(asn1.tag(0))}
     ]);
     var PersonnelRecord = new asn1.SEQUENCE([
-        {id: "name", type: Name},
-        {id: "title", type: asn1.GeneralString.tagged(asn1.tag(0))},
-        {id: "number", type: EmployeeNumber},
-        {id: "dateOfHire", type: Date.tagged(asn1.tag(1))},
-        {id: "nameOfSpouse", type: Name.tagged(asn1.tag(2))},
-        {id: "children",
-         type: new asn1.SEQUENCE_OF(ChildInformation).implicitlyTagged(
-             asn1.tag(3)),
-         optional: true}
+      {id: "name", type: Name},
+      {id: "title", type: asn1.GeneralString.tagged(asn1.tag(0))},
+      {id: "number", type: EmployeeNumber},
+      {id: "dateOfHire", type: Date.tagged(asn1.tag(1))},
+      {id: "nameOfSpouse", type: Name.tagged(asn1.tag(2))},
+      {id: "children",
+       type: new asn1.SEQUENCE_OF(ChildInformation).implicitlyTagged(
+         asn1.tag(3)),
+       optional: true}
     ]).implicitlyTagged(asn1.tag(0, asn1.TAG_CONSTRUCTED,
                                  asn1.TAG_APPLICATION));
 
     var value = {
-        name: {givenName: "John", initial: "P", familyName: "Smith"},
-        title: "Director",
-        number: 51,
-        dateOfHire: "19710917",
-        nameOfSpouse: {givenName: "Mary", initial: "T", familyName: "Smith"},
-        children: [
-            {
-                name: {givenName: "Ralph", initial: "T", familyName: "Smith"},
-                dateOfBirth: "19571111"
-            },
-            {
-                name: {givenName: "Susan", initial: "B", familyName: "Jones"},
-                dateOfBirth: "19590717"
-            }
-        ]
+      name: {givenName: "John", initial: "P", familyName: "Smith"},
+      title: "Director",
+      number: 51,
+      dateOfHire: "19710917",
+      nameOfSpouse: {givenName: "Mary", initial: "T", familyName: "Smith"},
+      children: [
+        {
+          name: {givenName: "Ralph", initial: "T", familyName: "Smith"},
+          dateOfBirth: "19571111"
+        },
+        {
+          name: {givenName: "Susan", initial: "B", familyName: "Jones"},
+          dateOfBirth: "19590717"
+        }
+      ]
     };
 
     isEncoding(PersonnelRecord, value,
@@ -129,14 +130,16 @@ test("X.690 Annex A example (modified)", function() {
                "19571111\x30\x1f\x61\x11\x1b\x05Susan" +
                "\x1b\x01B\x1b\x05Jones\xa0\x0a\x43\x0819590717",
                "PersonnelRecord");
-});
+  });
 
-test("Extra tests", function() {
+  it("should handle OCTET STRING", function() {
     isEncoding(asn1.OCTET_STRING,
                new Uint8Array([0x01, 0x02, 0x03, 0x04, 0x05]),
                "\x04\x05\x01\x02\x03\x04\x05",
                "OCTET STRING", arraysEqual);
+  });
 
+  it("should handle GeneralizedTime", function() {
     isEncoding(asn1.GeneralizedTime,
                new Date(Date.UTC(1990, 7, 3, 3, 14, 15)),
                "\x18\x0f19900803031415Z",
@@ -146,9 +149,9 @@ test("Extra tests", function() {
                new Date(Date.UTC(1990, 7, 3, 3, 14, 15, 920)),
                "\x18\x1219900803031415.92Z",
                "GeneralizedTime with milliseconds");
-});
+  });
 
-test("INTEGER edge cases", function() {
+  it("should handle INTEGER edge cases", function() {
     isEncoding(asn1.INTEGER,    0, "\x02\x01" + "\x00",     "0");
     isEncoding(asn1.INTEGER,  127, "\x02\x01" + "\x7f",     "127");
     isEncoding(asn1.INTEGER,  128, "\x02\x02" + "\x00\x80", "128");
@@ -159,4 +162,6 @@ test("INTEGER edge cases", function() {
     isEncoding(asn1.INTEGER, -129, "\x02\x02" + "\xff\x7f", "-129");
     isEncoding(asn1.INTEGER, -256, "\x02\x02" + "\xff\x00", "-256");
     isEncoding(asn1.INTEGER, -257, "\x02\x02" + "\xfe\xff", "-257");
+  });
+
 });

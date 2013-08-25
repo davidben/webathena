@@ -1,0 +1,35 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Mocha Spec Runner</title>
+    <link rel="stylesheet" href="lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="lib/mocha/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
+    <!-- assertion framework -->
+    <script src="lib/chai.js"></script>
+    <script>var assert = chai.assert</script>
+
+    <!--[if lt IE 9]>
+    <script src="/scripts/html5shiv.js"></script>
+    <![endif]-->
+    <script src="/scripts/jquery.min.js"></script>
+    <script src="/scripts/q.min.js"></script>
+    <script src="/scripts/sjcl.js"></script>
+    <script src="/scripts/crypto-js/rollups/tripledes.js"></script>
+
+    <script src="/scripts/webathena.js"></script>
+
+    <script src="lib/test-utils.js"></script>
+
+    <!-- include spec files here... -->
+    <script src="spec/test-asn1.js"></script>
+    <script src="spec/test-kcrypto.js"></script>
+    <script src="spec/test-krb.js"></script>
+
+    <script>mocha.run()</script>
+</body>
+</html>
