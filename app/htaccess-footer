@@ -1,0 +1,4 @@
+
+<Files relay.html>
+    Header unset X-Frame-Options
+</Files>
