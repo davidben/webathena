@@ -313,9 +313,9 @@ module.exports = function (grunt) {
 
     grunt.registerTask('build', [
         'clean:dist',
-        'config',
+//        'config',
         'useminPrepare',
-        'concat',
+//        'concat',
         'uglify',
         'copy:dist',
         'rev',
