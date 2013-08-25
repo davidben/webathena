@@ -315,7 +315,7 @@ module.exports = function (grunt) {
         'clean:dist',
 //        'config',
         'useminPrepare',
-//        'concat',
+        'concat',
         'uglify',
         'copy:dist',
         'rev',
