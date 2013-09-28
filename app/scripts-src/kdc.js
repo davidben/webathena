@@ -90,7 +90,6 @@ var KDC = (function() {
                 deferred.reject(new KDC.NetworkError('Network error'));
             }
 	};
-        xhr.setRequestHeader('X-WebKDC-Request', 'OK');
         if (data) {
             xhr.setRequestHeader('Content-Type', 'text/plain');
             xhr.send(arrayutils.toBase64(data));
