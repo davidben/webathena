@@ -6,8 +6,8 @@
     "cryptojs": "https://crypto-js.googlecode.com/files/CryptoJS%20v3.1.2.zip"
   },
   "devDependencies": {
-    "jquery": "1.9.x",
+    "jquery": "1.10.x",
     "winchan": "https://github.com/mozilla/winchan.git",
-    "html5shiv": "~3.6.2"
+    "html5shiv": "~3.7.0"
   }
 }
