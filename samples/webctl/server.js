@@ -7,6 +7,8 @@ var nodeStatic = require('node-static');
 
 var ALLOWED_HOSTS = {
     'primary-key.mit.edu': true,
+    'foreign-key.mit.edu': true,
+    'sql.mit.edu': true,
     'xvm-remote.mit.edu': true,
     'zygorthian-space-raiders.mit.edu': true
 };
