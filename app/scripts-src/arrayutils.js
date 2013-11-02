@@ -151,45 +151,6 @@ var arrayutils = (function() {
     };
 
     /**
-     * Adapted from CryptoJS.enc.Latin1.
-     * @param {CryptoJS.lib.WordArray}
-     * @returns {Uint8Array}
-     */
-    arrayutils.fromCryptoJS = function(wordArray) {
-        // Shortcuts
-        var words = wordArray.words;
-        var sigBytes = wordArray.sigBytes;
-
-        // Convert
-        var out = new Uint8Array(sigBytes);
-        for (var i = 0; i < sigBytes; i++) {
-            var bite = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-            out[i] = bite;
-        }
-
-        return out;
-    };
-
-    /**
-     * Adapted from CryptoJS.enc.Latin1.
-     * @param {ArrayBufferView}
-     * @returns {CryptoJS.lib.WordArray}
-     */
-    arrayutils.toCryptoJS = function(arr) {
-        arr = arrayutils.asUint8Array(arr);
-        // Shortcut
-        var arrLength = arr.length;
-
-        // Convert
-        var words = [];
-        for (var i = 0; i < arrLength; i++) {
-            words[i >>> 2] |= arr[i] << (24 - (i % 4) * 8);
-        }
-
-        return new CryptoJS.lib.WordArray.init(words, arrLength);
-    };
-
-    /**
      * @param {ArrayBufferView}
      * @param {ArrayBufferView}
      * @returns {boolean}

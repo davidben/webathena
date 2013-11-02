@@ -47,43 +47,6 @@ describe("kcrypto", function() {
                            "5c9bdcda d95c9899 c4cae4de e6d6cae4"));
   });
 
-  it("should match RFC 3961 mit_des_string_to_key test vectors", function() {
-    var afu = arrayutils.fromString;
-    var mit_des_string_to_key =
-      kcrypto.DesCbcCrcProfile.stringToKey.bind(kcrypto.DesCbcCrcProfile);
-    arraysEqual(mit_des_string_to_key("password", afu("ATHENA.MIT.EDUraeburn")),
-                hexToBytes("cbc22fae235298e3"));
-    arraysEqual(mit_des_string_to_key("potatoe", afu("WHITEHOUSE.GOVdanny")),
-                hexToBytes("df3d32a74fd92a01"));
-    // U+1D11E in UTF-16.
-    arraysEqual(mit_des_string_to_key("\uD834\uDD1E",
-                                      afu("EXAMPLE.COMpianist")),
-                hexToBytes("4ffb26bab0cd9413"));
-    arraysEqual(mit_des_string_to_key("\u00DF",
-                                      afu("ATHENA.MIT.EDUJuri\u0161i\u0107")),
-                hexToBytes("62c81a5232b5e69d"));
-    arraysEqual(mit_des_string_to_key("11119999", afu("AAAAAAAA")),
-                hexToBytes("984054d0f1a73e31"));
-    arraysEqual(mit_des_string_to_key("NNNN6666", afu("FFFFAAAA")),
-                hexToBytes("c4bf6b25adf7a4f8"));
-  });
-
-  it("should match RFC 3961 mod-crc-32 test vectors", function() {
-    var afbs = arrayutils.fromByteString;
-    var mod_crc_32 = kcrypto.Crc32Checksum.getMIC.bind(kcrypto.Crc32Checksum,
-                                                       afbs(""));
-    arraysEqual(mod_crc_32(afbs("foo")), hexToBytes("33 bc 32 73"));
-    arraysEqual(mod_crc_32(afbs("test0123456789")), hexToBytes("d6 88 3e b8"));
-    arraysEqual(mod_crc_32(afbs("MASSACHVSETTS INSTITVTE OF TECHNOLOGY")),
-                hexToBytes("f7 80 41 e3"));
-    arraysEqual(mod_crc_32(hexToBytes("8000")), hexToBytes("4b 98 83 3b"));
-    arraysEqual(mod_crc_32(hexToBytes("0008")), hexToBytes("32 88 db 0e"));
-    arraysEqual(mod_crc_32(hexToBytes("0080")), hexToBytes("20 83 b8 ed"));
-    arraysEqual(mod_crc_32(hexToBytes("80")), hexToBytes("20 83 b8 ed"));
-    arraysEqual(mod_crc_32(hexToBytes("80000000")), hexToBytes("3b b6 59 ed"));
-    arraysEqual(mod_crc_32(hexToBytes("00000001")), hexToBytes("96 30 07 77"));
-  });
-
   it("should match RFC 3962 PBKDF2 test vectors", function() {
     var afbs = arrayutils.fromByteString;
     function testStringToKey(password, salt, iters, expected128, expected256) {

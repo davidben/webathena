@@ -2,8 +2,7 @@
   "name": "webathena",
   "version": "0.0.0",
   "dependencies": {
-    "q": "~0.9.6",
-    "cryptojs": "https://crypto-js.googlecode.com/files/CryptoJS%20v3.1.2.zip"
+    "q": "~0.9.6"
   },
   "devDependencies": {
     "jquery": "1.10.x",
