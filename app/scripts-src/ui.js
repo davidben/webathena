@@ -92,22 +92,30 @@ function handleLoginPrompt(login) {
             login.fadeOut(function() { $(this).remove(); });
             deferred.resolve(tgtSession);
         }, function(error) {
-            var string;
+            var string, nodes;
             if (error instanceof kcrypto.DecryptionError) {
                 string = 'Incorrect password!';
             } else if (error instanceof KDC.Error) {
-                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN) {
                     string = 'User does not exist!';
-                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
-                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
+                } else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
+                           error.code == krb.KRB_AP_ERR_BAD_INTEGRITY) {
                     string = 'Incorrect password!';
-                else
+                } else if (error.code == krb.KDC_ERR_ETYPE_NOSUPP) {
+                    node = $('#bad-etype-template').children().clone();
+                } else {
                     string = error.message;
+                }
             } else {
                 string = String(error);
             }
             $('#alert-title').text('Error logging in:');
-            $('#alert-text').text(string);
+            if (nodes) {
+                $('#alert-text').empty();
+                $('#alert-text').append(nodes);
+            } else {
+                $('#alert-text').text(string);
+            }
             $('#alert').slideDown(100);
             resetForm();
         }).done();

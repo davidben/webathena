@@ -4,9 +4,7 @@
     /** @const */ krb.realm = "ATHENA.MIT.EDU"; // XXX
     /** @const */ krb.supportedEnctypes = [
 	kcrypto.enctype.aes256_cts_hmac_sha1_96,
-	kcrypto.enctype.aes128_cts_hmac_sha1_96,
-	kcrypto.enctype.des_cbc_crc,
-	kcrypto.enctype.des_cbc_md5
+	kcrypto.enctype.aes128_cts_hmac_sha1_96
     ];
 
     /** @constructor */
