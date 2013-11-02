@@ -251,7 +251,6 @@ $(function() {
     function mainPage() {
         getTGTSession().then(function(r) {
             var tgtSession = r[0], prompted = r[1];
-            log(tgtSession);
 
             var authed = $('#authed-template').children().clone();
             authed.appendTo(document.body);
