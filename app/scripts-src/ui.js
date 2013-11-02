@@ -26,38 +26,43 @@ KDC.xhrRequest(null, 'urandom').then(function(data) {
     sjcl.random.addEntropy(arr, arr.length * 32, 'server');
 }).done();
 
-function showLoginPrompt() {
+function handleLoginPrompt(login) {
     var deferred = Q.defer();
-    var login = $('#login-template').children().clone();
-    login.appendTo(document.body);
-    login.find('.username').focus();
+
+    // If there's a logout link, hook it up.
+    login.find('.logout-link').click(function(e) {
+        e.preventDefault();
+        login.remove(); // TODO: Fade out?
+        deferred.resolve(showLoginPrompt());
+    });
 
     login.find('form').submit(function(e) {
         e.preventDefault();
+        var $this = $(this);
 
         $('#alert').slideUp(100);
-        var usernameInput = $(this).find('.username')[0],
-            passwordInput = $(this).find('.password')[0],
-            username = usernameInput.value,
-            password = passwordInput.value,
+        var usernameInput = $this.find('.username'),
+            passwordInput = $this.find('.password'),
+            username = usernameInput.val(),
+            password = passwordInput.val(),
             fail = false;
         if (!username) {
-            $(this).find('.username + .error').fadeIn();
+            $this.find('.username + .error').fadeIn();
             fail = true;
         } else {
-            $(this).find('.username + .error').fadeOut();
+            $this.find('.username + .error').fadeOut();
         }
         if (!password) {
-            $(this).find('.password + .error').fadeIn();
+            $this.find('.password + .error').fadeIn();
             fail = true;
         } else {
-            $(this).find('.password + .error').fadeOut();
+            $this.find('.password + .error').fadeOut();
         }
         if (fail)
             return;
 
-        passwordInput.value = '';
-        var submit = $(this).find('.submit');
+        passwordInput.val('');
+        var submit = $this.find('.submit');
         var text = submit.text();
         submit.attr('disabled', 'disabled').text('.');
         var interval = setInterval(function() {
@@ -110,84 +115,25 @@ function showLoginPrompt() {
     return deferred.promise;
 }
 
+function showLoginPrompt() {
+    var deferred = Q.defer();
+    var login = $('#login-template').children().clone();
+    login.appendTo(document.body);
+    login.find('.username').focus();
+
+    return handleLoginPrompt(login);
+}
+
 function showRenewPrompt(oldSession) {
     var deferred = Q.defer();
     var login = $('#renew-template').children().clone();
-    login.find('.client-principal').text(oldSession.client.toString());
-    login.find('.logout-link').click(function(e) {
-        e.preventDefault();
-        login.remove(); // TODO: Fade out?
-        deferred.resolve(showLoginPrompt());
-    });
+    var principalStr = oldSession.client.toString();
+    login.find('.client-principal').text(principalStr);
+    login.find('.username').val(principalStr);
     login.appendTo(document.body);
     login.find('.password').focus();
 
-    login.find('form').submit(function(e) {
-        e.preventDefault();
-
-        $('#alert').slideUp(100);
-        var passwordInput = $(this).find('.password')[0],
-            password = passwordInput.value;
-        if (!password) {
-            $(this).find('.password + .error').fadeIn();
-            return;
-        }
-        $(this).find('.password + .error').fadeOut();
-
-        passwordInput.value = '';
-        var submit = $(this).find('.submit');
-        var text = submit.text();
-        submit.attr('disabled', 'disabled').text('.');
-        var interval = setInterval(function() {
-            submit.text((submit.text() + '.').replace('.....', '.'));
-        }, 500);
-        var resetForm = function() {
-            clearInterval(interval);
-            submit.attr('disabled', null).text(text);
-        };
-        KDC.getTGTSession(oldSession.client, password).then(function(tgtSession) {
-            resetForm();
-            // Position-absolute it so it doesn't interfere with its
-            // replacement. jQuery's position function tries to take
-            // the margins into account and this seems to be
-            // buggy. Just compute the position straight and be done
-            // with it.
-            var position = login.get(0).getBoundingClientRect();
-            var parentPosition =
-                login.offsetParent().get(0).getBoundingClientRect();
-            login.css({
-                margin: '0',
-                position: 'absolute',
-                top: (position.top - parentPosition.top) + 'px',
-                left: (position.left - parentPosition.left) + 'px'
-            });
-            login.fadeOut(function() { $(this).remove(); });
-            deferred.resolve(tgtSession);
-        }, function(error) {
-            var string;
-            if (error instanceof kcrypto.DecryptionError) {
-                string = 'Incorrect password!';
-            } else if (error instanceof KDC.Error) {
-                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
-                    string = 'User does not exist!';
-                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
-                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
-                    string = 'Incorrect password!';
-                else
-                    string = error.message;
-            } else if (error instanceof KDC.NetworkError) {
-                string = error.message;
-            } else {
-                // TODO: Just throw this or something?
-                string = String(error);
-            }
-            $('#alert-title').text('Error logging in:');
-            $('#alert-text').text(string);
-            $('#alert').slideDown(100);
-            resetForm();
-        }).done();
-    });
-    return deferred.promise;
+    return handleLoginPrompt(login);
 }
 
 
