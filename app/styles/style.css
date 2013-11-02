@@ -3,6 +3,7 @@ html, body {
     max-width: 800px;
     margin: 0 auto;
     font-family: 'Alegreya', serif;
+    font-size: 14pt;
     background: white;
     background: -moz-linear-gradient(left, white, white) repeat-y, #909098;
     background: -webkit-linear-gradient(left, white, white) repeat-y, #909098;
@@ -60,10 +61,10 @@ header {
     position: absolute;
     z-index: 1;
     top: -24px;
-    left: 1em;
+    left: 0.85em;
     width: 160px;
     height: 160px;
-    border-radius: 1em;
+    border-radius: 0.85em;
     box-shadow: 2pt 2pt 5pt black;
     background: url(/images/logo.png), #ff7560;
     background: url(/images/logo.png), -moz-linear-gradient(top, #ff937a, #ff5847);
@@ -97,10 +98,6 @@ h1 {
     text-shadow: 2pt 2pt 3pt #666, -2pt -2pt 3pt #222;
 }
 
-header ~ * * {
-    font-size: 14pt;
-}
-
 .error {
     padding: 4pt;
     box-shadow: 2pt 2pt 5pt black;
@@ -115,8 +112,8 @@ header ~ * * {
 
 .body {
     margin: auto;
-    margin-top: 2em;
-    padding: 1em;
+    margin-top: 1.7em;
+    padding: 0.85em;
     max-width: 500px;
 }
 
@@ -193,6 +190,7 @@ table.form-box > tbody > tr > td:only-child {
     border: 1px solid #888;
     border-radius: 2px;
     font-family: 'PT Mono', monospace;
+    font-size: 14pt;
 }
 
 .login .error {
