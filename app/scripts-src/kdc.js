@@ -73,6 +73,13 @@ var KDC = (function() {
     KDC.NetworkError.prototype.toString = function() {
         return this.message;
     };
+    /** @constructor */
+    KDC.ProtocolError = function(message) {
+        this.message = message;
+    };
+    KDC.ProtocolError = function(message) {
+        return this.message;
+    };
 
     KDC.xhrRequest = function(data, target) {
         var deferred = Q.defer();
@@ -216,7 +223,7 @@ var KDC = (function() {
             }
 	}
 	if (etypeInfo === null)
-            throw new Err(Err.Context.KEY, 0x03, 'No supported enctypes');
+            throw new KDC.ProtocolError('No supported enctypes');
 
 	// Derive a key.
 	var key = keyFromPassword(etypeInfo, principal, password);
@@ -277,11 +284,11 @@ var KDC = (function() {
 		var etypeInfos = extractPreAuthHint(asRep.padata);
 		if (etypeInfos) {
 		    if (etypeInfos.length != 1)
-			throw "Bad pre-auth hint";
+			throw new KDC.ProtocolError("Bad pre-auth hint");
 		    etypeInfo = etypeInfos[0];
 		    if ("etype" in etypeInfo &&
 			etypeInfo.etype != asRep.encPart.etype)
-			throw "Bad pre-auth hint";
+			throw new KDC.ProtocolError("Bad pre-auth hint");
 		}
 	    }
 	    etypeInfo.etype = asRep.encPart.etype;
@@ -305,10 +312,10 @@ var KDC = (function() {
             // If we didn't send principalName (because it was a TGS_REQ)
             // do we still check stuff?
             if(kdcRep.crealm != kdcReq.reqBody.realm)
-		throw new Err(Err.Context.KEY, 0x10, 'crealm does not match');
+		throw new KDC.ProtocolError('crealm does not match');
             if(!krb.principalNamesEqual(kdcReq.reqBody.principalName,
 					kdcRep.cname))
-		throw new Err(Err.Context.KEY, 0x11, 'cname does not match');
+		throw new KDC.ProtocolError('cname does not match');
 	}
 
 	// The client decrypts the encrypted part of the response
@@ -320,14 +327,14 @@ var KDC = (function() {
 	// matches the nonce it supplied in its request (to detect
 	// replays).
 	if (kdcReq.reqBody.nonce != encRepPart.nonce)
-            throw new Err(Err.Context.KEY, 0x12, 'nonce does not match');
+            throw new KDC.ProtocolError('nonce does not match');
 
 	// It also verifies that the sname and srealm in the
 	// response match those in the request (or are otherwise
 	// expected values), and that the host address field is
 	// also correct.
 	if (!krb.principalNamesEqual(kdcReq.reqBody.sname, encRepPart.sname))
-            throw new Err(Err.Context.KEY, 0x13, 'sname does not match');
+            throw new KDC.ProtocolError('sname does not match');
 
 	// It then stores the ticket, session key, start and
 	// expiration times, and other information for later use.
