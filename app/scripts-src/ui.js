@@ -26,6 +26,13 @@ KDC.xhrRequest(null, 'urandom').then(function(data) {
     sjcl.random.addEntropy(arr, arr.length * 32, 'server');
 }).done();
 
+function UserError(message) {
+    this.message = message;
+}
+UserError.prototype.toString = function() {
+    return this.message;
+};
+
 function handleLoginPrompt(login) {
     var deferred = Q.defer();
 
@@ -73,6 +80,9 @@ function handleLoginPrompt(login) {
             submit.attr('disabled', null).text(text);
         };
         return Q.fcall(krb.Principal.fromString, username).then(function(principal) {
+            // Not actually a user error, but...
+            if (principal.realm != krb.realm)
+                throw new UserError("Cross-realm not supported!");
             return KDC.getTGTSession(principal, password);
         }).then(function(tgtSession) {
             resetForm();
@@ -110,7 +120,8 @@ function handleLoginPrompt(login) {
                     string = error.message;
                 }
             } else if (error instanceof KDC.NetworkError ||
-                       error instanceof KDC.ProtocolError) {
+                       error instanceof KDC.ProtocolError ||
+                       error instanceof UserError) {
                 string = error.toString();
             } else {
                 // Anything else is an internal error. Rethrow it.
