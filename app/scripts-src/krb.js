@@ -91,16 +91,10 @@
     krb.Key = function(keytype, keyvalue) {
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
-        this.profile = kcrypto.encProfiles[keytype];
-        if (this.profile === undefined)
-            throw new Err(Err.Context.KEY, 0x00,
-                          'Unsupported enctype ' + this.keytype);
+	this.profile = kcrypto.getEncryptionProfile(keytype);
     };
     krb.Key.makeRandomKey = function(keytype) {
-	var encProfile = kcrypto.encProfiles[keytype];
-	if (encProfile === undefined)
-            throw new Err(Err.Context.KEY, 0x00,
-			  'Unsupported enctype ' + keytype);
+	var encProfile = kcrypto.getEncryptionProfile(keytype);
         // Generate the appropriate number of random bytes.
         var words = sjcl.random.randomWords(
             (encProfile.keyGenerationSeedLength + 31) >>> 5);
@@ -160,10 +154,7 @@
                            arrayutils.fromBase64(key.keyvalue));
     };
     krb.Key.fromPassword = function(keytype, password, salt, params) {
-	var encProfile = kcrypto.encProfiles[keytype];
-	if (encProfile === undefined)
-            throw new Err(Err.Context.KEY, 0x02,
-			  'Unsupported enctype ' + keytype);
+	var encProfile = kcrypto.getEncryptionProfile(keytype);
 	return new krb.Key(keytype,
 			   encProfile.stringToKey(password, salt, params));
     };

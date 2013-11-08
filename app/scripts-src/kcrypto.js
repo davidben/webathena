@@ -3,6 +3,12 @@ var kcrypto = (function() {
 
     var kcrypto = { };
 
+    kcrypto.NotSupportedError = function(message) {
+        this.message = message;
+    };
+    kcrypto.NotSupportedError.prototype.toString = function() {
+        return "NotSupportedError: " + this.message;
+    };
     kcrypto.DecryptionError = function(message) {
         this.message = message;
     };
@@ -555,6 +561,17 @@ var kcrypto = (function() {
         kcrypto.ShaOne96Aes128Checksum;
     kcrypto.sumProfiles[kcrypto.ShaOne96Aes256Checksum.sumtype] =
         kcrypto.ShaOne96Aes256Checksum;
+
+    kcrypto.getEncryptionProfile = function(enctype) {
+        if (enctype in kcrypto.encProfiles)
+            return kcrypto.encProfiles[enctype];
+        throw new kcrypto.NotSupportedError("Unsupported enctype: " + enctype);
+    };
+    kcrypto.getChecksumProfile = function(sumtype) {
+        if (sumtype in kcrypto.sumProfiles)
+            return kcrypto.sumProfiles[sumtype];
+        throw new kcrypto.NotSupportedError("Unsupported sumtype: " + sumtype);
+    };
 
     return kcrypto;
 }());
