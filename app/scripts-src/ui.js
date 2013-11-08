@@ -93,7 +93,7 @@ function handleLoginPrompt(login) {
             login.fadeOut(function() { $(this).remove(); });
             deferred.resolve(tgtSession);
         }, function(error) {
-            var string, nodes;
+            var string, nodes, rethrow = false;
             if (error instanceof kcrypto.DecryptionError) {
                 string = 'Incorrect password!';
             } else if (error instanceof krb.PrincipalError) {
@@ -109,8 +109,13 @@ function handleLoginPrompt(login) {
                 } else {
                     string = error.message;
                 }
+            } else if (error instanceof KDC.NetworkError ||
+                       error instanceof KDC.ProtocolError) {
+                string = error.toString();
             } else {
-                string = String(error);
+                // Anything else is an internal error. Rethrow it.
+                string = 'Internal error: ' + error;
+                rethrow = true;
             }
             $('#alert-title').text('Error logging in:');
             if (nodes) {
@@ -121,6 +126,8 @@ function handleLoginPrompt(login) {
             }
             $('#alert').slideDown(100);
             resetForm();
+            if (rethrow)
+                throw error;
         }).done();
     });
     return deferred.promise;

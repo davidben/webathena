@@ -66,7 +66,7 @@ var KDC = (function() {
         this.message = message;
     };
     KDC.ProtocolError = function(message) {
-        return this.message;
+        return "Protocol error: " + this.message;
     };
 
     KDC.xhrRequest = function(data, target) {
