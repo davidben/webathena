@@ -88,6 +88,15 @@
     }
 
     /** @constructor */
+    krb.KeyTypeMismatchError = function(dataType, keyType) {
+        this.dataType = dataType;
+        this.keyType = keyType;
+    };
+    krb.KeyTypeMismatchError.prototype.toString = function() {
+        return 'Key types do not match';
+    };
+
+    /** @constructor */
     krb.Key = function(keytype, keyvalue) {
 	this.keytype = keytype;
 	this.keyvalue = keyvalue;
@@ -104,7 +113,7 @@
     };
     krb.Key.prototype.decrypt = function(usage, data) {
 	if (data.etype != this.keytype)
-            throw new Err(Err.Context.KEY, 0x01, 'Key types do not match');
+            throw new krb.KeyTypeMismatchError(data.etype, this.keytype);
 	// TODO: cache the derived key? This'll let us also cache things
 	// computed from the derived key.
 	var derivedKey = this.profile.deriveKey(this.keyvalue, usage);

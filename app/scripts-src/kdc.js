@@ -320,8 +320,14 @@ var KDC = (function() {
 
 	// The client decrypts the encrypted part of the response
 	// using its secret key...
-	var encRepPart = key.decryptAs(krb.EncASorTGSRepPart,
-                                       keyUsage, kdcRep.encPart)[1];
+        try {
+	    var encRepPart = key.decryptAs(krb.EncASorTGSRepPart,
+                                           keyUsage, kdcRep.encPart)[1];
+        } catch (e) {
+            if (e instanceof krb.KeyTypeMismatchError)
+                throw new KDC.ProtocolError('enctype does not match');
+            throw e;
+        }
 
 	// ...and verifies that the nonce in the encrypted part
 	// matches the nonce it supplied in its request (to detect
