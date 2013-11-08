@@ -7,18 +7,6 @@
 // Only place in first file of each bundle.
 "use strict";
 
-/** @constructor */
-var Err = function(ctx, code, msg) {
-    this.ctx = ctx;
-    this.code = code;
-    this.msg = msg;
-};
-
-Err.Context = {};
-Err.Context.KEY = 0x02;
-Err.Context.NET = 0x03;
-Err.Context.UNK = 0x0f;
-
 var Crypto = {};
 
 Crypto.randomNonce = function() {
