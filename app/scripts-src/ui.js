@@ -72,8 +72,9 @@ function handleLoginPrompt(login) {
             clearInterval(interval);
             submit.attr('disabled', null).text(text);
         };
-        var principal = krb.Principal.fromString(username);
-        KDC.getTGTSession(principal, password).then(function(tgtSession) {
+        return Q.fcall(krb.Principal.fromString, username).then(function(principal) {
+            return KDC.getTGTSession(principal, password);
+        }).then(function(tgtSession) {
             resetForm();
             // Position-absolute it so it doesn't interfere with its
             // replacement. jQuery's position function tries to take
@@ -95,6 +96,8 @@ function handleLoginPrompt(login) {
             var string, nodes;
             if (error instanceof kcrypto.DecryptionError) {
                 string = 'Incorrect password!';
+            } else if (error instanceof krb.PrincipalError) {
+                string = 'Bad username!';
             } else if (error instanceof KDC.Error) {
                 if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN) {
                     string = 'User does not exist!';

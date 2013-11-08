@@ -7,6 +7,12 @@
 	kcrypto.enctype.aes128_cts_hmac_sha1_96
     ];
 
+    krb.PrincipalError = function() {
+    };
+    krb.PrincipalError.prototype.toString = function() {
+        return "Malformed principal";
+    };
+
     /** @constructor */
     krb.Principal = function(principalName, realm) {
 	this.principalName = principalName;
@@ -47,7 +53,7 @@
             if (str[i] == "\\") {
 		i++;
 		if (i >= str.length)
-                    throw "Malformed principal";
+                    throw new krb.PrincipalError();
 		switch (str[i]) {
 		case "n": component += "\n"; break;
 		case "t": component += "\t"; break;
@@ -57,12 +63,12 @@
 		}
             } else if (str[i] == "/") {
 		if (seenAt)
-                    throw "Malformed principal";
+                    throw new krb.PrincipalError();
 		components.push(component);
 		component = "";
             } else if (str[i] == "@") {
 		if (seenAt)
-                    throw "Malformed principal";
+                    throw new krb.PrincipalError();
 		components.push(component);
 		component = "";
 		seenAt = true;
