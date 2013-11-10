@@ -211,7 +211,7 @@ var KDC = (function() {
             }
 	}
 	if (etypeInfo === null)
-            throw new KDC.ProtocolError('No supported enctypes');
+            throw new kcrypto.NotSupportedError('No supported enctypes');
 
 	// Derive a key.
 	var key = keyFromPassword(etypeInfo, principal, password);

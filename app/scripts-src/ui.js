@@ -119,6 +119,8 @@ function handleLoginPrompt(login) {
                 } else {
                     string = error.message;
                 }
+            } else if (error instanceof kcrypto.NotSupportedError) {
+                nodes = $('#bad-etype-template').children().clone();
             } else if (error instanceof KDC.NetworkError ||
                        error instanceof KDC.ProtocolError ||
                        error instanceof UserError) {
