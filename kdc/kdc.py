@@ -143,7 +143,9 @@ class WebKDC(object):
             return self._error_response(e)
 
         # Okay, it seems good. Go on and send it, reencoded.
-        krb_rep = self.send_krb_request(der_encoder.encode(req_asn1))
+        krb_rep = self.send_krb_request(
+            der_encoder.encode(req_asn1),
+            use_master=request.args.has_key('use_master'))
 
         if krb_rep is None:
             data = { 'status': 'TIMEOUT' }
@@ -165,14 +167,17 @@ class WebKDC(object):
             headers=[('Content-Disposition',
                       'attachment; filename="json_response.txt"')])
 
-    def send_krb_request(self, krb_req):
+    def send_krb_request(self, krb_req, use_master):
         """
         Sends Kerberos request krb_req, returns the response or None
-        if we time out.
+        if we time out. If use_master is true, we only talk to the
+        master KDC.
         """
+        svctype = '_kerberos-master' if use_master else '_kerberos'
         # TODO: Support TCP as well as UDP. I think MIT's KDC only
         # supports UDP though.
-        srv_query = '_kerberos._udp.' + self.realm
+        socktype = '_udp'
+        srv_query = '%s.%s.%s' % (svctype, socktype, self.realm)
         srv_records = list(dns.resolver.query(srv_query, 'SRV'))
         srv_records.sort(key = lambda r: r.priority)
 
