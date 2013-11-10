@@ -167,10 +167,12 @@ var KDC = (function() {
             // PA-ETYPE-INFO2. Arbitrarily declare that typed array is
             // the representation.
             if (methodData[i].padataType == krb.PA_ETYPE_INFO2) {
-		var info = krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
-                if (info.salt !== undefined)
-                    info.salt = arrayutils.fromString(info.salt);
-                return info;
+                var infos = krb.ETYPE_INFO2.decodeDER(methodData[i].padataValue);
+                infos.forEach(function(info) {
+                    if (info.salt !== undefined)
+                        info.salt = arrayutils.fromString(info.salt);
+                });
+                return infos;
             }
 	}
 	for (var i = 0; i < methodData.length; i++) {
