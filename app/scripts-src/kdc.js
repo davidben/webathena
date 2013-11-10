@@ -99,7 +99,9 @@ var KDC = (function() {
         return deferred.promise;
     };
 
-    KDC.kdcProxyRequest = function(data, target, outputType) {
+    KDC.kdcProxyRequest = function(data, target, outputType, useMaster) {
+        if (useMaster)
+            target += '?use_master';
         return KDC.xhrRequest(data, target).then(function(responseText) {
 	    var data = JSON.parse(responseText);
 	    switch (data.status) {
@@ -114,14 +116,14 @@ var KDC = (function() {
         });
     };
 
-    KDC.asReq = function(principal, padata) {
+    KDC.asReq = function(principal, padata, useMaster) {
 	return Crypto.retryForEntropy(function () {
             var asReq = {};
             asReq.pvno = krb.pvno;
             asReq.msgType = krb.KRB_MT_AS_REQ;
             // TODO: padata will likely want to be a more interesting
             // callback for ones which depend on, say, the reqBody.
-            if (padata !== undefined)
+            if (padata != null)
 		asReq.padata = padata;
 
             // FIXME: This is obnoxious. Also constants.
@@ -148,7 +150,7 @@ var KDC = (function() {
             asReq.reqBody.etype = krb.supportedEnctypes;
 
             return KDC.kdcProxyRequest(krb.AS_REQ.encodeDER(asReq),
-                                       'AS_REQ', krb.AS_REP_OR_ERROR)
+                                       'AS_REQ', krb.AS_REP_OR_ERROR, useMaster)
 		.then(function (asRep) {
 		    return { asReq: asReq, asRep: asRep };
 		});
@@ -238,8 +240,8 @@ var KDC = (function() {
 	});
     };
 
-    KDC.getTGTSession = function (principal, password) {
-	return KDC.asReq(principal).then(function (ret) {
+    KDC.getTGTSession = function (principal, password, useMaster) {
+	var result = KDC.asReq(principal, null, useMaster).then(function (ret) {
             var asReq = ret.asReq, asRep = ret.asRep;
             // Handle pre-authentication.
             if (asRep.msgType == krb.KRB_MT_ERROR &&
@@ -258,7 +260,7 @@ var KDC = (function() {
                         ).then(function(padata) {
                             // Make a new AS-REQ with our PA-DATA and
                             // process that.
-                            return KDC.asReq(principal, [padata]);
+                            return KDC.asReq(principal, [padata], useMaster);
 			});
                     }
 		}
@@ -295,6 +297,25 @@ var KDC = (function() {
             return KDC.sessionFromKDCRep(key, krb.KU_AS_REQ_ENC_PART,
 					 asReq, asRep);
 	});
+
+        // On failure, fall back to the master, a la MIT Kerberos.
+        // TODO(davidben): Don't fallback if we happened to be talking
+        // to the master anyway.
+        if (!useMaster) {
+            result = result.then(null, function(oldErr) {
+                log('Falling back to master');
+                return KDC.getTGTSession(
+                    principal, password, true
+                ).then(null, function(err) {
+                    if (err instanceof KDC.NetworkError) {
+                        log('Could not reach master: ' + err);
+                        throw oldErr;
+                    }
+                    throw err;
+                });
+            });
+        }
+        return result;
     };
 
     KDC.sessionFromKDCRep = function (key, keyUsage, kdcReq, kdcRep) {
