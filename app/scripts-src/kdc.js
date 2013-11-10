@@ -65,7 +65,7 @@ var KDC = (function() {
     KDC.ProtocolError = function(message) {
         this.message = message;
     };
-    KDC.ProtocolError = function(message) {
+    KDC.ProtocolError.prototype.toString = function() {
         return "Protocol error: " + this.message;
     };
 
