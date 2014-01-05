@@ -26,6 +26,13 @@ KDC.xhrRequest(null, 'urandom').then(function(data) {
     sjcl.random.addEntropy(arr, arr.length * 32, 'server');
 }).done();
 
+function UserError(message) {
+    this.message = message;
+}
+UserError.prototype.toString = function() {
+    return this.message;
+};
+
 function handleLoginPrompt(login) {
     var deferred = Q.defer();
 
@@ -72,8 +79,12 @@ function handleLoginPrompt(login) {
             clearInterval(interval);
             submit.attr('disabled', null).text(text);
         };
-        var principal = krb.Principal.fromString(username);
-        KDC.getTGTSession(principal, password).then(function(tgtSession) {
+        return Q.fcall(krb.Principal.fromString, username).then(function(principal) {
+            // Not actually a user error, but...
+            if (principal.realm != krb.realm)
+                throw new UserError("Cross-realm not supported!");
+            return KDC.getTGTSession(principal, password);
+        }).then(function(tgtSession) {
             resetForm();
             // Position-absolute it so it doesn't interfere with its
             // replacement. jQuery's position function tries to take
@@ -92,24 +103,44 @@ function handleLoginPrompt(login) {
             login.fadeOut(function() { $(this).remove(); });
             deferred.resolve(tgtSession);
         }, function(error) {
-            var string;
+            var string, nodes, rethrow = false;
             if (error instanceof kcrypto.DecryptionError) {
                 string = 'Incorrect password!';
+            } else if (error instanceof krb.PrincipalError) {
+                string = 'Bad username!';
             } else if (error instanceof KDC.Error) {
-                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN)
+                if (error.code == krb.KDC_ERR_C_PRINCIPAL_UNKNOWN) {
                     string = 'User does not exist!';
-                else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
-                         error.code == krb.KRB_AP_ERR_BAD_INTEGRITY)
+                } else if (error.code == krb.KDC_ERR_PREAUTH_FAILED ||
+                           error.code == krb.KRB_AP_ERR_BAD_INTEGRITY) {
                     string = 'Incorrect password!';
-                else
+                } else if (error.code == krb.KDC_ERR_ETYPE_NOSUPP) {
+                    node = $('#bad-etype-template').children().clone();
+                } else {
                     string = error.message;
+                }
+            } else if (error instanceof kcrypto.NotSupportedError) {
+                nodes = $('#bad-etype-template').children().clone();
+            } else if (error instanceof KDC.NetworkError ||
+                       error instanceof KDC.ProtocolError ||
+                       error instanceof UserError) {
+                string = error.toString();
             } else {
-                string = String(error);
+                // Anything else is an internal error. Rethrow it.
+                string = 'Internal error: ' + error;
+                rethrow = true;
             }
             $('#alert-title').text('Error logging in:');
-            $('#alert-text').text(string);
+            if (nodes) {
+                $('#alert-text').empty();
+                $('#alert-text').append(nodes);
+            } else {
+                $('#alert-text').text(string);
+            }
             $('#alert').slideDown(100);
             resetForm();
+            if (rethrow)
+                throw error;
         }).done();
     });
     return deferred.promise;

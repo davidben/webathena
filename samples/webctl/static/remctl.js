@@ -120,11 +120,11 @@ function RemctlSocket(proxy, host, port) {
                 }
             }
         } else {
-            console.log('Unexpected message', msg);
+            if (window.console && console.log)
+                console.log('Unexpected message', msg);
         }
     }.bind(this));
     this.socket.addEventListener('close', function(ev) {
-        console.log(this);
         if (ev.code === 1000) {
             this.disconnect();
         } else {

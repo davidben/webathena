@@ -151,6 +151,7 @@ table.form-box > tbody > tr > td:only-child {
     text-align: center;
     font-size: 2em;
     padding-right: 0.3em;
+    vertical-align: top;
 }
 
 #alert-content {
