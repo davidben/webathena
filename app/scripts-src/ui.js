@@ -115,7 +115,7 @@ function handleLoginPrompt(login) {
                            error.code == krb.KRB_AP_ERR_BAD_INTEGRITY) {
                     string = 'Incorrect password!';
                 } else if (error.code == krb.KDC_ERR_ETYPE_NOSUPP) {
-                    node = $('#bad-etype-template').children().clone();
+                    nodes = $('#bad-etype-template').children().clone();
                 } else {
                     string = error.message;
                 }
