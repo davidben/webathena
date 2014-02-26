@@ -10,7 +10,8 @@ var ALLOWED_HOSTS = {
     'foreign-key.mit.edu': true,
     'sql.mit.edu': true,
     'xvm-remote.mit.edu': true,
-    'zygorthian-space-raiders.mit.edu': true
+    'zygorthian-space-raiders.mit.edu': true,
+    'pergamon.mit.edu': true
 };
 var REMCTL_PORT = 4373;
 
